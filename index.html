@@ -174,7 +174,7 @@ function predict(){
   const includeAdd = document.getElementById('includeAdd').checked;
   const additional = document.getElementById('additional').value;
 
-  const draws = (range === 'all') ? historical : historical.slice(0,-range);
+  const draws = (range === 'all') ? historical : historical.slice(-range);
   const freq = Array(50).fill(0);
   const compat = Array(50).fill(0);
 
