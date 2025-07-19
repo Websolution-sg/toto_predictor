@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Singapore TOTO Predictor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin: 40px; }
+    h1 { color: #2c3e50; }
+    select, button { padding: 10px; margin: 10px; font-size: 16px; }
+    #predictions { margin-top: 20px; }
+    canvas { max-width: 600px; margin: auto; }
+  </style>
+</head>
+<body>
+  <h1>Singapore TOTO Predictor</h1>
+  <p>Select your 3 base numbers:</p>
+  <select id="num1"></select>
+  <select id="num2"></select>
+  <select id="num3"></select>
+  <button onclick="predictNumbers()">Predict Next Numbers</button>
+
+  <div id="predictions"></div>
+  <canvas id="hotChart"></canvas>
+
+  <script>
+    // Dummy historical draw data (replace with real data)
+    const historicalDraws = [
+      [5, 12, 23, 32, 38, 45],
+      [3, 11, 18, 28, 34, 49],
+      [7, 10, 15, 22, 37, 42],
+      [8, 19, 24, 29, 35, 48],
+      [1, 6, 17, 21, 30, 39]
+    ];
+
+    // Populate dropdowns
+    const populateSelects = () => {
+      for (let i = 1; i <= 49; i++) {
+        ['num1', 'num2', 'num3'].forEach(id => {
+          document.getElementById(id).innerHTML += `<option value="${i}">${i}</option>`;
+        });
+      }
+    };
+    populateSelects();
+
+    // Calculate number frequencies
+    const getFrequencies = draws => {
+      const freq = Array(50).fill(0);
+      draws.forEach(draw => {
+        draw.forEach(num => freq[num]++);
+      });
+      return freq;
+    };
+
+    // Predict numbers
+    const predictNumbers = () => {
+      const baseNums = ['num1', 'num2', 'num3'].map(id => parseInt(document.getElementById(id).value));
+      const freq = getFrequencies(historicalDraws);
+
+      const hotNumbers = freq
+        .map((count, num) => ({ num, count }))
+        .filter(item => item.num !== 0 && !baseNums.includes(item.num))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      const suggestions = hotNumbers.map(hot => [...baseNums, hot.num]);
+
+      document.getElementById('predictions').innerHTML = `
+        <h2>Predicted Combinations</h2>
+        ${suggestions.map(set => `<p>${set.join(', ')}</p>`).join('')}
+      `;
+
+      const ctx = document.getElementById('hotChart').getContext('2d');
+      if (window.hotChartInstance) window.hotChartInstance.destroy();
+      window.hotChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: hotNumbers.map(item => item.num),
+          datasets: [{
+            label: 'Frequency',
+            data: hotNumbers.map(item => item.count),
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    };
+  </script>
+</body>
+</html>
