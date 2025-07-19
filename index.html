@@ -80,7 +80,13 @@ for(let i=1;i<=49;i++){
     document.getElementById(id).append(opt);
   });
 }
-
+// Auto-select most recent result
+const recent = historical[0];
+['base1','base2','base3','base4','base5','base6'].forEach((id, idx) => {
+  document.getElementById(id).value = recent[idx];
+});
+document.getElementById('additional').value = recent[6];
+  
 // Prediction logic
 function predict(){
   const bases = ['base1','base2','base3','base4','base5','base6'].map(id => +document.getElementById(id).value);
