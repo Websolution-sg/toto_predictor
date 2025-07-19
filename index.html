@@ -55,7 +55,7 @@ const historical = [
 
 // Populate selects
 for(let i=1;i<=49;i++){
-  ['base1','base2','base3','base4','base5','base6'].forEach(id => {
+  ['base1','base2','base3','base4','base5','base6','additional'].forEach(id => {
     const opt = document.createElement('option');
     opt.value=opt.textContent=i;
     document.getElementById(id).append(opt);
