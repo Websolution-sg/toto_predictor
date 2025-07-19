@@ -1,97 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Singapore TOTO Predictor</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>TOTO Predictor</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; margin: 40px; }
-    h1 { color: #2c3e50; }
-    select, button { padding: 10px; margin: 10px; font-size: 16px; }
-    #predictions { margin-top: 20px; }
-    canvas { max-width: 600px; margin: auto; }
+    body { font: 16px/1.5 Arial; padding: 20px; max-width: 600px; margin: auto; }
+    select, button, input { font-size: 1em; margin: 0.5em 0; }
+    canvas { max-width: 100%; }
   </style>
 </head>
 <body>
   <h1>Singapore TOTO Predictor</h1>
-  <p>Select your 3 base numbers:</p>
-  <select id="num1"></select>
-  <select id="num2"></select>
-  <select id="num3"></select>
+  <p>Select 3 expected numbers:</p>
+  <div>
+    <select id="base1"></select>
+    <select id="base2"></select>
+    <select id="base3"></select>
+  </div>
 
-  <button onclick="predictNumbers()">Predict Next Numbers</button>
+  <p>Select draw range:</p>
+  <select id="drawRange">
+    <option value="100">Last 100</option>
+    <option value="200">Last 200</option>
+    <option value="all">All</option>
+  </select>
 
-  <div id="predictions"></div>
-  <canvas id="hotChart"></canvas>
+  <label>
+    <input type="checkbox" id="includeAdd"/> Include additional number
+  </label>
 
-  <script>
-    // Dummy historical draw data (replace with real data)
-    const historicalDraws = [
-      [5, 12, 23, 32, 38, 45],
-      [3, 11, 18, 28, 34, 49],
-      [7, 10, 15, 22, 37, 42],
-      [8, 19, 24, 29, 35, 48],
-      [1, 6, 17, 21, 30, 39]
-    ];
+  <button onclick="predict()">Predict</button>
 
-    // Populate dropdowns
-    const populateSelects = () => {
-      for (let i = 1; i <= 49; i++) {
-        ['num1', 'num2', 'num3'].forEach(id => {
-          document.getElementById(id).innerHTML += `<option value="${i}">${i}</option>`;
-        });
+  <h2>Results</h2>
+  <div id="results"></div>
+  <canvas id="freqChart"></canvas>
+
+<script>
+const historical = [
+  // Replace with real Singapore TOTO data: 6 winning + 1 additional
+  [5,12,23,32,38,45,7],
+  [3,11,18,28,34,49,17],
+  /* ... */
+];
+
+// Populate selects
+for(let i=1;i<=49;i++){
+  ['base1','base2','base3'].forEach(id => {
+    const opt = document.createElement('option');
+    opt.value=opt.textContent=i;
+    document.getElementById(id).append(opt);
+  });
+}
+
+// Prediction logic
+function predict(){
+  const bases = ['base1','base2','base3'].map(id => +document.getElementById(id).value);
+  const range = document.getElementById('drawRange').value;
+  const includeAdd = document.getElementById('includeAdd').checked;
+
+  const draws = (range === 'all') ? historical : historical.slice(-range);
+  const freq = Array(50).fill(0);
+  const compat = Array(50).fill(0);
+
+  draws.forEach(draw => {
+    const main = draw.slice(0,6);
+    const add = draw[6];
+    const pool = includeAdd ? main.concat(add) : main;
+    pool.forEach(n => freq[n]++);
+    bases.forEach(b => {
+      if(pool.includes(b)){
+        pool.filter(n => n!==b).forEach(n=> compat[n]++);
       }
-    };
-    populateSelects();
+    });
+  });
 
-    // Calculate number frequencies
-    const getFrequencies = draws => {
-      const freq = Array(50).fill(0);
-      draws.forEach(draw => {
-        draw.forEach(num => freq[num]++);
-      });
-      return freq;
-    };
+  const suggestions = freq
+    .map((count,n)=>({n,count,compat:compat[n]}))
+    .filter(o=>o.n && !bases.includes(o.n))
+    .sort((a,b)=> (b.compat + b.count) - (a.compat + a.count))
+    .slice(0,6);
 
-    // Predict numbers
-    const predictNumbers = () => {
-      const baseNums = ['num1', 'num2', 'num3'].map(id => parseInt(document.getElementById(id).value));
-      const freq = getFrequencies(historicalDraws);
+  const rs = document.getElementById('results');
+  rs.innerHTML = '<h3>Suggested next numbers:</h3>' +
+                 suggestions.map(o=>`<p>${o.n} (freq:${o.count}, compat:${o.compat})</p>`).join('');
 
-      const hotNumbers = freq
-        .map((count, num) => ({ num, count }))
-        .filter(item => item.num !== 0 && !baseNums.includes(item.num))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 10);
-
-      const suggestions = hotNumbers.map(hot => [...baseNums, hot.num]);
-
-      document.getElementById('predictions').innerHTML = `
-        <h2>Predicted Combinations</h2>
-        ${suggestions.map(set => `<p>${set.join(', ')}</p>`).join('')}
-      `;
-
-      const ctx = document.getElementById('hotChart').getContext('2d');
-      if (window.hotChartInstance) window.hotChartInstance.destroy();
-      window.hotChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: hotNumbers.map(item => item.num),
-          datasets: [{
-            label: 'Frequency',
-            data: hotNumbers.map(item => item.count),
-            backgroundColor: 'rgba(54, 162, 235, 0.5)',
-            borderColor: 'rgba(54, 162, 235, 1)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          scales: { y: { beginAtZero: true } }
-        }
-      });
-    };
-  </script>
+  // Chart
+  const ctx = document.getElementById('freqChart').getContext('2d');
+  new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: suggestions.map(o=>o.n),
+      datasets:[{label:'Score',data:suggestions.map(o=>o.count+o.compat)}]
+    },
+    options:{scales:{y:{beginAtZero:true}}}
+  });
+}
+</script>
 </body>
 </html>
