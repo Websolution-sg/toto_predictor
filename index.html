@@ -171,6 +171,12 @@ document.getElementById('additional').value = recent[6];
 function predict(){
   const bases = ['base1','base2','base3','base4','base5','base6'].map(id => +document.getElementById(id).value);
   const range = document.getElementById('drawRange').value;
+   let draws;
+  if (range === 'all') {
+    draws = historical;
+  } else {
+    draws = historical.slice(0, range); // Get the most recent N draws
+  }
   const includeAdd = document.getElementById('includeAdd').checked;
   const additional = document.getElementById('additional').value;
 
