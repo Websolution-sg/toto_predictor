@@ -225,7 +225,7 @@ const historical = [
       numbers.forEach((n, i) => {
         console.log(`Number ${n} -> Frequency: ${freq[n]}, Compatibility: ${compat[n]}, Total Score: ${scores[i]}`);
       });
-      displayPredictedNumbers(numbers, additional, scores);
+      displayPredictedNumbers(numbers, additional, scores, freq, compat);
     }
 
     function runFrequencyCompatibilityPrediction() {
@@ -257,10 +257,10 @@ const historical = [
       suggestions.forEach((o, i) => {
         console.log(`Number ${o.n} -> Frequency: ${o.count}, Compatibility: ${o.compat}, Total Score: ${scores[i]}`);
       });
-      displayPredictedNumbers(suggestions.map(o => o.n), null, scores);
+      displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat);
     }
 
-    function displayPredictedNumbers(numbers, additional = null, scores) {
+    function displayPredictedNumbers(numbers, additional = null, scores, freq, compat) {
       const rs = document.getElementById('results');
       rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
         `<p>${numbers.join(', ')}${additional !== null ? ' (' + additional + ')' : ''}</p>`;
@@ -272,9 +272,9 @@ const historical = [
       chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: numbers,
+          labels: numbers.map((n, i) => `${n}\n(freq: ${freq[n]}, compat: ${compat[n]})`),
           datasets: [{
-            label: 'Score',
+            label: 'Total Score',
             data: scores,
             backgroundColor: 'rgba(54, 162, 235, 0.6)',
             borderColor: 'rgba(54, 162, 235, 1)',
@@ -283,6 +283,16 @@ const historical = [
         },
         options: {
           responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const index = context.dataIndex;
+                  return `Freq: ${freq[numbers[index]]}, Compat: ${compat[numbers[index]]}, Total: ${scores[index]}`;
+                }
+              }
+            }
+          },
           scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
         }
       });
