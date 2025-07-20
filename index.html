@@ -166,6 +166,9 @@ const recent = historical[0];
   document.getElementById(id).value = recent[idx];
 });
 document.getElementById('additional').value = recent[6];
+
+// Global variable to hold chart instance
+let chartInstance = null;
   
 // Prediction logic
 function predict(){
@@ -174,7 +177,7 @@ function predict(){
   const includeAdd = document.getElementById('includeAdd').checked;
   const additional = document.getElementById('additional').value;
 
-  const draws = (range === 'all') ? historical: historical.slice(0,range);
+  const draws = (range === 'all') ? historical : historical.slice(0, parseInt(range));
   const freq = Array(50).fill(0);
   const compat = Array(50).fill(0);
 
@@ -200,10 +203,17 @@ function predict(){
   rs.innerHTML = '<h3>Suggested next numbers:</h3>' +
                  suggestions.map(o=>`<p>${o.n} (freq:${o.count}, compat:${o.compat})</p>`).join('');
 
+  // If no suggestions, alert and stop
+  if (suggestions.length === 0) {
+    alert('No data to display in chart. Try selecting a larger draw range.');
+    return;
+  }
+
   // Chart update with destroy and recreate
   const ctx = document.getElementById('freqChart').getContext('2d');
   if (chartInstance) {
     chartInstance.destroy();
+    chartInstance = null;
   }
   chartInstance = new Chart(ctx, {
     type: 'bar',
