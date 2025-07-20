@@ -200,45 +200,15 @@ function predict(){
   rs.innerHTML = '<h3>Suggested next numbers:</h3>' +
                  suggestions.map(o=>`<p>${o.n} (freq:${o.count}, compat:${o.compat})</p>`).join('');
 
-  // Render chart showing scores for suggested numbers
+  // Chart
   const ctx = document.getElementById('freqChart').getContext('2d');
-  if (freqChartInstance) freqChartInstance.destroy(); // Destroy previous chart if exists
-  freqChartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: rawSuggestions.map(o => o.n),
-      datasets: [{
-        label: 'Score',
-        data: rawSuggestions.map(o => o.count + o.compat),
-        backgroundColor: '#3a7bd5',
-        borderRadius: 6,
-        borderSkipped: false,
-        hoverBackgroundColor: '#285fa7',
-      }]
+  new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: suggestions.map(o=>o.n),
+      datasets:[{label:'Score',data:suggestions.map(o=>o.count+o.compat)}]
     },
-    options: {
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#285fa7',
-          titleColor: '#fff',
-          bodyColor: '#fff',
-        }
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          title: { display: true, text: 'Number', color: '#285fa7', font: { weight: 'bold' } },
-          ticks: { color: '#285fa7', font: { weight: 'bold' } }
-        },
-        y: {
-          beginAtZero: true,
-          grid: { color: '#e3f0ff' },
-          title: { display: true, text: 'Score', color: '#285fa7', font: { weight: 'bold' } },
-          ticks: { color: '#285fa7', font: { weight: 'bold' } }
-        }
-      }
-    }
+    options:{scales:{y:{beginAtZero:true}}}
   });
 }
 </script>
