@@ -25,12 +25,12 @@
   </div>
  
   <div>
-    <label>Additional Number:</label><br>
+    <label>Additional Number:</label><br/>
     <select id="additional"></select>
   </div>
   
   <div>
-    <label>Select draw range:</label><br>
+    <label>Select draw range:</label><br/>
     <select id="drawRange">
       <option value="20">Last 20</option>
       <option value="50">Last 50</option>
@@ -40,7 +40,7 @@
   
   <label>
     <input type="checkbox" id="includeAdd"/> Include additional number
-  </label><br>
+  </label><br/>
 
   <button onclick="predict()">Predict</button>
 
@@ -160,13 +160,13 @@ const historical = [
         const opt = document.createElement('option');
         opt.value = opt.textContent = i;
         document.getElementById(id).append(opt);
-      });
+      })
     }
 
     // Auto-select most recent result
     const recent = historical[0];
     ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
-      document.getElementById(id).value = recent[idx];
+      document.getElementById(id).value = recent[idx]
     });
     document.getElementById('additional').value = recent[6];
 
@@ -262,8 +262,10 @@ const historical = [
 
     function displayPredictedNumbers(numbers, additional = null, scores, freq, compat) {
       const rs = document.getElementById('results');
+      // Sort numbers for display but keep original order for chart
+      const sortedNumbers = [...numbers].sort((a, b) => a - b);
       rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
-        `<p>${numbers.join(', ')}</p>`;
+        `<p>${sortedNumbers.join(', ')}</p>`;
 
       const ctx = document.getElementById('freqChart').getContext('2d');
       if (chartInstance) {
