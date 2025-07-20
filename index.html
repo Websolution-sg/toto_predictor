@@ -179,8 +179,8 @@ function predict(){
   }
 }
 
-// Check for next historical draw or fallback
-function findNextHistoricalDrawOrPredict() {
+// Check for previous historical draw or fallback
+function findPreviousHistoricalDrawOrPredict() {
   const bases = ['base1','base2','base3','base4','base5','base6']
     .map(id => parseInt(document.getElementById(id).value))
     .sort((a, b) => a - b);
@@ -188,18 +188,18 @@ function findNextHistoricalDrawOrPredict() {
   // Clear previous predictions
   document.getElementById('results').innerHTML = '';
 
-  for (let i = 0; i < historical.length - 1; i++) {
+  for (let i = 1; i < historical.length; i++) {
     const draw = historical[i].slice(0, 6).sort((a, b) => a - b);
     if (JSON.stringify(draw) === JSON.stringify(bases)) {
-      const nextDraw = historical[i + 1];
+      const prevDraw = historical[i - 1];
       document.getElementById('nextHistorical').innerHTML = `
-        <h3>Next Historical Draw:</h3>
-        <p>${nextDraw.slice(0,6).join(', ')} (${nextDraw[6]})</p>`;
+        <h3>Previous Historical Draw:</h3>
+        <p>${prevDraw.slice(0,6).join(', ')} (${prevDraw[6]})</p>`;
       return true;
     }
   }
   document.getElementById('nextHistorical').innerHTML = `
-    <h3>Next Historical Draw:</h3>
+    <h3>Previous Historical Draw:</h3>
     <p>No historical match found. Using frequency-based prediction.</p>`;
   return false;
 }
