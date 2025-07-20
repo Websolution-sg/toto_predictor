@@ -200,20 +200,33 @@ function predict(){
   rs.innerHTML = '<h3>Suggested next numbers:</h3>' +
                  suggestions.map(o=>`<p>${o.n} (freq:${o.count}, compat:${o.compat})</p>`).join('');
 
-  // Chart
+  // Chart update with destroy and recreate
   const ctx = document.getElementById('freqChart').getContext('2d');
-  new Chart(ctx, {
-    type:'bar',
-    data:{
+  if (chartInstance) {
+    chartInstance.destroy();
+  }
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
       labels: suggestions.map(o=>o.n),
-      datasets:[{label:'Score',data:suggestions.map(o=>o.count+o.compat)}]
+      datasets: [{
+        label: 'Score',
+        data: suggestions.map(o => o.count + o.compat),
+        backgroundColor: 'rgba(54, 162, 235, 0.5)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+      }]
     },
-    options:{scales:{y:{beginAtZero:true}}}
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true } }
+    }
   });
 }
 </script>
 </body>
 </html>
+
 
 
  
