@@ -178,10 +178,7 @@ const historical = [
     }
 
     function checkHistoricalAndMaybePredict() {
-      const bases = ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
-        .map(id => parseInt(document.getElementById(id).value))
-        .sort((a, b) => a - b);
-
+      const bases = getSelectedBases();
       for (let i = historical.length - 1; i > 0; i--) {
         const draw = historical[i].slice(0, 6).sort((a, b) => a - b);
         if (arraysEqual(draw, bases)) {
@@ -193,17 +190,23 @@ const historical = [
       return false;
     }
 
+    function getSelectedBases() {
+      return ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
+        .map(id => parseInt(document.getElementById(id).value))
+        .sort((a, b) => a - b);
+    }
+
     function arraysEqual(a, b) {
       return a.length === b.length && a.every((val, index) => val === b[index]);
     }
 
     function calculateScoresAndDisplay(numbers, additional = null) {
+      const bases = numbers.slice();
       const range = parseInt(document.getElementById('drawRange').value);
       const includeAdd = document.getElementById('includeAdd').checked;
       const draws = historical.slice(0, range);
       const freq = Array(50).fill(0);
       const compat = Array(50).fill(0);
-      const bases = numbers.slice(); // use predicted numbers as bases
 
       draws.forEach(draw => {
         const pool = includeAdd ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
@@ -216,12 +219,15 @@ const historical = [
       });
 
       const scores = numbers.map(n => freq[n] + compat[n]);
+      console.log('Validation for Predicted Numbers:');
+      numbers.forEach((n, i) => {
+        console.log(`Number ${n} -> Frequency: ${freq[n]}, Compatibility: ${compat[n]}, Total Score: ${scores[i]}`);
+      });
       displayPredictedNumbers(numbers, additional, scores);
     }
 
     function runFrequencyCompatibilityPrediction() {
-      const bases = ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
-        .map(id => parseInt(document.getElementById(id).value));
+      const bases = getSelectedBases();
       const range = parseInt(document.getElementById('drawRange').value);
       const includeAdd = document.getElementById('includeAdd').checked;
       const draws = historical.slice(0, range);
@@ -245,6 +251,10 @@ const historical = [
         .slice(0, 6);
 
       const scores = suggestions.map(o => o.count + o.compat);
+      console.log('Validation for Suggestions:');
+      suggestions.forEach((o, i) => {
+        console.log(`Number ${o.n} -> Frequency: ${o.count}, Compatibility: ${o.compat}, Total Score: ${scores[i]}`);
+      });
       displayPredictedNumbers(suggestions.map(o => o.n), null, scores);
     }
 
