@@ -6,166 +6,47 @@
   <title>Singapore TOTO Predictor</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body {
-      font: 16px/1.5 'Segoe UI', Arial, sans-serif;
-      padding: 32px 20px;
-      max-width: 700px;
-      margin: auto;
-      background: linear-gradient(135deg, #e3f0ff 0%, #f9f9fc 100%);
-      color: #2a3a4d;
-    }
-    select, button, input {
-      font-size: 1em;
-      margin: 0.5em 0;
-      padding: 0.4em 0.8em;
-      border-radius: 6px;
-      border: 1px solid #b3c6e0;
-      background: #fff;
-      transition: box-shadow 0.2s;
-    }
-    select:focus, button:focus, input:focus {
-      outline: none;
-      box-shadow: 0 0 0 2px #b3c6e0;
-    }
-    button {
-      background: #3a7bd5;
-      color: #fff;
-      border: none;
-      cursor: pointer;
-      font-weight: 600;
-      box-shadow: 0 2px 6px rgba(58,123,213,0.08);
-      margin-top: 12px;
-      margin-bottom: 18px;
-    }
-    button:hover {
-      background: #285fa7;
-    }
-    .results-chart-outer {
-      display: flex;
-      justify-content: center;
-      margin-top: 36px;
-    }
-    .results-chart-container {
-      display: flex;
-      gap: 36px;
-      align-items: flex-start;
-      max-width: 900px;
-      background: #fff;
-      border: 2px solid #3a7bd5;
-      border-radius: 16px;
-      box-shadow: 0 4px 16px rgba(58,123,213,0.10);
-      padding: 32px 24px;
-      margin-bottom: 12px;
-    }
-    #results {
-      flex: 1 1 0;
-      min-width: 260px;
-      padding-right: 12px;
-    }
-    #freqChart {
-      flex: 1 1 0;
-      min-width: 320px;
-      max-width: 420px;
-      height: 340px;
-      background: #f6faff;
-      border-radius: 8px;
-      box-shadow: 0 2px 8px rgba(58,123,213,0.07);
-    }
-    h1 {
-      font-size: 2.2em;
-      font-weight: 700;
-      color: #285fa7;
-      margin-bottom: 0.2em;
-      letter-spacing: 1px;
-    }
-    h2 {
-      font-size: 1.3em;
-      color: #3a7bd5;
-      margin-top: 2em;
-      margin-bottom: 0.5em;
-    }
-    h3 {
-      font-size: 1.1em;
-      color: #285fa7;
-      margin-bottom: 0.5em;
-    }
-    label {
-      display: flex;
-      align-items: center;
-      gap: 0.5em;
-      margin-top: 0.5em;
-      margin-bottom: 1em;
-    }
-    p#recentResult {
-      font-weight: 600;
-      color: #285fa7;
-      background: #e3f0ff;
-      border-radius: 6px;
-      padding: 6px 12px;
-      margin-bottom: 10px;
-      display: inline-block;
-    }
-    select {
-      min-width: 56px;
-    }
+    body { font: 16px/1.5 Arial; padding: 20px; max-width: 600px; margin: auto; }
+    select, button, input { font-size: 1em; margin: 0.5em 0; }
+    canvas { max-width: 100%; }
   </style>
 </head>
 <body>
   <h1>Singapore TOTO Predictor</h1>
-  <p id="recentResult"></p>
-  <p style="margin-bottom:1.2em;">By default, the previous lottery result is selected:</p>
-  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:1em;">
-    <div>
-      <label for="base1">Base 1</label>
-      <select id="base1"></select>
-    </div>
-    <div>
-      <label for="base2">Base 2</label>
-      <select id="base2"></select>
-    </div>
-    <div>
-      <label for="base3">Base 3</label>
-      <select id="base3"></select>
-    </div>
-    <div>
-      <label for="base4">Base 4</label>
-      <select id="base4"></select>
-    </div>
-    <div>
-      <label for="base5">Base 5</label>
-      <select id="base5"></select>
-    </div>
-    <div>
-      <label for="base6">Base 6</label>
-      <select id="base6"></select>
-    </div>
+  <p>RECENT RESULT: 7,8,17,29,32,42(1)</p>
+  <p>By default, the previous lottery result is selected:</p>
+  <div>
+    <select id="base1"></select>
+    <select id="base2"></select>
+    <select id="base3"></select>
+    <select id="base4"></select>
+    <select id="base5"></select>
+    <select id="base6"></select>
   </div>
-  <div style="margin-bottom:1em;">
-    <label for="additional">Additional Number</label>
+ 
+  <div>
+    <p>Additional Number</p>
     <select id="additional"></select>
   </div>
-  <div style="margin-bottom:1em;">
-    <label for="drawRange">Select draw range:</label>
-    <select id="drawRange">
-      <option value="20">Last 20</option>
-      <option value="50">Last 50</option>
-      <option value="100">Last 100</option>
-    </select>
-  </div>
+  
+  <p>Select draw range:</p>
+  <select id="drawRange">
+    <option value="20">Last 20</option>
+    <option value="50">Last 50</option>
+    <option value="100">Last 100</option>
+  </select>
+
   <label>
     <input type="checkbox" id="includeAdd"/> Include additional number
   </label>
+
   <button onclick="predict()">Predict</button>
+
   <h2>Results</h2>
-  <div class="results-chart-outer">
-    <div class="results-chart-container">
-      <div id="results"></div>
-      <canvas id="freqChart"></canvas>
-    </div>
-  </div>
+  <div id="results"></div>
+  <canvas id="freqChart"></canvas>
 
 <script>
-// Historical TOTO results: each entry is [6 main numbers, 1 additional number]
 const historical = [
   // Replace with real Singapore TOTO data: 6 winning + 1 additional
 [7,8,17,29,32,42,1],
@@ -271,7 +152,7 @@ const historical = [
   /* ... */
 ];
 
-// Populate all select dropdowns with numbers 1-49
+// Populate selects
 for(let i=1;i<=49;i++){
   ['base1','base2','base3','base4','base5','base6','additional'].forEach(id => {
     const opt = document.createElement('option');
@@ -279,102 +160,55 @@ for(let i=1;i<=49;i++){
     document.getElementById(id).append(opt);
   });
 }
-
-// Auto-select the most recent result for all selects and display it
+// Auto-select most recent result
 const recent = historical[0];
-['base1','base2','base3','base4','base5','base6','additional'].forEach((id, idx) => {
+['base1','base2','base3','base4','base5','base6'].forEach((id, idx) => {
   document.getElementById(id).value = recent[idx];
 });
-document.getElementById('recentResult').textContent = `RECENT RESULT: ${recent.slice(0,6).join(',')} (${recent[6]})`;
-
-let freqChartInstance = null; // Add this line above the predict function
-
-// Main prediction logic, called when user clicks "Predict"
+document.getElementById('additional').value = recent[6];
+  
+// Prediction logic
 function predict(){
-  // Get selected base numbers from dropdowns
   const bases = ['base1','base2','base3','base4','base5','base6'].map(id => +document.getElementById(id).value);
-  // Get selected draw range (how many past draws to use)
   const range = document.getElementById('drawRange').value;
-  // Whether to include the additional number in calculations
   const includeAdd = document.getElementById('includeAdd').checked;
-  // Get selected additional number (not used in prediction)
   const additional = document.getElementById('additional').value;
 
-  // Select draws to use based on range
-  const draws = (range === 'all') ? historical : historical.slice(0,range);
-  // Frequency of each number appearing in draws
+  const draws = (range === 'all') ? historical: historical.slice(0,range);
   const freq = Array(50).fill(0);
-  // Compatibility score for each number (how often it appears with selected bases)
   const compat = Array(50).fill(0);
 
-  // Calculate frequency and compatibility for each number
   draws.forEach(draw => {
-    const main = draw.slice(0,6); // main numbers
-    const add = draw[6];          // additional number
-    // Pool of numbers to consider (main + additional if checked)
+    const main = draw.slice(0,6);
+    const add = draw[6];
     const pool = includeAdd ? main.concat(add) : main;
     pool.forEach(n => freq[n]++);
     bases.forEach(b => {
       if(pool.includes(b)){
-        // For each base, increment compatibility for other numbers in the same draw
         pool.filter(n => n!==b).forEach(n=> compat[n]++);
       }
     });
   });
 
-  // Build suggestion list: exclude already selected bases, sort by score, pick top 6
-  let rawSuggestions = freq
+  const suggestions = freq
     .map((count,n)=>({n,count,compat:compat[n]}))
     .filter(o=>o.n && !bases.includes(o.n))
     .sort((a,b)=> (b.compat + b.count) - (a.compat + a.count))
     .slice(0,6);
-  // Sort suggestions numerically for display
-  const suggestions = [...rawSuggestions].sort((a,b)=>a.n-b.n);
 
-  // Display suggested numbers and their stats
   const rs = document.getElementById('results');
   rs.innerHTML = '<h3>Suggested next numbers:</h3>' +
                  suggestions.map(o=>`<p>${o.n} (freq:${o.count}, compat:${o.compat})</p>`).join('');
 
-  // Render chart showing scores for suggested numbers
+  // Chart
   const ctx = document.getElementById('freqChart').getContext('2d');
-  if (freqChartInstance) freqChartInstance.destroy(); // Destroy previous chart if exists
-  freqChartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: rawSuggestions.map(o => o.n),
-      datasets: [{
-        label: 'Score',
-        data: rawSuggestions.map(o => o.count + o.compat),
-        backgroundColor: '#3a7bd5',
-        borderRadius: 6,
-        borderSkipped: false,
-        hoverBackgroundColor: '#285fa7',
-      }]
+  new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels: suggestions.map(o=>o.n),
+      datasets:[{label:'Score',data:suggestions.map(o=>o.count+o.compat)}]
     },
-    options: {
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: '#285fa7',
-          titleColor: '#fff',
-          bodyColor: '#fff',
-        }
-      },
-      scales: {
-        x: {
-          grid: { display: false },
-          title: { display: true, text: 'Number', color: '#285fa7', font: { weight: 'bold' } },
-          ticks: { color: '#285fa7', font: { weight: 'bold' } }
-        },
-        y: {
-          beginAtZero: true,
-          grid: { color: '#e3f0ff' },
-          title: { display: true, text: 'Score', color: '#285fa7', font: { weight: 'bold' } },
-          ticks: { color: '#285fa7', font: { weight: 'bold' } }
-        }
-      }
-    }
+    options:{scales:{y:{beginAtZero:true}}}
   });
 }
 </script>
