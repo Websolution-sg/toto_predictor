@@ -203,7 +203,8 @@ const historical = [
       const draws = historical.slice(0, range);
       const freq = Array(50).fill(0);
       const compat = Array(50).fill(0);
-      const bases = numbers.slice(); // use predicted numbers as bases
+      const bases = ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
+        .map(id => parseInt(document.getElementById(id).value));
 
       draws.forEach(draw => {
         const pool = includeAdd ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
