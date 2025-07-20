@@ -171,25 +171,32 @@ const historical = [
     let chartInstance = null;
 
     function predict() {
-      const hasHistoricalMatch = checkHistoricalAndMaybePredict();
+      const hasHistoricalMatch = findPreviousHistoricalDrawOrPredict();
       if (!hasHistoricalMatch) {
         runFrequencyCompatibilityPrediction();
       }
     }
 
-    function checkHistoricalAndMaybePredict() {
+    function findPreviousHistoricalDrawOrPredict() {
       const bases = ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
         .map(id => parseInt(document.getElementById(id).value))
         .sort((a, b) => a - b);
+
+      document.getElementById('results').innerHTML = '';
 
       for (let i = historical.length - 1; i > 0; i--) {
         const draw = historical[i].slice(0, 6).sort((a, b) => a - b);
         if (arraysEqual(draw, bases)) {
           const prevDraw = historical[i - 1];
-          calculateScoresAndDisplay(prevDraw.slice(0, 6), prevDraw[6]);
+          document.getElementById('nextHistorical').innerHTML = `
+            <h3>Previous Historical Draw:</h3>
+            <p>${prevDraw.slice(0, 6).join(', ')} (${prevDraw[6]})</p>`;
           return true;
         }
       }
+      document.getElementById('nextHistorical').innerHTML = `
+        <h3>Previous Historical Draw:</h3>
+        <p>No historical match found. Using frequency-based prediction.</p>`;
       return false;
     }
 
@@ -197,40 +204,20 @@ const historical = [
       return a.length === b.length && a.every((val, index) => val === b[index]);
     }
 
-    function calculateScoresAndDisplay(numbers, additional = null) {
-      const range = parseInt(document.getElementById('drawRange').value);
-      const includeAdd = document.getElementById('includeAdd').checked;
-      const draws = historical.slice(0, range);
-      const freq = Array(50).fill(0);
-      const compat = Array(50).fill(0);
-      const bases = ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
-        .map(id => parseInt(document.getElementById(id).value));
-
-      draws.forEach(draw => {
-        const pool = includeAdd ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
-        pool.forEach(n => freq[n]++);
-        bases.forEach(b => {
-          if (pool.includes(b)) {
-            pool.filter(n => n !== b).forEach(n => compat[n]++);
-          }
-        });
-      });
-
-      const scores = numbers.map(n => freq[n] + compat[n]);
-      displayPredictedNumbers(numbers, additional, scores);
-    }
-
     function runFrequencyCompatibilityPrediction() {
       const bases = ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
         .map(id => parseInt(document.getElementById(id).value));
-      const range = parseInt(document.getElementById('drawRange').value);
+      const range = document.getElementById('drawRange').value;
       const includeAdd = document.getElementById('includeAdd').checked;
-      const draws = historical.slice(0, range);
+
+      const draws = (range === 'all') ? historical : historical.slice(0, parseInt(range));
       const freq = Array(50).fill(0);
       const compat = Array(50).fill(0);
 
       draws.forEach(draw => {
-        const pool = includeAdd ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+        const main = draw.slice(0, 6);
+        const add = draw[6];
+        const pool = includeAdd ? main.concat(add) : main;
         pool.forEach(n => freq[n]++);
         bases.forEach(b => {
           if (pool.includes(b)) {
@@ -245,37 +232,39 @@ const historical = [
         .sort((a, b) => (b.compat + b.count) - (a.compat + a.count))
         .slice(0, 6);
 
-      const scores = suggestions.map(o => o.count + o.compat);
-      displayPredictedNumbers(suggestions.map(o => o.n), null, scores);
-    }
-
-    function displayPredictedNumbers(numbers, additional = null, scores) {
       const rs = document.getElementById('results');
+      if (suggestions.length === 0) {
+        rs.innerHTML = '<p>No prediction available.</p>';
+        return;
+      }
       rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
-        `<p>${numbers.join(', ')}${additional !== null ? ' (' + additional + ')' : ''}</p>`;
+        suggestions.map(o => `<p>${o.n} (freq:${o.count}, compat:${o.compat})</p>`).join('');
 
       const ctx = document.getElementById('freqChart').getContext('2d');
       if (chartInstance) {
         chartInstance.destroy();
+        chartInstance = null;
       }
       chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: numbers,
+          labels: suggestions.map(o => o.n),
           datasets: [{
             label: 'Score',
-            data: scores,
-            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            data: suggestions.map(o => o.count + o.compat),
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
             borderColor: 'rgba(54, 162, 235, 1)',
             borderWidth: 1
           }]
         },
         options: {
           responsive: true,
-          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+          scales: { y: { beginAtZero: true } }
         }
       });
     }
   </script>
 </body>
 </html>
+
+ 
