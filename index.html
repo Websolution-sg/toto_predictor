@@ -25,20 +25,22 @@
   </div>
  
   <div>
-    <p>Additional Number</p>
+    <label>Additional Number:</label><br>
     <select id="additional"></select>
   </div>
   
-  <p>Select draw range:</p>
-  <select id="drawRange">
-    <option value="20">Last 20</option>
-    <option value="50">Last 50</option>
-    <option value="100">Last 100</option>
-  </select>
-
+  <div>
+    <label>Select draw range:</label><br>
+    <select id="drawRange">
+      <option value="20">Last 20</option>
+      <option value="50">Last 50</option>
+      <option value="100">Last 100</option>
+    </select>
+  </div>
+  
   <label>
     <input type="checkbox" id="includeAdd"/> Include additional number
-  </label>
+  </label><br>
 
   <button onclick="predict()">Predict</button>
 
