@@ -190,12 +190,14 @@ const historical = [
         if (arraysEqual(draw, bases)) {
           const prevDraw = historical[i - 1];
           document.getElementById('nextHistorical').innerHTML = `
-            <h3>Predicted Numbers:</h3>
+            <h3>Previous Historical Draw:</h3>
             <p>${prevDraw.slice(0, 6).join(', ')} (${prevDraw[6]})</p>`;
           return true;
         }
       }
-      document.getElementById('nextHistorical').innerHTML = `         
+      document.getElementById('nextHistorical').innerHTML = `
+        <h3>Previous Historical Draw:</h3>
+        <p>No historical match found. Using frequency-based prediction.</p>`;
       return false;
     }
 
@@ -265,5 +267,3 @@ const historical = [
   </script>
 </body>
 </html>
-
- 
