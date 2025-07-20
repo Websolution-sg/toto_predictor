@@ -219,7 +219,7 @@ const historical = [
       });
 
       const scores = numbers.map(n => freq[n] + compat[n]);
-      console.log('Validation for Predicted Numbers:');
+      console.log('Sanity Check - Predicted Numbers:');
       numbers.forEach((n, i) => {
         console.log(`Number ${n} -> Frequency: ${freq[n]}, Compatibility: ${compat[n]}, Total Score: ${scores[i]}`);
       });
@@ -251,7 +251,7 @@ const historical = [
         .slice(0, 6);
 
       const scores = suggestions.map(o => o.count + o.compat);
-      console.log('Validation for Suggestions:');
+      console.log('Sanity Check - Suggestions:');
       suggestions.forEach((o, i) => {
         console.log(`Number ${o.n} -> Frequency: ${o.count}, Compatibility: ${o.compat}, Total Score: ${scores[i]}`);
       });
