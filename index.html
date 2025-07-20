@@ -153,121 +153,119 @@ const historical = [
   /* ... */
 ];
 
-// Populate selects
-for(let i=1;i<=49;i++){
-  ['base1','base2','base3','base4','base5','base6','additional'].forEach(id => {
-    const opt = document.createElement('option');
-    opt.value=opt.textContent=i;
-    document.getElementById(id).append(opt);
-  });
-}
-// Auto-select most recent result
-const recent = historical[0];
-['base1','base2','base3','base4','base5','base6'].forEach((id, idx) => {
-  document.getElementById(id).value = recent[idx];
-});
-document.getElementById('additional').value = recent[6];
+    // Populate selects
+    for (let i = 1; i <= 49; i++) {
+      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
+        const opt = document.createElement('option');
+        opt.value = opt.textContent = i;
+        document.getElementById(id).append(opt);
+      });
+    }
 
-// Global variable to hold chart instance
-let chartInstance = null;
-  
-// Main predict function
-function predict(){
-  const hasHistoricalMatch = findNextHistoricalDrawOrPredict();
-  if (!hasHistoricalMatch) {
-    runFrequencyCompatibilityPrediction();
-  }
-}
+    // Auto-select most recent result
+    const recent = historical[0];
+    ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
+      document.getElementById(id).value = recent[idx];
+    });
+    document.getElementById('additional').value = recent[6];
 
-// Check for previous historical draw or fallback
-function findPreviousHistoricalDrawOrPredict() {
-  const bases = ['base1','base2','base3','base4','base5','base6']
-    .map(id => parseInt(document.getElementById(id).value))
-    .sort((a, b) => a - b);
+    let chartInstance = null;
 
-  // Clear previous predictions
-  document.getElementById('results').innerHTML = '';
+    function predict() {
+      const hasHistoricalMatch = findPreviousHistoricalDrawOrPredict();
+      if (!hasHistoricalMatch) {
+        runFrequencyCompatibilityPrediction();
+      }
+    }
 
-  for (let i = 1; i < historical.length; i++) {
-    const draw = historical[i].slice(0, 6).sort((a, b) => a - b);
-    if (JSON.stringify(draw) === JSON.stringify(bases)) {
-      const prevDraw = historical[i - 1];
+    function findPreviousHistoricalDrawOrPredict() {
+      const bases = ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
+        .map(id => parseInt(document.getElementById(id).value))
+        .sort((a, b) => a - b);
+
+      document.getElementById('results').innerHTML = '';
+
+      for (let i = historical.length - 1; i > 0; i--) {
+        const draw = historical[i].slice(0, 6).sort((a, b) => a - b);
+        if (arraysEqual(draw, bases)) {
+          const prevDraw = historical[i - 1];
+          document.getElementById('nextHistorical').innerHTML = `
+            <h3>Previous Historical Draw:</h3>
+            <p>${prevDraw.slice(0, 6).join(', ')} (${prevDraw[6]})</p>`;
+          return true;
+        }
+      }
       document.getElementById('nextHistorical').innerHTML = `
         <h3>Previous Historical Draw:</h3>
-        <p>${prevDraw.slice(0,6).join(', ')} (${prevDraw[6]})</p>`;
-      return true;
+        <p>No historical match found. Using frequency-based prediction.</p>`;
+      return false;
     }
-  }
-  document.getElementById('nextHistorical').innerHTML = `
-    <h3>Previous Historical Draw:</h3>
-    <p>No historical match found. Using frequency-based prediction.</p>`;
-  return false;
-}
 
-// Frequency + Compatibility Prediction
-function runFrequencyCompatibilityPrediction() {
-  const bases = ['base1','base2','base3','base4','base5','base6']
-    .map(id => parseInt(document.getElementById(id).value));
-  const range = document.getElementById('drawRange').value;
-  const includeAdd = document.getElementById('includeAdd').checked;
+    function arraysEqual(a, b) {
+      return a.length === b.length && a.every((val, index) => val === b[index]);
+    }
 
-  const draws = (range === 'all') ? historical : historical.slice(0, parseInt(range));
-  const freq = Array(50).fill(0);
-  const compat = Array(50).fill(0);
+    function runFrequencyCompatibilityPrediction() {
+      const bases = ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
+        .map(id => parseInt(document.getElementById(id).value));
+      const range = document.getElementById('drawRange').value;
+      const includeAdd = document.getElementById('includeAdd').checked;
 
-  draws.forEach(draw => {
-    const main = draw.slice(0,6);
-    const add = draw[6];
-    const pool = includeAdd ? main.concat(add) : main;
-    pool.forEach(n => freq[n]++);
-    bases.forEach(b => {
-      if (pool.includes(b)) {
-        pool.filter(n => n !== b).forEach(n => compat[n]++);
+      const draws = (range === 'all') ? historical : historical.slice(0, parseInt(range));
+      const freq = Array(50).fill(0);
+      const compat = Array(50).fill(0);
+
+      draws.forEach(draw => {
+        const main = draw.slice(0, 6);
+        const add = draw[6];
+        const pool = includeAdd ? main.concat(add) : main;
+        pool.forEach(n => freq[n]++);
+        bases.forEach(b => {
+          if (pool.includes(b)) {
+            pool.filter(n => n !== b).forEach(n => compat[n]++);
+          }
+        });
+      });
+
+      const suggestions = freq
+        .map((count, n) => ({ n, count, compat: compat[n] }))
+        .filter(o => o.n && !bases.includes(o.n))
+        .sort((a, b) => (b.compat + b.count) - (a.compat + a.count))
+        .slice(0, 6);
+
+      const rs = document.getElementById('results');
+      if (suggestions.length === 0) {
+        rs.innerHTML = '<p>No prediction available.</p>';
+        return;
       }
-    });
-  });
+      rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
+        suggestions.map(o => `<p>${o.n} (freq:${o.count}, compat:${o.compat})</p>`).join('');
 
-  const suggestions = freq
-    .map((count,n)=>({n,count,compat:compat[n]}))
-    .filter(o=>o.n && !bases.includes(o.n))
-    .sort((a,b)=>(b.compat + b.count) - (a.compat + a.count))
-    .slice(0,6);
-
-  const rs = document.getElementById('results');
-  if (suggestions.length === 0) {
-    rs.innerHTML = '<p>No prediction available.</p>';
-    return;
-  }
-  rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
-    suggestions.map(o=>`<p>${o.n} (freq:${o.count}, compat:${o.compat})</p>`).join('');
-
-  const ctx = document.getElementById('freqChart').getContext('2d');
-  if (chartInstance) {
-    chartInstance.destroy();
-    chartInstance = null;
-  }
-  chartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: suggestions.map(o=>o.n),
-      datasets: [{
-        label: 'Score',
-        data: suggestions.map(o => o.count + o.compat),
-        backgroundColor: 'rgba(54, 162, 235, 0.5)',
-        borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: { y: { beginAtZero: true } }
+      const ctx = document.getElementById('freqChart').getContext('2d');
+      if (chartInstance) {
+        chartInstance.destroy();
+        chartInstance = null;
+      }
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: suggestions.map(o => o.n),
+          datasets: [{
+            label: 'Score',
+            data: suggestions.map(o => o.count + o.compat),
+            backgroundColor: 'rgba(54, 162, 235, 0.5)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: { y: { beginAtZero: true } }
+        }
+      });
     }
-  });
-}
-</script>
+  </script>
 </body>
 </html>
-
-
 
  
