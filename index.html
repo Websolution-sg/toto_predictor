@@ -43,6 +43,7 @@
   <button onclick="predict()">Predict</button>
 
   <h2>Results</h2>
+  <div id="nextHistorical"></div>
   <div id="results"></div>
   <canvas id="freqChart"></canvas>
 
@@ -170,12 +171,34 @@ document.getElementById('additional').value = recent[6];
 // Global variable to hold chart instance
 let chartInstance = null;
   
-// Prediction logic
-function predict(){
-  const bases = ['base1','base2','base3','base4','base5','base6'].map(id => +document.getElementById(id).value);
+// Check for next historical draw or fallback
+function findNextHistoricalDrawOrPredict() {
+  const bases = ['base1','base2','base3','base4','base5','base6']
+    .map(id => parseInt(document.getElementById(id).value))
+    .sort((a, b) => a - b);
+
+  for (let i = 0; i < historical.length - 1; i++) {
+    const draw = historical[i].slice(0, 6).sort((a, b) => a - b);
+    if (JSON.stringify(draw) === JSON.stringify(bases)) {
+      const nextDraw = historical[i + 1];
+      document.getElementById('nextHistorical').innerHTML = `
+        <h3>Next Historical Draw:</h3>
+        <p>${nextDraw.slice(0,6).join(', ')} (${nextDraw[6]})</p>`;
+      return true;
+    }
+  }
+  document.getElementById('nextHistorical').innerHTML = `
+    <h3>Next Historical Draw:</h3>
+    <p>No historical match found. Using frequency-based prediction.</p>`;
+  return false;
+}
+
+// Frequency + Compatibility Prediction
+function runFrequencyCompatibilityPrediction() {
+  const bases = ['base1','base2','base3','base4','base5','base6']
+    .map(id => parseInt(document.getElementById(id).value));
   const range = document.getElementById('drawRange').value;
   const includeAdd = document.getElementById('includeAdd').checked;
-  const additional = document.getElementById('additional').value;
 
   const draws = (range === 'all') ? historical : historical.slice(0, parseInt(range));
   const freq = Array(50).fill(0);
@@ -187,8 +210,8 @@ function predict(){
     const pool = includeAdd ? main.concat(add) : main;
     pool.forEach(n => freq[n]++);
     bases.forEach(b => {
-      if(pool.includes(b)){
-        pool.filter(n => n!==b).forEach(n=> compat[n]++);
+      if (pool.includes(b)) {
+        pool.filter(n => n !== b).forEach(n => compat[n]++);
       }
     });
   });
@@ -196,20 +219,18 @@ function predict(){
   const suggestions = freq
     .map((count,n)=>({n,count,compat:compat[n]}))
     .filter(o=>o.n && !bases.includes(o.n))
-    .sort((a,b)=> (b.compat + b.count) - (a.compat + a.count))
+    .sort((a,b)=>(b.compat + b.count) - (a.compat + a.count))
     .slice(0,6);
 
   const rs = document.getElementById('results');
-  rs.innerHTML = '<h3>Suggested next numbers:</h3>' +
-                 suggestions.map(o=>`<p>${o.n} (freq:${o.count}, compat:${o.compat})</p>`).join('');
+  rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
+    suggestions.map(o=>`<p>${o.n} (freq:${o.count}, compat:${o.compat})</p>`).join('');
 
-  // If no suggestions, alert and stop
   if (suggestions.length === 0) {
     alert('No data to display in chart. Try selecting a larger draw range.');
     return;
   }
 
-  // Chart update with destroy and recreate
   const ctx = document.getElementById('freqChart').getContext('2d');
   if (chartInstance) {
     chartInstance.destroy();
