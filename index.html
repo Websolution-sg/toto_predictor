@@ -263,7 +263,7 @@ const historical = [
     function displayPredictedNumbers(numbers, additional = null, scores, freq, compat) {
       const rs = document.getElementById('results');
       rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
-        `<p>${numbers.join(', ')}${additional !== null ? ' (' + additional + ')' : ''}</p>`;
+        `<p>${numbers.join(', ')}</p>`;
 
       const ctx = document.getElementById('freqChart').getContext('2d');
       if (chartInstance) {
