@@ -1,190 +1,384 @@
-<!DOCTYPE html> 
-<html lang="en"> 
-<head> 
-  <meta charset="UTF-8"/> 
-  <meta name="viewport" content="width=device-width,initial-scale=1"/> 
-  <title>Singapore TOTO Predictor</title> 
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> 
-  <style>     body { font: 16px/1.5 Arial; padding: 20px; max-width: 600px; margin: auto; }     select, button, input { font-size: 1em; margin: 0.5em 0; } 
-    .results-chart-outer {       display: flex;       justify-content: center;       margin-top: 32px; 
-    } 
-    .results-chart-container {       display: flex;       gap: 32px;       align-items: flex-start;       max-width: 800px; 
-    } 
-    #results {       flex: 1 1 0;       min-width: 250px; 
-    } 
-    #freqChart {       flex: 1 1 0;       min-width: 300px;       max-width: 400px;       height: 320px; 
-    } 
-  </style> 
-</head> 
-<body> 
-  <h1>Singapore TOTO Predictor</h1> 
-  <p id="recentResult"></p> 
-  <p>By default, the previous lottery result is selected:</p> 
-  <div> 
-    <select id="base1"></select> 
-    <select id="base2"></select> 
-    <select id="base3"></select> 
-    <select id="base4"></select> 
-    <select id="base5"></select> 
-    <select id="base6"></select> 
-  </div> 
-  
-  <div> 
-    <p>Additional Number</p> 
-    <select id="additional"></select> 
-  </div> 
-   
-  <p>Select draw range:</p> 
-  <select id="drawRange"> 
-    <option value="20">Last 20</option> 
-    <option value="50">Last 50</option> 
-    <option value="100">Last 100</option> 
-  </select> 
- 
-  <label> 
-    <input type="checkbox" id="includeAdd"/> Include additional number 
-  </label> 
- 
-  <button onclick="predict()">Predict</button> 
- 
-  <h2>Results</h2> 
-  <div class="results-chart-outer"> 
-    <div class="results-chart-container"> 
-      <div id="results"></div> 
-      <canvas id="freqChart"></canvas> 
-    </div> 
-  </div> 
- 
-<script> const historical = [ 
-  // Replace with real Singapore TOTO data: 6 winning + 1 additional 
-[7,8,17,29,32,42,1], 
-[2,8,19,29,38,41,20], 
-[12,21,26,27,35,44,10], 
-[10,15,17,33,36,45,34], 
-[6,15,16,17,25,34,31], 
-[11,27,31,33,34,36,13], 
-[10,26,28,35,37,46,20], 
-[2,15,29,37,45,49,24], 
-[1,10,37,40,45,47,19], 
-[5,18,27,32,48,49,21], 
-[3,7,38,41,44,49,20], 
-[7,10,11,21,32,48,27], 
-[2,5,25,26,29,30,42], 
-[10,19,21,22,28,31,34], 
-[1,5,7,11,19,47,44], [5,9,15,28,46,48,8], 
-[3,10,32,34,44,48,29], 
-[2,15,17,18,39,45,26], 
-[9,16,17,20,34,38,18], 
-[6,16,20,23,40,48,45], 
-[9,13,17,39,46,47,22], 
-[5,8,28,38,40,43,39], 
-[2,8,12,30,35,49,38], [3,8,12,18,24,41,11], 
-[17,19,21,23,30,40,33], 
-[1,17,30,37,41,43,32], 
-[15,17,26,31,40,46,19], 
-[6,14,29,30,35,42,25], 
-[14,26,27,30,46,48,10], 
-[7,19,35,40,43,47,33], 
-[12,14,15,16,21,40,23], 
-[9,12,17,23,29,46,20], 
-[21,22,27,35,40,42,3], 
-[18,19,25,28,31,44,34], 
-[9,10,11,13,23,42,20], [7,30,39,42,43,48,33], 
-[16,26,34,36,42,49,41], [5,7,32,38,42,47,27], 
-[19,33,35,38,46,49,39], 
-[4,16,24,25,43,49,46], 
-[2,10,13,15,37,40,28], 
-[24,37,38,42,48,49,31], 
-[3,25,31,37,39,42,21], 
-[1,16,23,39,41,42,9], 
-[5,8,13,28,30,49,17], 
-[1,3,7,18,34,39,46], 
-[16,18,22,23,28,35,32], 
-[1,12,29,31,41,48,25], 
-[2,9,13,24,26,43,49], 
-[7,16,22,26,33,43,44], 
-[9,10,18,35,43,49,42], [3,5,6,16,32,49,4], 
-[6,13,18,27,35,46,48], 
-[3,7,11,13,34,35,17], [13,32,34,36,38,40,37], 
-[6,10,13,27,41,49,4], 
-[9,11,24,29,39,46,31], 
-[3,10,13,29,32,46,18], 
-[8,21,30,35,44,49,39], 
-[34,40,42,44,45,46,19], [3,9,10,20,23,32,42], 
-[13,19,22,26,40,49,45], 
-[17,18,19,31,32,33,8], [1,4,8,10,16,46,23], 
-[8,14,15,20,31,49,13], 
-[10,11,12,21,41,49,44], [1,2,4,15,18,24,35], 
-[26,28,31,38,41,42,23], 
-[4,7,11,14,21,28,36], [1,2,14,36,44,46,20], 
-[12,16,29,36,39,40,37], 
-[13,28,39,43,46,48,30], 
-[4,12,17,18,23,34,28], 
-[14,18,25,28,29,44,36], 
-[2,6,10,17,18,49,35], 
-[10,16,33,37,45,47,6], 
-[20,24,28,37,46,47,36], 
-[4,13,19,44,46,49,31], 
-[2,4,10,25,36,38,22], 
-[12,33,39,42,43,48,10], 
-[1,17,24,25,27,39,30], 
-[16,22,23,31,41,49,8], 
-[2,9,15,17,40,48,28], 
-[4,33,34,38,40,43,15], 
-[17,23,26,31,38,40,14], 
-[9,20,22,32,37,47,1], 
-[7,13,17,22,31,37,1], 
-[2,8,15,19,33,38,21], 
-[5,6,14,36,45,49,12], 
-[1,4,10,16,18,29,6], 
-[1,13,27,38,40,43,2], 
-[6,7,13,30,37,39,16], 
-[3,9,10,12,27,41,29], 
-[6,8,18,34,35,37,33], 
-[2,5,8,43,45,48,41], 
-[2,3,16,26,29,41,12], 
-[15,24,35,36,42,46,48], [2,8,27,33,34,43,11], 
-[23,26,32,36,41,49,31], 
-[1,12,15,30,42,43,22], 
-  /* ... */ 
-]; 
- 
-// Populate selects for(let i=1;i<=49;i++){ 
-  ['base1','base2','base3','base4','base5','base6','additional'].forEach(id => {     const opt = document.createElement('option');     opt.value=opt.textContent=i;     document.getElementById(id).append(opt); 
-  }); 
-} 
-// Auto-select most recent result and display it const recent = historical[0]; 
-['base1','base2','base3','base4','base5','base6','additional'].forEach((id, idx) => {   document.getElementById(id).value = recent[idx]; 
-}); 
-document.getElementById('recentResult').textContent = `RECENT RESULT: 
-${recent.slice(0,6).join(',')} (${recent[6]})`; 
-   
-// Prediction logic function predict(){   const bases = ['base1','base2','base3','base4','base5','base6'].map(id => 
-+document.getElementById(id).value);   const range = document.getElementById('drawRange').value;   const includeAdd = document.getElementById('includeAdd').checked;   const additional = document.getElementById('additional').value; 
- 
-  const draws = (range === 'all') ? historical: historical.slice(0,range);   const freq = Array(50).fill(0);   const compat = Array(50).fill(0); 
- 
-  draws.forEach(draw => {     const main = draw.slice(0,6);     const add = draw[6];     const pool = includeAdd ? main.concat(add) : main;     pool.forEach(n => freq[n]++);     bases.forEach(b => {       if(pool.includes(b)){         pool.filter(n => n!==b).forEach(n=> compat[n]++); 
-      } 
-    }); 
-  }); 
- 
-  const suggestions = freq 
-    .map((count,n)=>({n,count,compat:compat[n]})) 
-    .filter(o=>o.n && !bases.includes(o.n)) 
-    .sort((a,b)=> (b.compat + b.count) - (a.compat + a.count)) 
-    .slice(0,6); 
- 
-  const rs = document.getElementById('results');   rs.innerHTML = '<h3>Suggested next numbers:</h3>' +                  suggestions.map(o=>`<p>${o.n} (freq:${o.count}, compat:${o.compat})</p>`).join(''); 
- 
-  // Chart   const ctx = document.getElementById('freqChart').getContext('2d');   new Chart(ctx, {     type:'bar',     data:{       labels: suggestions.map(o=>o.n),       datasets:[{label:'Score',data:suggestions.map(o=>o.count+o.compat)}] 
-    }, 
-    options:{scales:{y:{beginAtZero:true}}} 
-  }); 
-} 
-</script> 
-</body> 
-</html> 
- 
- 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Singapore TOTO Predictor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font: 16px/1.5 'Segoe UI', Arial, sans-serif;
+      padding: 32px 20px;
+      max-width: 700px;
+      margin: auto;
+      background: linear-gradient(135deg, #e3f0ff 0%, #f9f9fc 100%);
+      color: #2a3a4d;
+    }
+    select, button, input {
+      font-size: 1em;
+      margin: 0.5em 0;
+      padding: 0.4em 0.8em;
+      border-radius: 6px;
+      border: 1px solid #b3c6e0;
+      background: #fff;
+      transition: box-shadow 0.2s;
+    }
+    select:focus, button:focus, input:focus {
+      outline: none;
+      box-shadow: 0 0 0 2px #b3c6e0;
+    }
+    button {
+      background: #3a7bd5;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(58,123,213,0.08);
+      margin-top: 12px;
+      margin-bottom: 18px;
+    }
+    button:hover {
+      background: #285fa7;
+    }
+    .results-chart-outer {
+      display: flex;
+      justify-content: center;
+      margin-top: 36px;
+    }
+    .results-chart-container {
+      display: flex;
+      gap: 36px;
+      align-items: flex-start;
+      max-width: 900px;
+      background: #fff;
+      border: 2px solid #3a7bd5;
+      border-radius: 16px;
+      box-shadow: 0 4px 16px rgba(58,123,213,0.10);
+      padding: 32px 24px;
+      margin-bottom: 12px;
+    }
+    #results {
+      flex: 1 1 0;
+      min-width: 260px;
+      padding-right: 12px;
+    }
+    #freqChart {
+      flex: 1 1 0;
+      min-width: 320px;
+      max-width: 420px;
+      height: 340px;
+      background: #f6faff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(58,123,213,0.07);
+    }
+    h1 {
+      font-size: 2.2em;
+      font-weight: 700;
+      color: #285fa7;
+      margin-bottom: 0.2em;
+      letter-spacing: 1px;
+    }
+    h2 {
+      font-size: 1.3em;
+      color: #3a7bd5;
+      margin-top: 2em;
+      margin-bottom: 0.5em;
+    }
+    h3 {
+      font-size: 1.1em;
+      color: #285fa7;
+      margin-bottom: 0.5em;
+    }
+    label {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      margin-top: 0.5em;
+      margin-bottom: 1em;
+    }
+    p#recentResult {
+      font-weight: 600;
+      color: #285fa7;
+      background: #e3f0ff;
+      border-radius: 6px;
+      padding: 6px 12px;
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+    select {
+      min-width: 56px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Singapore TOTO Predictor</h1>
+  <p id="recentResult"></p>
+  <p style="margin-bottom:1.2em;">By default, the previous lottery result is selected:</p>
+  <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:1em;">
+    <div>
+      <label for="base1">Base 1</label>
+      <select id="base1"></select>
+    </div>
+    <div>
+      <label for="base2">Base 2</label>
+      <select id="base2"></select>
+    </div>
+    <div>
+      <label for="base3">Base 3</label>
+      <select id="base3"></select>
+    </div>
+    <div>
+      <label for="base4">Base 4</label>
+      <select id="base4"></select>
+    </div>
+    <div>
+      <label for="base5">Base 5</label>
+      <select id="base5"></select>
+    </div>
+    <div>
+      <label for="base6">Base 6</label>
+      <select id="base6"></select>
+    </div>
+  </div>
+  <div style="margin-bottom:1em;">
+    <label for="additional">Additional Number</label>
+    <select id="additional"></select>
+  </div>
+  <div style="margin-bottom:1em;">
+    <label for="drawRange">Select draw range:</label>
+    <select id="drawRange">
+      <option value="20">Last 20</option>
+      <option value="50">Last 50</option>
+      <option value="100">Last 100</option>
+    </select>
+  </div>
+  <label>
+    <input type="checkbox" id="includeAdd"/> Include additional number
+  </label>
+  <button onclick="predict()">Predict</button>
+  <h2>Results</h2>
+  <div class="results-chart-outer">
+    <div class="results-chart-container">
+      <div id="results"></div>
+      <canvas id="freqChart"></canvas>
+    </div>
+  </div>
+
+<script>
+// Historical TOTO results: each entry is [6 main numbers, 1 additional number]
+const historical = [
+  // Replace with real Singapore TOTO data: 6 winning + 1 additional
+[7,8,17,29,32,42,1],
+[2,8,19,29,38,41,20],
+[12,21,26,27,35,44,10],
+[10,15,17,33,36,45,34],
+[6,15,16,17,25,34,31],
+[11,27,31,33,34,36,13],
+[10,26,28,35,37,46,20],
+[2,15,29,37,45,49,24],
+[1,10,37,40,45,47,19],
+[5,18,27,32,48,49,21],
+[3,7,38,41,44,49,20],
+[7,10,11,21,32,48,27],
+[2,5,25,26,29,30,42],
+[10,19,21,22,28,31,34],
+[1,5,7,11,19,47,44],
+[5,9,15,28,46,48,8],
+[3,10,32,34,44,48,29],
+[2,15,17,18,39,45,26],
+[9,16,17,20,34,38,18],
+[6,16,20,23,40,48,45],
+[9,13,17,39,46,47,22],
+[5,8,28,38,40,43,39],
+[2,8,12,30,35,49,38],
+[3,8,12,18,24,41,11],
+[17,19,21,23,30,40,33],
+[1,17,30,37,41,43,32],
+[15,17,26,31,40,46,19],
+[6,14,29,30,35,42,25],
+[14,26,27,30,46,48,10],
+[7,19,35,40,43,47,33],
+[12,14,15,16,21,40,23],
+[9,12,17,23,29,46,20],
+[21,22,27,35,40,42,3],
+[18,19,25,28,31,44,34],
+[9,10,11,13,23,42,20],
+[7,30,39,42,43,48,33],
+[16,26,34,36,42,49,41],
+[5,7,32,38,42,47,27],
+[19,33,35,38,46,49,39],
+[4,16,24,25,43,49,46],
+[2,10,13,15,37,40,28],
+[24,37,38,42,48,49,31],
+[3,25,31,37,39,42,21],
+[1,16,23,39,41,42,9],
+[5,8,13,28,30,49,17],
+[1,3,7,18,34,39,46],
+[16,18,22,23,28,35,32],
+[1,12,29,31,41,48,25],
+[2,9,13,24,26,43,49],
+[7,16,22,26,33,43,44],
+[9,10,18,35,43,49,42],
+[3,5,6,16,32,49,4],
+[6,13,18,27,35,46,48],
+[3,7,11,13,34,35,17],
+[13,32,34,36,38,40,37],
+[6,10,13,27,41,49,4],
+[9,11,24,29,39,46,31],
+[3,10,13,29,32,46,18],
+[8,21,30,35,44,49,39],
+[34,40,42,44,45,46,19],
+[3,9,10,20,23,32,42],
+[13,19,22,26,40,49,45],
+[17,18,19,31,32,33,8],
+[1,4,8,10,16,46,23],
+[8,14,15,20,31,49,13],
+[10,11,12,21,41,49,44],
+[1,2,4,15,18,24,35],
+[26,28,31,38,41,42,23],
+[4,7,11,14,21,28,36],
+[1,2,14,36,44,46,20],
+[12,16,29,36,39,40,37],
+[13,28,39,43,46,48,30],
+[4,12,17,18,23,34,28],
+[14,18,25,28,29,44,36],
+[2,6,10,17,18,49,35],
+[10,16,33,37,45,47,6],
+[20,24,28,37,46,47,36],
+[4,13,19,44,46,49,31],
+[2,4,10,25,36,38,22],
+[12,33,39,42,43,48,10],
+[1,17,24,25,27,39,30],
+[16,22,23,31,41,49,8],
+[2,9,15,17,40,48,28],
+[4,33,34,38,40,43,15],
+[17,23,26,31,38,40,14],
+[9,20,22,32,37,47,1],
+[7,13,17,22,31,37,1],
+[2,8,15,19,33,38,21],
+[5,6,14,36,45,49,12],
+[1,4,10,16,18,29,6],
+[1,13,27,38,40,43,2],
+[6,7,13,30,37,39,16],
+[3,9,10,12,27,41,29],
+[6,8,18,34,35,37,33],
+[2,5,8,43,45,48,41],
+[2,3,16,26,29,41,12],
+[15,24,35,36,42,46,48],
+[2,8,27,33,34,43,11],
+[23,26,32,36,41,49,31],
+[1,12,15,30,42,43,22],
+  /* ... */
+];
+
+// Populate all select dropdowns with numbers 1-49
+for(let i=1;i<=49;i++){
+  ['base1','base2','base3','base4','base5','base6','additional'].forEach(id => {
+    const opt = document.createElement('option');
+    opt.value=opt.textContent=i;
+    document.getElementById(id).append(opt);
+  });
+}
+
+// Auto-select the most recent result for all selects and display it
+const recent = historical[0];
+['base1','base2','base3','base4','base5','base6','additional'].forEach((id, idx) => {
+  document.getElementById(id).value = recent[idx];
+});
+document.getElementById('recentResult').textContent = `RECENT RESULT: ${recent.slice(0,6).join(',')} (${recent[6]})`;
+
+let freqChartInstance = null; // Add this line above the predict function
+
+// Main prediction logic, called when user clicks "Predict"
+function predict(){
+  // Get selected base numbers from dropdowns
+  const bases = ['base1','base2','base3','base4','base5','base6'].map(id => +document.getElementById(id).value);
+  // Get selected draw range (how many past draws to use)
+  const range = document.getElementById('drawRange').value;
+  // Whether to include the additional number in calculations
+  const includeAdd = document.getElementById('includeAdd').checked;
+  // Get selected additional number (not used in prediction)
+  const additional = document.getElementById('additional').value;
+
+  // Select draws to use based on range
+  const draws = (range === 'all') ? historical : historical.slice(0,range);
+  // Frequency of each number appearing in draws
+  const freq = Array(50).fill(0);
+  // Compatibility score for each number (how often it appears with selected bases)
+  const compat = Array(50).fill(0);
+
+  // Calculate frequency and compatibility for each number
+  draws.forEach(draw => {
+    const main = draw.slice(0,6); // main numbers
+    const add = draw[6];          // additional number
+    // Pool of numbers to consider (main + additional if checked)
+    const pool = includeAdd ? main.concat(add) : main;
+    pool.forEach(n => freq[n]++);
+    bases.forEach(b => {
+      if(pool.includes(b)){
+        // For each base, increment compatibility for other numbers in the same draw
+        pool.filter(n => n!==b).forEach(n=> compat[n]++);
+      }
+    });
+  });
+
+  // Build suggestion list: exclude already selected bases, sort by score, pick top 6
+  let rawSuggestions = freq
+    .map((count,n)=>({n,count,compat:compat[n]}))
+    .filter(o=>o.n && !bases.includes(o.n))
+    .sort((a,b)=> (b.compat + b.count) - (a.compat + a.count))
+    .slice(0,6);
+  // Sort suggestions numerically for display
+  const suggestions = [...rawSuggestions].sort((a,b)=>a.n-b.n);
+
+  // Display suggested numbers and their stats
+  const rs = document.getElementById('results');
+  rs.innerHTML = '<h3>Suggested next numbers:</h3>' +
+                 suggestions.map(o=>`<p>${o.n} (freq:${o.count}, compat:${o.compat})</p>`).join('');
+
+  // Render chart showing scores for suggested numbers
+  const ctx = document.getElementById('freqChart').getContext('2d');
+  if (freqChartInstance) freqChartInstance.destroy(); // Destroy previous chart if exists
+  freqChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: rawSuggestions.map(o => o.n),
+      datasets: [{
+        label: 'Score',
+        data: rawSuggestions.map(o => o.count + o.compat),
+        backgroundColor: '#3a7bd5',
+        borderRadius: 6,
+        borderSkipped: false,
+        hoverBackgroundColor: '#285fa7',
+      }]
+    },
+    options: {
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#285fa7',
+          titleColor: '#fff',
+          bodyColor: '#fff',
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          title: { display: true, text: 'Number', color: '#285fa7', font: { weight: 'bold' } },
+          ticks: { color: '#285fa7', font: { weight: 'bold' } }
+        },
+        y: {
+          beginAtZero: true,
+          grid: { color: '#e3f0ff' },
+          title: { display: true, text: 'Score', color: '#285fa7', font: { weight: 'bold' } },
+          ticks: { color: '#285fa7', font: { weight: 'bold' } }
+        }
+      }
+    }
+  });
+}
+</script>
+</body>
+</html>
+
  
