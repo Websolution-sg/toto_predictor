@@ -186,7 +186,7 @@ const historical = [
         const draw = historical[i].slice(0, 6).sort((a, b) => a - b);
         if (arraysEqual(draw, bases)) {
           const prevDraw = historical[i - 1];
-          displayPredictedNumbers(prevDraw.slice(0, 6), prevDraw[6], true);
+          calculateScoresAndDisplay(prevDraw.slice(0, 6), prevDraw[6]);
           return true;
         }
       }
@@ -197,12 +197,34 @@ const historical = [
       return a.length === b.length && a.every((val, index) => val === b[index]);
     }
 
+    function calculateScoresAndDisplay(numbers, additional = null) {
+      const range = parseInt(document.getElementById('drawRange').value);
+      const includeAdd = document.getElementById('includeAdd').checked;
+      const draws = historical.slice(0, range);
+      const freq = Array(50).fill(0);
+      const compat = Array(50).fill(0);
+      const bases = ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
+        .map(id => parseInt(document.getElementById(id).value));
+
+      draws.forEach(draw => {
+        const pool = includeAdd ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+        pool.forEach(n => freq[n]++);
+        bases.forEach(b => {
+          if (pool.includes(b)) {
+            pool.filter(n => n !== b).forEach(n => compat[n]++);
+          }
+        });
+      });
+
+      const scores = numbers.map(n => freq[n] + compat[n]);
+      displayPredictedNumbers(numbers, additional, scores);
+    }
+
     function runFrequencyCompatibilityPrediction() {
       const bases = ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
         .map(id => parseInt(document.getElementById(id).value));
       const range = parseInt(document.getElementById('drawRange').value);
       const includeAdd = document.getElementById('includeAdd').checked;
-
       const draws = historical.slice(0, range);
       const freq = Array(50).fill(0);
       const compat = Array(50).fill(0);
@@ -223,10 +245,11 @@ const historical = [
         .sort((a, b) => (b.compat + b.count) - (a.compat + a.count))
         .slice(0, 6);
 
-      displayPredictedNumbers(suggestions.map(o => o.n));
+      const scores = suggestions.map(o => o.count + o.compat);
+      displayPredictedNumbers(suggestions.map(o => o.n), null, scores);
     }
 
-    function displayPredictedNumbers(numbers, additional = null, isHistorical = false) {
+    function displayPredictedNumbers(numbers, additional = null, scores) {
       const rs = document.getElementById('results');
       rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
         `<p>${numbers.join(', ')}${additional !== null ? ' (' + additional + ')' : ''}</p>`;
@@ -241,7 +264,7 @@ const historical = [
           labels: numbers,
           datasets: [{
             label: 'Score',
-            data: isHistorical ? numbers.map(() => 1) : numbers.map(n => n),
+            data: scores,
             backgroundColor: 'rgba(54, 162, 235, 0.6)',
             borderColor: 'rgba(54, 162, 235, 1)',
             borderWidth: 1
