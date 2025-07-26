@@ -256,6 +256,7 @@ const historical = [
         .slice(0, 6);
 
       const scores = suggestions.map(o => o.score);
+      const numbers = suggestions.map(o => o.n);
             console.log('Sanity Check - Suggestions:');
       suggestions.forEach((o, i) => {
         console.log(`Number ${o.n} -> Frequency: ${o.count}, Compatibility: ${o.compat}, Total Score: ${scores[i]}`);
