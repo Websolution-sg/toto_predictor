@@ -35,7 +35,6 @@
       <option value="20">Last 20</option>
       <option value="50">Last 50</option>
       <option value="100">Last 100</option>
-      <option value="all">All</option>
     </select>
   </div>
   
@@ -184,8 +183,7 @@ const historical = [
 
     function checkHistoricalAndMaybePredict() {
       const bases = getSelectedBases();
-      for (let i = historical.length - 1; i > 1; i--) {
-      if (i === historical.length - 1) continue;  
+      for (let i = historical.length - 1; i > 0; i--) {
         const draw = historical[i].slice(0, 6).sort((a, b) => a - b);
         if (arraysEqual(draw, bases)) {
           const prevDraw = historical[i - 1];
@@ -208,9 +206,9 @@ const historical = [
 
     function calculateScoresAndDisplay(numbers, additional = null) {
       const bases = numbers.slice();
-      const rangeVal = document.getElementById('drawRange').value;
+      const range = parseInt(document.getElementById('drawRange').value);
       const includeAdd = document.getElementById('includeAdd').checked;
-      const draws = (rangeVal === 'all') ? historical : historical.slice(0, parseInt(rangeVal));
+      const draws = historical.slice(0, range);
       const freq = Array(50).fill(0);
       const compat = Array(50).fill(0);
 
@@ -234,9 +232,9 @@ const historical = [
 
     function runFrequencyCompatibilityPrediction() {
       const bases = getSelectedBases();
-      const rangeVal = document.getElementById('drawRange').value;
+      const range = parseInt(document.getElementById('drawRange').value);
       const includeAdd = document.getElementById('includeAdd').checked;
-      const draws = (rangeVal === 'all') ? historical : historical.slice(0, parseInt(rangeVal));
+      const draws = historical.slice(0, range);
       const freq = Array(50).fill(0);
       const compat = Array(50).fill(0);
 
@@ -251,60 +249,31 @@ const historical = [
       });
 
       const suggestions = freq
-        .map((count, n) => ({ n, count, compat: compat[n], score: count + compat[n] }))
+        .map((count, n) => ({ n, count, compat: compat[n] }))
         .filter(o => o.n && !bases.includes(o.n))
-        .sort((a, b) => b.score - a.score || b.count - a.count || a.n - b.n)
+        .sort((a, b) => (b.compat + b.count) - (a.compat + a.count) || b.count - a.count || a.n - b.n)
         .slice(0, 6);
 
-      const numbers = suggestions.map(o => o.n);
-      const scores = suggestions.map(o => o.score);
-        console.log('Sanity Check - Suggestions:');
+      const scores = suggestions.map(o => o.count + o.compat);
+      console.log('Sanity Check - Suggestions:');
       suggestions.forEach((o, i) => {
         console.log(`Number ${o.n} -> Frequency: ${o.count}, Compatibility: ${o.compat}, Total Score: ${scores[i]}`);
       });
-      console.log(' Displaying Final Numbers:', numbers);
-      displayPredictedNumbers(numbers, null, scores, freq, compat);
+      displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat);
     }
 
-function displayPredictedNumbers(numbers, additional = null, scores, freq, compat) {
-  const rs = document.getElementById('results');
-
-  const chartData = numbers.map((n, i) => ({
-    n,
-    score: scores[i],
-    freq: freq[n],
-    compat: compat[n]
-  })).sort((a, b) => b.score - a.score || b.freq - a.freq || a.n - b.n);
-
-  const sortedNumbers = chartData.map(o => o.n);
-  const sortedScores = chartData.map(o => o.score);
-  const sortedFreq = chartData.map(o => o.freq);
-  const sortedCompat = chartData.map(o => o.compat);
-
-  rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
-    `<p>${sortedNumbers.join(', ')}</p>`;
-
-  const ctx = document.getElementById('freqChart').getContext('2d');
-  if (window.chartInstance) window.chartInstance.destroy();
-
-  window.chartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: sortedNumbers.map((n, i) => `${n}\n(freq: ${sortedFreq[i]}, compat: ${sortedCompat[i]})`),
-      datasets: [{
-        label: 'Total Score',
-        data: sortedScores,
-        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-        borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
-    }
-  });
-}
+    function displayPredictedNumbers(numbers, additional = null, scores, freq, compat) {
+      const rs = document.getElementById('results');
+      // Sort numbers, scores, freq, compat for both display and chart
+      const sorted = numbers
+        .map((n, i) => ({ n, score: scores[i], freq: freq[n], compat: compat[n] }))
+        .sort((a, b) => a.n - b.n);
+      const sortedNumbers = sorted.map(o => o.n);
+      const sortedScores = sorted.map(o => o.score);
+      const sortedFreq = sorted.map(o => o.freq);
+      const sortedCompat = sorted.map(o => o.compat);
+      rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
+        `<p>${sortedNumbers.join(', ')}</p>`;
 
       const ctx = document.getElementById('freqChart').getContext('2d');
       if (chartInstance) {
