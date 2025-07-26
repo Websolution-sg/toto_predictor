@@ -35,7 +35,6 @@
       <option value="20">Last 20</option>
       <option value="50">Last 50</option>
       <option value="100">Last 100</option>
-      <option value="all">All</option>
     </select>
   </div>
   
@@ -206,10 +205,10 @@ const historical = [
     }
 
     function calculateScoresAndDisplay(numbers, additional = null) {
-      const bases = getSelectedBases();
-      const rangeVal = document.getElementById('drawRange').value;
+      const bases = numbers.slice();
+      const range = parseInt(document.getElementById('drawRange').value);
       const includeAdd = document.getElementById('includeAdd').checked;
-      const draws = (rangeValue === 'all') ? historical : historical.slice(0, parseInt(rangeValue));
+      const draws = historical.slice(0, range);
       const freq = Array(50).fill(0);
       const compat = Array(50).fill(0);
 
