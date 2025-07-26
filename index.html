@@ -1,4 +1,3 @@
-1
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -276,10 +275,11 @@ const sorted = numbers.map((n, i) => ({
   freq: freq[n],
   compat: compat[n]
 }));
-      const sortedNumbers = sorted.map(o => o.n);
-      const sortedScores = sorted.map(o => o.score);
-      const sortedFreq = sorted.map(o => o.freq);
-      const sortedCompat = sorted.map(o => o.compat);
+const chartData = [...sorted].sort((a, b) => b.score - a.score || b.freq - a.freq || a.n - b.n);
+const sortedNumbers = chartData.map(o => o.n);
+const sortedScores = chartData.map(o => o.score);
+const sortedFreq = chartData.map(o => o.freq);
+const sortedCompat = chartData.map(o => o.compat);
 rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
 `<p>${sorted.map(d => d.n).join(', ')}</p>`;
 
