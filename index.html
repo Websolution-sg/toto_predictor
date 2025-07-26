@@ -39,7 +39,7 @@
   </div>
   
   <label>
-    <input type="checkbox" id="includeAdd"/> Include additional number
+    <input type="checkbox" id="includeAdd" checked="false" />
   </label><br/>
 
   <button onclick="predict()">Predict</button>
@@ -171,6 +171,7 @@ const historical = [
       document.getElementById(id).value = recent[idx]
     });
     document.getElementById('additional').value = recent[6];
+   document.getElementById('includeAdd').checked = false;
 
     let chartInstance = null;
 
