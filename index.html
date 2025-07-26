@@ -267,7 +267,7 @@ const historical = [
       // Sort numbers, scores, freq, compat for both display and chart
       const sorted = numbers
         .map((n, i) => ({ n, score: scores[i], freq: freq[n], compat: compat[n] }))
-        .sort((a, b) => b.score - a.score || b.freq - a.freq || a.n - b.n);
+        .sort((a, b) => a.n - b.n);
       const sortedNumbers = sorted.map(o => o.n);
       const sortedScores = sorted.map(o => o.score);
       const sortedFreq = sorted.map(o => o.freq);
