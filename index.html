@@ -256,12 +256,12 @@ const historical = [
         .slice(0, 6);
 
       const scores = suggestions.map(o => o.score);
+      displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat);
+    }
       console.log('Sanity Check - Suggestions:');
       suggestions.forEach((o, i) => {
         console.log(`Number ${o.n} -> Frequency: ${o.count}, Compatibility: ${o.compat}, Total Score: ${scores[i]}`);
       });
-      displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat);
-    }
 
     function displayPredictedNumbers(numbers, additional = null, scores, freq, compat) {
       const rs = document.getElementById('results');
