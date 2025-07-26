@@ -251,7 +251,7 @@ const historical = [
       const suggestions = freq
         .map((count, n) => ({ n, count, compat: compat[n] }))
         .filter(o => o.n && !bases.includes(o.n))
-        .sort((a, b) => (b.compat + b.count) - (a.compat + a.count))
+        .sort((a, b) => (b.compat + b.count) - (a.compat + a.count) || b.count - a.count || a.n - b.n)
         .slice(0, 6);
 
       const scores = suggestions.map(o => o.count + o.compat);
