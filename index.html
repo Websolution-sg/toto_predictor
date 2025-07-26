@@ -274,8 +274,11 @@ function checkHistoricalAndMaybePredict() {
       suggestions.forEach((o, i) => {
         console.log(`Number ${o.n} -> Frequency: ${o.count}, Compatibility: ${o.compat}, Total Score: ${scores[i]}`);
       });
-      displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat);
-    }
+     const numbers = suggestions.map(o => o.n);
+     const scores = suggestions.map(o => o.compat + o.count);
+
+     displayPredictedNumbers(numbers, null, scores, freq, compat);
+     }
 
     function displayPredictedNumbers(numbers, additional = null, scores, freq, compat) {
       const rs = document.getElementById('results');
