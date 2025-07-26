@@ -268,13 +268,6 @@ const historical = [
     function displayPredictedNumbers(numbers, additional = null, scores, freq, compat) {
       const rs = document.getElementById('results');
       // Sort numbers, scores, freq, compat for both display and chart
-      const sortedNumbers = sorted.map(o => o.n);
-      const sortedScores = sorted.map(o => o.score);
-      const sortedFreq = sorted.map(o => o.freq);
-      const sortedCompat = sorted.map(o => o.compat);
-      rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
-        `<p>${sortedNumbers.join(', ')}</p>`;
-
       const ctx = document.getElementById('freqChart').getContext('2d');
       if (chartInstance) {
         chartInstance.destroy();
