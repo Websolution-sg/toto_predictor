@@ -261,6 +261,7 @@ const historical = [
       suggestions.forEach((o, i) => {
         console.log(`Number ${o.n} -> Frequency: ${o.count}, Compatibility: ${o.compat}, Total Score: ${scores[i]}`);
       });
+      console.log(' Displaying Final Numbers:', numbers);
       displayPredictedNumbers(numbers, null, scores, freq, compat);
     }
 
