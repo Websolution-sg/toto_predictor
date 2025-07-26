@@ -266,25 +266,45 @@ const historical = [
       displayPredictedNumbers(numbers, null, scores, freq, compat);
     }
 
-    function displayPredictedNumbers(numbers, additional = null, scores, freq, compat) {
-      const rs = document.getElementById('results');
-      // Sort numbers, scores, freq, compat for both display and chart
-const sorted = numbers.map((n, i) => ({
-  n,
-  score: scores[i],
-  freq: freq[n],
-  compat: compat[n]
-}));
-const chartData = [...sorted].sort((a, b) => b.score - a.score || b.freq - a.freq || a.n - b.n);
-const sortedNumbers = chartData.map(o => o.n);
-const sortedScores = chartData.map(o => o.score);
-const sortedFreq = chartData.map(o => o.freq);
-const sortedCompat = chartData.map(o => o.compat);
+function displayPredictedNumbers(numbers, additional = null, scores, freq, compat) {
+  const rs = document.getElementById('results');
 
-console.log("✅ Predicted numbers shown to user:", sortedNumbers);      
+  const chartData = numbers.map((n, i) => ({
+    n,
+    score: scores[i],
+    freq: freq[n],
+    compat: compat[n]
+  })).sort((a, b) => b.score - a.score || b.freq - a.freq || a.n - b.n);
 
-rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
-`<p>${sortedNumbers.join(', ')}</p>`;
+  const sortedNumbers = chartData.map(o => o.n);
+  const sortedScores = chartData.map(o => o.score);
+  const sortedFreq = chartData.map(o => o.freq);
+  const sortedCompat = chartData.map(o => o.compat);
+
+  rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
+    `<p>${sortedNumbers.join(', ')}</p>`;
+
+  const ctx = document.getElementById('freqChart').getContext('2d');
+  if (window.chartInstance) window.chartInstance.destroy();
+
+  window.chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sortedNumbers.map((n, i) => `${n}\n(freq: ${sortedFreq[i]}, compat: ${sortedCompat[i]})`),
+      datasets: [{
+        label: 'Total Score',
+        data: sortedScores,
+        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+    }
+  });
+}
 
       const ctx = document.getElementById('freqChart').getContext('2d');
       if (chartInstance) {
