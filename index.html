@@ -250,12 +250,12 @@ const historical = [
       });
 
       const suggestions = freq
-        .map((count, n) => ({ n, count, compat: compat[n] }))
+        .map((count, n) => ({ n, count, compat: compat[n], score: count + compat[n] }))
         .filter(o => o.n && !bases.includes(o.n))
         .sort((a, b) => b.score - a.score || b.count - a.count || a.n - b.n)
         .slice(0, 6);
 
-      const scores = suggestions.map(o => o.count + o.compat);
+      const scores = suggestions.map(o => o.score);
       console.log('Sanity Check - Suggestions:');
       suggestions.forEach((o, i) => {
         console.log(`Number ${o.n} -> Frequency: ${o.count}, Compatibility: ${o.compat}, Total Score: ${scores[i]}`);
