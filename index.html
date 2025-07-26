@@ -183,21 +183,27 @@ const historical = [
 
 function checkHistoricalAndMaybePredict() {
   const bases = getSelectedBases().sort((a, b) => a - b);
-const mostRecentDraw = historical[0].slice(0, 6).sort((a, b) => a - b);
+  const mostRecentDraw = historical[0].slice(0, 6).sort((a, b) => a - b);
 
-for (let i = historical.length - 1; i > 0; i--) {
-  const draw = historical[i].slice(0, 6).sort((a, b) => a - b);
-
-  if (arraysEqual(draw, mostRecentDraw)) {
-    continue;  // ✅ Skip matching against latest draw
+  // ✅ Skip historical prediction entirely if base = most recent draw
+  if (arraysEqual(bases, mostRecentDraw)) {
+    return false;
   }
 
-  if (arraysEqual(draw, bases)) {
-    const prevDraw = historical[i - 1];
-    calculateScoresAndDisplay(prevDraw.slice(0, 6), prevDraw[6]);
-    return true;
+  for (let i = historical.length - 1; i > 0; i--) {
+    const draw = historical[i].slice(0, 6).sort((a, b) => a - b);
+
+    // This only prevents matching the most recent draw as a historical case
+    if (arraysEqual(draw, mostRecentDraw)) {
+      continue;
+    }
+
+    if (arraysEqual(draw, bases)) {
+      const prevDraw = historical[i - 1];
+      calculateScoresAndDisplay(prevDraw.slice(0, 6), prevDraw[6]);
+      return true;
+    }
   }
-}
 
   return false;
 }
