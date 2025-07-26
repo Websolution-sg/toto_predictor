@@ -280,6 +280,9 @@ const sortedNumbers = chartData.map(o => o.n);
 const sortedScores = chartData.map(o => o.score);
 const sortedFreq = chartData.map(o => o.freq);
 const sortedCompat = chartData.map(o => o.compat);
+
+console.log("✅ Predicted numbers shown to user:", sortedNumbers);      
+
 rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
 `<p>${sortedNumbers.join(', ')}</p>`;
 
