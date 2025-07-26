@@ -192,6 +192,10 @@ function checkHistoricalAndMaybePredict() {
 
   for (let i = historical.length - 1; i > 0; i--) {
     const draw = historical[i].slice(0, 6).sort((a, b) => a - b);
+  const mostRecentDraw = historical[0].slice(0, 6).sort((a, b) => a - b);
+  if (arraysEqual(draw, mostRecentDraw)) {
+    continue;
+    }  
     if (arraysEqual(draw, bases)) {
       const prevDraw = historical[i - 1];
       calculateScoresAndDisplay(prevDraw.slice(0, 6), prevDraw[6]);
