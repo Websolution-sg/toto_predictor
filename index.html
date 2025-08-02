@@ -4,7 +4,140 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Singapore TOTO Predictor</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js">
+function arraysEqual(a, b) {
+  return a.length === b.length && a.every((val, index) => val === b[index]);
+}
+
+let chartInstance = null;
+
+function predict() {
+  const hasHistoricalMatch = checkHistoricalAndMaybePredict();
+  if (!hasHistoricalMatch) {
+    runFrequencyCompatibilityPrediction();
+  }
+}
+
+function getSelectedBases() {
+  return ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
+    .map(id => parseInt(document.getElementById(id).value))
+    .sort((a, b) => a - b);
+}
+
+function checkHistoricalAndMaybePredict() {
+  const bases = getSelectedBases();
+  const mostRecentDraw = historical[0].slice(0, 6).sort((a, b) => a - b);
+  if (arraysEqual(bases, mostRecentDraw)) return false;
+  for (let i = historical.length - 1; i > 0; i--) {
+    const draw = historical[i].slice(0, 6).sort((a, b) => a - b);
+    if (arraysEqual(draw, bases)) {
+      const prevDraw = historical[i - 1];
+      calculateScoresAndDisplay(prevDraw.slice(0, 6), prevDraw[6]);
+      return true;
+    }
+  }
+  return false;
+}
+
+function calculateScoresAndDisplay(numbers, additional = null) {
+  const bases = numbers.slice();
+  const range = parseInt(document.getElementById('drawRange').value);
+  const includeAdd = document.getElementById('includeAdd').checked;
+  const draws = historical.slice(0, range);
+  const freq = Array(50).fill(0);
+  const compat = Array(50).fill(0);
+
+  draws.forEach(draw => {
+    const pool = includeAdd ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+    pool.forEach(n => freq[n]++);
+    bases.forEach(b => {
+      if (pool.includes(b)) {
+        pool.filter(n => n !== b).forEach(n => compat[n]++);
+      }
+    });
+  });
+
+  const scores = numbers.map(n => freq[n] + compat[n]);
+  displayPredictedNumbers(numbers, additional, scores, freq, compat);
+}
+
+function runFrequencyCompatibilityPrediction() {
+  const bases = getSelectedBases();
+  const range = parseInt(document.getElementById('drawRange').value);
+  const includeAdd = document.getElementById('includeAdd').checked;
+  const draws = historical.slice(0, range);
+  const freq = Array(50).fill(0);
+  const compat = Array(50).fill(0);
+
+  draws.forEach(draw => {
+    const pool = includeAdd ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+    pool.forEach(n => freq[n]++);
+    bases.forEach(b => {
+      if (pool.includes(b)) {
+        pool.filter(n => n !== b).forEach(n => compat[n]++);
+      }
+    });
+  });
+
+  const suggestions = freq.map((count, n) => ({ n, count, compat: compat[n] }))
+    .filter(o => o.n)
+    .sort((a, b) => (b.compat + b.count) - (a.compat + a.count) || b.count - a.count || a.n - b.n)
+    .slice(0, 6);
+
+  const scores = suggestions.map(o => o.count + o.compat);
+  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat);
+}
+
+function displayPredictedNumbers(numbers, additional = null, scores, freq, compat) {
+  const rs = document.getElementById('results');
+  const sorted = numbers.map((n, i) => ({
+    n,
+    score: scores[i],
+    freq: freq[n],
+    compat: compat[n]
+  })).sort((a, b) => a.n - b.n);
+
+  const sortedNumbers = sorted.map(o => o.n);
+  const sortedScores = sorted.map(o => o.score);
+  const sortedFreq = sorted.map(o => o.freq);
+  const sortedCompat = sorted.map(o => o.compat);
+
+  rs.innerHTML = '<h3>Predicted Numbers:</h3><p>' + sortedNumbers.join(', ') + '</p>';
+
+  const ctx = document.getElementById('freqChart').getContext('2d');
+  if (chartInstance) chartInstance.destroy();
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: sortedNumbers.map((n, i) => `${n}
+(freq: ${sortedFreq[i]}, compat: ${sortedCompat[i]})`),
+      datasets: [{
+        label: 'Total Score',
+        data: sortedScores,
+        backgroundColor: 'rgba(54, 162, 235, 0.6)',
+        borderColor: 'rgba(54, 162, 235, 1)',
+        borderWidth: 1
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const index = context.dataIndex;
+              return `Freq: ${sortedFreq[index]}, Compat: ${sortedCompat[index]}, Total: ${sortedScores[index]}`;
+            }
+          }
+        }
+      },
+      scales: {
+        y: { beginAtZero: true, ticks: { stepSize: 1 } }
+      }
+    }
+  });
+}
+</script>
   <style>
     body { font: 16px/1.5 Arial; padding: 20px; max-width: 600px; margin: auto; }
     select, button, input { font-size: 1em; margin: 0.5em 0; }
