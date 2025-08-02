@@ -69,9 +69,8 @@ fetch('totoResult.csv')
         const opt = document.createElement('option');
         opt.value = opt.textContent = i;
         document.getElementById(id).append(opt);
-      })
+      });
     }
-
 
     // Auto-select most recent result
     const recent = historical[0];
@@ -81,11 +80,15 @@ fetch('totoResult.csv')
     document.getElementById('additional').value = recent[6];
     document.getElementById('includeAdd').checked = false;
     
-    // Display the current recent result from CSV
-    updateLatestResult(recent.slice(0, 6), recent[6]);
+    // Display the current recent result from CSV with current date
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('en-SG', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+    updateLatestResult(recent.slice(0, 6), recent[6], 'success', dateStr);
   });
-    
-      const resultElement = document.getElementById('recentResult');
       const refreshButton = document.querySelector('button[onclick="fetchLatestTotoResults()"]');
       
       try {
@@ -219,12 +222,10 @@ fetch('totoResult.csv')
     function updateLatestResult(winningNumbers, additionalNumber, status = 'success', drawDate = null) {
       const resultElement = document.getElementById('recentResult');
       if (resultElement) {
-        // Use provided draw date or get from historical data
-        let dateDisplay = drawDate || 'Latest Draw';
-        
+        const dateDisplay = drawDate || 'Latest Draw';
         const resultText = `${winningNumbers.join(', ')} + ${additionalNumber}`;
         resultElement.className = status;
-        resultElement.innerHTML = `DRAW RESULT (${drawDateStr}): ${resultText}`;
+        resultElement.innerHTML = `DRAW RESULT (${dateDisplay}): ${resultText}`;
       }
     }
     
