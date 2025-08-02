@@ -23,7 +23,7 @@
     <select id="base5"></select>
     <select id="base6"></select>
   </div>
- 
+
   <div>
     <label>Additional Number:</label><br/>
     <select id="additional"></select>
@@ -69,6 +69,10 @@ fetch('totoResult.csv')
     const today = new Date();
     const dateStr = today.toLocaleDateString('en-SG', { day: '2-digit', month: '2-digit', year: 'numeric' });
     updateLatestResult(recent.slice(0, 6), recent[6], dateStr);
+  })
+  .catch(error => {
+    alert("Failed to load historical data.");
+    console.error(error);
   });
 
 function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
@@ -79,7 +83,16 @@ function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
   }
 }
 
+function hasDuplicates(arr) {
+  return new Set(arr).size !== arr.length;
+}
+
 function predict() {
+  const bases = getSelectedBases();
+  if (hasDuplicates(bases)) {
+    alert("Duplicate base numbers selected. Please choose unique numbers.");
+    return;
+  }
   const hasHistoricalMatch = checkHistoricalAndMaybePredict();
   if (!hasHistoricalMatch) {
     runFrequencyCompatibilityPrediction();
@@ -119,7 +132,7 @@ function calculateScoresAndDisplay(numbers, additional = null) {
   const freq = Array(50).fill(0);
   const compat = Array(50).fill(0);
   draws.forEach(draw => {
-    const pool = includeAdd ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
     pool.forEach(n => freq[n]++);
     numbers.forEach(b => {
       if (pool.includes(b)) {
@@ -139,7 +152,7 @@ function runFrequencyCompatibilityPrediction() {
   const freq = Array(50).fill(0);
   const compat = Array(50).fill(0);
   draws.forEach(draw => {
-    const pool = includeAdd ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
     pool.forEach(n => freq[n]++);
     bases.forEach(b => {
       if (pool.includes(b)) {
@@ -148,7 +161,7 @@ function runFrequencyCompatibilityPrediction() {
     });
   });
   const suggestions = freq.map((count, n) => ({ n, count, compat: compat[n] }))
-    .filter(o => o.n)
+    .filter(o => o.n >= 1 && o.n <= 49)
     .sort((a, b) => (b.compat + b.count) - (a.compat + a.count) || b.count - a.count || a.n - b.n)
     .slice(0, 6);
   const scores = suggestions.map(o => o.count + o.compat);
@@ -169,7 +182,7 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: sortedNumbers.map((n, i) => `${n}\n(freq: ${sortedFreq[i]}, compat: ${sortedCompat[i]})`),
+      labels: sortedNumbers.map((n, i) => `${n} (F: ${sortedFreq[i]}, C: ${sortedCompat[i]})`),
       datasets: [{
         label: 'Total Score',
         data: sortedScores,
