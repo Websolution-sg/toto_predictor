@@ -44,6 +44,7 @@
   </label><br/>
 
   <button onclick="predict()">Predict</button>
+  <button onclick="fetchLatestTotoResults()" style="background-color: #28a745; color: white; margin-left: 10px;">Refresh Latest Results</button>
 
   <h2>Results</h2>
   <div id="results"></div>
@@ -87,11 +88,279 @@ fetch('totoResult.csv')
     
     // Function to fetch latest TOTO results from Singapore Pools
     async function fetchLatestTotoResults() {
+      const resultElement = document.getElementById('recentResult');
+      const refreshButton = document.querySelector('button[onclick="fetchLatestTotoResults()"]');
+      
       try {
+        // Show loading state
+        if (resultElement) {
+          resultElement.textContent = 'RECENT RESULT: Fetching latest results...';
+        }
+        if (refreshButton) {
+          refreshButton.textContent = 'Fetching...';
+          refreshButton.disabled = true;
+        }
+        
         console.log('Fetching latest TOTO results...');
         
-        // For GitHub Pages, we'll rely on the GitHub Action to update the CSV
-        // and just reload the CSV data to get the latest results
+        // First try to fetch directly from Singapore Pools
+        let fetchedResults = await fetchFromSingaporePools();
+        
+        if (!fetchedResults) {
+          // Fallback: Check if GitHub Action has updated the CSV
+          console.log('Direct fetch failed, checking CSV for updates...');
+          fetchedResults = await checkCSVForUpdates();
+        }
+        
+        if (fetchedResults) {
+          const { winningNumbers, additionalNumber } = fetchedResults;
+          
+          // Check if this is newer than our current data
+          const currentLatest = historical[0];
+          const newResult = [...winningNumbers, additionalNumber];
+          
+          if (!arraysEqual(newResult, currentLatest)) {
+            // Update historical data
+            historical.unshift(newResult);
+            
+            // Update the page display
+            updateLatestResult(winningNumbers, additionalNumber);
+            
+            // Auto-select the new result
+            ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
+              document.getElementById(id).value = winningNumbers[idx];
+            });
+            document.getElementById('additional').value = additionalNumber;
+            
+            console.log('Latest TOTO results updated successfully!');
+            
+            // Show success message briefly
+            if (refreshButton && refreshButton.textContent === 'Fetching...') {
+              refreshButton.textContent = 'Updated!';
+              setTimeout(() => {
+                refreshButton.textContent = 'Refresh Latest Results';
+              }, 2000);
+            }
+          } else {
+            console.log('Current data is already up to date.');
+            if (refreshButton && refreshButton.textContent === 'Fetching...') {
+              refreshButton.textContent = 'Already Up to Date';
+              setTimeout(() => {
+                refreshButton.textContent = 'Refresh Latest Results';
+              }, 2000);
+            }
+          }
+        } else {
+          // No new results found, restore original display
+          const recent = historical[0];
+          updateLatestResult(recent.slice(0, 6), recent[6]);
+        }
+        
+      } catch (error) {
+        console.error('Error fetching TOTO results:', error);
+        console.log('Using existing data from CSV file.');
+        
+        // Restore original display on error
+        const recent = historical[0];
+        updateLatestResult(recent.slice(0, 6), recent[6]);
+      } finally {
+        // Reset button state
+        if (refreshButton) {
+          refreshButton.disabled = false;
+          if (refreshButton.textContent === 'Fetching...') {
+            refreshButton.textContent = 'Refresh Latest Results';
+          }
+        }
+      }
+    }
+    
+    // Function to fetch directly from Singapore Pools
+    async function fetchFromSingaporePools() {
+      try {
+        // Try multiple endpoints and methods
+        const endpoints = [
+          'https://www.singaporepools.com.sg/api/toto/latest',
+          'https://www.singaporepools.com.sg/DataFileArchive/Lottery/Output/toto_results_today.xml',
+          'https://api.singaporepools.com.sg/toto/latest'
+        ];
+        
+        for (const endpoint of endpoints) {
+          try {
+            console.log('Trying endpoint:', endpoint);
+            
+            const response = await fetch(endpoint, {
+              method: 'GET',
+              headers: {
+                'Accept': 'application/json, application/xml, text/xml, */*',
+                'Content-Type': 'application/json'
+              },
+              mode: 'cors'
+            });
+            
+            if (!response.ok) {
+              console.log(`Endpoint ${endpoint} failed with status: ${response.status}`);
+              continue;
+            }
+            
+            const contentType = response.headers.get('content-type');
+            let data;
+            
+            if (contentType && contentType.includes('xml')) {
+              const xmlText = await response.text();
+              data = parseXMLResults(xmlText);
+            } else {
+              data = await response.json();
+            }
+            
+            const results = extractTotoNumbers(data);
+            if (results) {
+              console.log('Successfully fetched from:', endpoint);
+              return results;
+            }
+            
+          } catch (endpointError) {
+            console.log(`Endpoint ${endpoint} error:`, endpointError.message);
+            continue;
+          }
+        }
+        
+        // Try web scraping as fallback
+        return await scrapeFromWebsite();
+        
+      } catch (error) {
+        console.log('Direct fetch from Singapore Pools failed:', error.message);
+        return null;
+      }
+    }
+    
+    // Function to parse XML results
+    function parseXMLResults(xmlText) {
+      try {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
+        
+        // Try different XML structures
+        const numbers = [];
+        
+        // Method 1: Look for number elements
+        const numberElements = xmlDoc.getElementsByTagName('number');
+        for (let i = 0; i < Math.min(7, numberElements.length); i++) {
+          numbers.push(parseInt(numberElements[i].textContent));
+        }
+        
+        // Method 2: Look for draw results
+        if (numbers.length < 7) {
+          const drawElements = xmlDoc.getElementsByTagName('draw');
+          if (drawElements.length > 0) {
+            const drawText = drawElements[0].textContent;
+            const extractedNumbers = drawText.match(/\d+/g);
+            if (extractedNumbers && extractedNumbers.length >= 7) {
+              return {
+                winningNumbers: extractedNumbers.slice(0, 6).map(n => parseInt(n)),
+                additionalNumber: parseInt(extractedNumbers[6])
+              };
+            }
+          }
+        }
+        
+        if (numbers.length >= 7) {
+          return {
+            winningNumbers: numbers.slice(0, 6),
+            additionalNumber: numbers[6]
+          };
+        }
+        
+        return null;
+      } catch (error) {
+        console.log('XML parsing failed:', error);
+        return null;
+      }
+    }
+    
+    // Function to extract TOTO numbers from API response
+    function extractTotoNumbers(data) {
+      try {
+        let winningNumbers, additionalNumber;
+        
+        // Try different response formats
+        if (data.results && data.results[0]) {
+          const result = data.results[0];
+          winningNumbers = result.winningNumbers || result.numbers || result.draw;
+          additionalNumber = result.additionalNumber || result.additional || result.bonus;
+        } else if (data.winningNumbers || data.numbers) {
+          winningNumbers = data.winningNumbers || data.numbers;
+          additionalNumber = data.additionalNumber || data.additional || data.bonus;
+        } else if (data.draw) {
+          winningNumbers = data.draw.slice(0, 6);
+          additionalNumber = data.draw[6];
+        } else if (Array.isArray(data) && data.length >= 7) {
+          winningNumbers = data.slice(0, 6);
+          additionalNumber = data[6];
+        }
+        
+        // Validate the numbers
+        if (winningNumbers && Array.isArray(winningNumbers) && winningNumbers.length === 6 && 
+            additionalNumber && !isNaN(additionalNumber)) {
+          
+          const validNumbers = winningNumbers.every(n => !isNaN(n) && n >= 1 && n <= 49);
+          const validAdditional = additionalNumber >= 1 && additionalNumber <= 49;
+          
+          if (validNumbers && validAdditional) {
+            return { winningNumbers: winningNumbers.map(n => parseInt(n)), additionalNumber: parseInt(additionalNumber) };
+          }
+        }
+        
+        return null;
+      } catch (error) {
+        console.log('Number extraction failed:', error);
+        return null;
+      }
+    }
+    
+    // Function to scrape from website (CORS proxy might be needed)
+    async function scrapeFromWebsite() {
+      try {
+        // This might not work due to CORS, but worth trying
+        const proxyUrls = [
+          'https://api.allorigins.win/raw?url=',
+          'https://corsproxy.io/?',
+          'https://api.codetabs.com/v1/proxy?quest='
+        ];
+        
+        const targetUrl = 'https://www.singaporepools.com.sg/en/product/sr/Pages/toto_results.aspx';
+        
+        for (const proxy of proxyUrls) {
+          try {
+            const response = await fetch(proxy + encodeURIComponent(targetUrl));
+            const html = await response.text();
+            
+            // Look for number patterns in the HTML
+            const numberMatches = html.match(/\b([1-9]|[1-4][0-9])\b/g);
+            if (numberMatches && numberMatches.length >= 7) {
+              const numbers = numberMatches.slice(0, 7).map(n => parseInt(n));
+              if (numbers.every(n => n >= 1 && n <= 49)) {
+                return {
+                  winningNumbers: numbers.slice(0, 6),
+                  additionalNumber: numbers[6]
+                };
+              }
+            }
+          } catch (proxyError) {
+            console.log('Proxy attempt failed:', proxyError.message);
+            continue;
+          }
+        }
+        
+        return null;
+      } catch (error) {
+        console.log('Web scraping failed:', error);
+        return null;
+      }
+    }
+    
+    // Function to check CSV for updates (fallback)
+    async function checkCSVForUpdates() {
+      try {
         const response = await fetch('totoResult.csv?' + Date.now()); // Cache busting
         const text = await response.text();
         const newHistorical = text
@@ -107,23 +376,16 @@ fetch('totoResult.csv')
           // Update historical data
           historical = newHistorical;
           
-          // Update the page display
-          updateLatestResult(fetchedLatest.slice(0, 6), fetchedLatest[6]);
-          
-          // Auto-select the new result
-          ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
-            document.getElementById(id).value = fetchedLatest[idx];
-          });
-          document.getElementById('additional').value = fetchedLatest[6];
-          
-          console.log('Latest TOTO results updated successfully!');
-        } else {
-          console.log('Current data is already up to date.');
+          return {
+            winningNumbers: fetchedLatest.slice(0, 6),
+            additionalNumber: fetchedLatest[6]
+          };
         }
         
+        return null;
       } catch (error) {
-        console.error('Error fetching TOTO results:', error);
-        console.log('Using existing data from CSV file.');
+        console.log('CSV check failed:', error);
+        return null;
       }
     }
     
