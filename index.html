@@ -60,12 +60,20 @@
 let historical = [];
 
 fetch('totoResult.csv')
-  .then(response => response.text())
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`Failed to load CSV: ${response.status}`);
+    }
+    return response.text();
+  })
   .then(text => {
+    console.log('CSV loaded successfully');
     historical = text
       .trim()
       .split('\n')
       .map(line => line.split(',').map(Number));
+
+    console.log('Historical data loaded:', historical.length, 'entries');
 
     // Populate selects
     for (let i = 1; i <= 49; i++) {
@@ -75,7 +83,6 @@ fetch('totoResult.csv')
         document.getElementById(id).append(opt);
       })
     }
-
 
     // Auto-select most recent result
     const recent = historical[0];
@@ -90,6 +97,10 @@ fetch('totoResult.csv')
     
     // Automatically fetch latest TOTO results on page load
     fetchLatestTotoResults();
+  })
+  .catch(error => {
+    console.error('Error loading CSV:', error);
+    document.getElementById('recentResult').textContent = 'Error loading data: ' + error.message;
   });
     
     // Function to fetch latest TOTO results from Singapore Pools
@@ -231,13 +242,19 @@ fetch('totoResult.csv')
           try {
             console.log('Trying proxy:', proxy);
             
+            // Create timeout controller
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 10000);
+            
             const response = await fetch(proxy + encodeURIComponent(targetUrl), {
               method: 'GET',
               headers: {
                 'Accept': 'application/json, text/html',
               },
-              timeout: 10000
+              signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
             
             if (!response.ok) {
               console.log(`Proxy ${proxy} failed with status: ${response.status}`);
@@ -477,44 +494,6 @@ fetch('totoResult.csv')
       } catch (error) {
         console.log('CSV check failed:', error);
         return null;
-      }
-    }
-    
-    // Alternative function to manually update results
-    function manuallyUpdateResults() {
-      const numbers = prompt('Enter the 6 winning numbers separated by commas (e.g., 7,19,20,21,22,29):');
-      const additional = prompt('Enter the additional number:');
-      
-      if (numbers && additional) {
-        try {
-          const winningNumbers = numbers.split(',').map(n => parseInt(n.trim()));
-          const additionalNumber = parseInt(additional.trim());
-          
-          if (winningNumbers.length !== 6 || winningNumbers.some(n => isNaN(n) || n < 1 || n > 49)) {
-            throw new Error('Invalid winning numbers');
-          }
-          
-          if (isNaN(additionalNumber) || additionalNumber < 1 || additionalNumber > 49) {
-            throw new Error('Invalid additional number');
-          }
-          
-          updateLatestResult(winningNumbers, additionalNumber);
-          
-          // Update the historical data array
-          const newResult = [...winningNumbers, additionalNumber];
-          historical.unshift(newResult);
-          
-          // Auto-select the new result
-          ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
-            document.getElementById(id).value = winningNumbers[idx];
-          });
-          document.getElementById('additional').value = additionalNumber;
-          
-          alert('Results updated successfully!');
-          
-        } catch (error) {
-          alert('Error: ' + error.message);
-        }
       }
     }
     
