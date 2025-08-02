@@ -215,10 +215,34 @@ fetch('totoResult.csv')
     function updateLatestResult(winningNumbers, additionalNumber, status = 'success') {
       const resultElement = document.getElementById('recentResult');
       if (resultElement) {
-        const timestamp = new Date().toLocaleString();
+        // Get today's date and format it as dd/mm/yyyy
+        const today = new Date();
+        const dd = String(today.getDate()).padStart(2, '0');
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const yyyy = today.getFullYear();
+        
+        // Format draw dates based on Singapore TOTO schedule (Mon & Thu)
+        const drawDays = ['Monday', 'Thursday'];
+        const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ...
+        let drawDate = new Date(today);
+        
+        // Find the most recent draw day
+        if (currentDay > 4) { // After Thursday
+            drawDate.setDate(drawDate.getDate() - (currentDay - 4)); // Last Thursday
+        } else if (currentDay > 1) { // After Monday but before Thursday
+            drawDate.setDate(drawDate.getDate() - (currentDay - 1)); // Last Monday
+        } else if (currentDay === 0) { // Sunday
+            drawDate.setDate(drawDate.getDate() - 3); // Last Thursday
+        }
+        
+        const drawdd = String(drawDate.getDate()).padStart(2, '0');
+        const drawmm = String(drawDate.getMonth() + 1).padStart(2, '0');
+        const drawyyyy = drawDate.getFullYear();
+        const drawDateStr = `${drawdd}/${drawmm}/${drawyyyy}`;
+        
         const resultText = `${winningNumbers.join(', ')} + ${additionalNumber}`;
         resultElement.className = status;
-        resultElement.innerHTML = `RECENT RESULT (${timestamp}): ${resultText}`;
+        resultElement.innerHTML = `DRAW RESULT (${drawDateStr}): ${resultText}`;
       }
     }
     
