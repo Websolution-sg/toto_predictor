@@ -47,7 +47,6 @@
   </label><br/>
 
   <button onclick="predict()">Predict</button>
-  <button onclick="fetchLatestTotoResults()" style="background-color: #28a745; color: white; margin-left: 10px;">Refresh Latest Results</button>
 
   <h2>Results</h2>
   <div id="results"></div>
@@ -84,13 +83,8 @@ fetch('totoResult.csv')
     
     // Display the current recent result from CSV
     updateLatestResult(recent.slice(0, 6), recent[6]);
-    
-    // Automatically fetch latest TOTO results on page load
-    fetchLatestTotoResults();
   });
     
-    // Function to fetch latest TOTO results from Singapore Pools
-    async function fetchLatestTotoResults() {
       const resultElement = document.getElementById('recentResult');
       const refreshButton = document.querySelector('button[onclick="fetchLatestTotoResults()"]');
       
@@ -103,8 +97,8 @@ fetch('totoResult.csv')
         
         console.log('Fetching latest TOTO results...');
         
-        // Singapore Pools TOTO API endpoint
-        const response = await fetch('https://www.singaporepools.com.sg/api/toto/latest', {
+        // Fetch from Singapore Pools website
+        const response = await fetch('https://www.singaporepools.com.sg/en/product/Pages/toto_results.aspx', {
           method: 'GET',
           headers: {
             'Accept': 'application/json',
@@ -116,29 +110,39 @@ fetch('totoResult.csv')
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         
-        const data = await response.json();
+        const text = await response.text();
         
-        // Extract winning numbers and additional number
-        let winningNumbers, additionalNumber;
+        // Create a temporary element to parse the HTML
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, 'text/html');
         
-        if (data.results && data.results[0]) {
-          const result = data.results[0];
-          winningNumbers = result.winningNumbers || result.numbers;
-          additionalNumber = result.additionalNumber || result.additional;
-        } else if (data.winningNumbers || data.numbers) {
-          winningNumbers = data.winningNumbers || data.numbers;
-          additionalNumber = data.additionalNumber || data.additional;
-        } else {
-          throw new Error('Unexpected API response format');
+        // Find the latest draw info
+        const drawDateElement = doc.querySelector('.table-responsive .table tbody tr:first-child td:first-child');
+        const numbersElement = doc.querySelector('.table-responsive .table tbody tr:first-child td:nth-child(2)');
+        const additionalElement = doc.querySelector('.table-responsive .table tbody tr:first-child td:nth-child(3)');
+        
+        if (!drawDateElement || !numbersElement || !additionalElement) {
+            throw new Error('Could not find draw information on the page');
         }
         
-        if (!winningNumbers || winningNumbers.length !== 6) {
-          throw new Error('Invalid winning numbers format');
-        }
+        // Parse the draw date (format: DD/MM/YYYY)
+        const drawDate = drawDateElement.textContent.trim();
         
-        // Check if this is newer than our current data
-        const currentLatest = historical[0];
-        const newResult = [...winningNumbers, additionalNumber];
+        // Parse winning numbers and additional number
+        const winningNumbers = numbersElement.textContent.trim()
+            .split(' ')
+            .map(n => parseInt(n.trim()))
+            .filter(n => !isNaN(n))
+            .sort((a, b) => a - b);
+            
+        const additionalNumber = parseInt(additionalElement.textContent.trim());
+          
+          // Check if this is newer than our current data
+          const currentLatest = historical[0];
+          const newResult = [...winningNumbers, additionalNumber];
+          
+          // Store the draw date with the result
+          newResult.drawDate = drawDate;
         
         // Only update if the result is different from what we have
         if (!arraysEqual(newResult, currentLatest)) {
@@ -212,33 +216,11 @@ fetch('totoResult.csv')
     }
     
     // Function to update the display of latest results
-    function updateLatestResult(winningNumbers, additionalNumber, status = 'success') {
+    function updateLatestResult(winningNumbers, additionalNumber, status = 'success', drawDate = null) {
       const resultElement = document.getElementById('recentResult');
       if (resultElement) {
-        // Get today's date and format it as dd/mm/yyyy
-        const today = new Date();
-        const dd = String(today.getDate()).padStart(2, '0');
-        const mm = String(today.getMonth() + 1).padStart(2, '0');
-        const yyyy = today.getFullYear();
-        
-        // Format draw dates based on Singapore TOTO schedule (Mon & Thu)
-        const drawDays = ['Monday', 'Thursday'];
-        const currentDay = today.getDay(); // 0 = Sunday, 1 = Monday, ...
-        let drawDate = new Date(today);
-        
-        // Find the most recent draw day
-        if (currentDay > 4) { // After Thursday
-            drawDate.setDate(drawDate.getDate() - (currentDay - 4)); // Last Thursday
-        } else if (currentDay > 1) { // After Monday but before Thursday
-            drawDate.setDate(drawDate.getDate() - (currentDay - 1)); // Last Monday
-        } else if (currentDay === 0) { // Sunday
-            drawDate.setDate(drawDate.getDate() - 3); // Last Thursday
-        }
-        
-        const drawdd = String(drawDate.getDate()).padStart(2, '0');
-        const drawmm = String(drawDate.getMonth() + 1).padStart(2, '0');
-        const drawyyyy = drawDate.getFullYear();
-        const drawDateStr = `${drawdd}/${drawmm}/${drawyyyy}`;
+        // Use provided draw date or get from historical data
+        let dateDisplay = drawDate || 'Latest Draw';
         
         const resultText = `${winningNumbers.join(', ')} + ${additionalNumber}`;
         resultElement.className = status;
