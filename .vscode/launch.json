@@ -1,0 +1,23 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "msedge",
+            "request": "launch",
+            "name": "Open index.html",
+            "file": "${workspaceFolder}/index.html",
+            "webRoot": "${workspaceFolder}",
+            "sourceMaps": true,
+            "runtimeArgs": ["--allow-file-access-from-files"]
+        },
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Open in Chrome",
+            "file": "${workspaceFolder}/index.html",
+            "webRoot": "${workspaceFolder}",
+            "sourceMaps": true,
+            "runtimeArgs": ["--allow-file-access-from-files"]
+        }
+    ]
+}

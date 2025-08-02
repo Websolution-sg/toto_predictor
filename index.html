@@ -9,6 +9,9 @@
     body { font: 16px/1.5 Arial; padding: 20px; max-width: 600px; margin: auto; }
     select, button, input { font-size: 1em; margin: 0.5em 0; }
     canvas { max-width: 100%; }
+    .loading { opacity: 0.5; }
+    .error { color: red; }
+    .success { color: green; }
   </style>
 </head>
 <body>
@@ -93,13 +96,10 @@ fetch('totoResult.csv')
       
       try {
         // Show loading state
-        if (resultElement) {
-          resultElement.textContent = 'RECENT RESULT: Fetching latest results...';
-        }
-        if (refreshButton) {
-          refreshButton.textContent = 'Fetching...';
-          refreshButton.disabled = true;
-        }
+        resultElement.className = 'loading';
+        resultElement.textContent = 'RECENT RESULT: Fetching latest results...';
+        refreshButton.disabled = true;
+        refreshButton.textContent = 'Fetching...';
         
         console.log('Fetching latest TOTO results...');
         
@@ -160,8 +160,16 @@ fetch('totoResult.csv')
         }
         
       } catch (error) {
-        console.log('CSV check failed:', error);
-        return null;
+        console.error('Error fetching results:', error);
+        const recent = historical[0];
+        updateLatestResult(
+          recent.slice(0, 6),
+          recent[6],
+          'error'
+        );
+      } finally {
+        refreshButton.disabled = false;
+        refreshButton.textContent = 'Refresh Latest Results';
       }
     }
     
@@ -204,11 +212,13 @@ fetch('totoResult.csv')
     }
     
     // Function to update the display of latest results
-    function updateLatestResult(winningNumbers, additionalNumber) {
-      const resultText = `${winningNumbers.join(',')}(${additionalNumber})`;
+    function updateLatestResult(winningNumbers, additionalNumber, status = 'success') {
       const resultElement = document.getElementById('recentResult');
       if (resultElement) {
-        resultElement.textContent = `RECENT RESULT: ${resultText}`;
+        const timestamp = new Date().toLocaleString();
+        const resultText = `${winningNumbers.join(', ')} + ${additionalNumber}`;
+        resultElement.className = status;
+        resultElement.innerHTML = `RECENT RESULT (${timestamp}): ${resultText}`;
       }
     }
     
