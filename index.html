@@ -28,7 +28,7 @@
     <label>Additional Number:</label><br/>
     <select id="additional"></select>
   </div>
-  
+
   <div>
     <label>Select draw range:</label><br/>
     <select id="drawRange">
@@ -37,13 +37,12 @@
       <option value="100">Last 100</option>
     </select>
   </div>
-  
+
   <label>
-   <input type="checkbox" id="includeAdd"/> Include additional number
+    <input type="checkbox" id="includeAdd"/> Include additional number
   </label><br/>
 
   <button onclick="predict()">Predict</button>
-  <button onclick="fetchLatestTotoResults()">Refresh</button>
 
   <h2>Results</h2>
   <div id="results"></div>
@@ -52,13 +51,22 @@
 <script>
 let historical = [];
 
+function downloadCSV() {
+  const csvContent = historical.map(row => row.join(",")).join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.setAttribute("href", url);
+  link.setAttribute("download", "totoResult_updated.csv");
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 fetch('totoResult.csv')
   .then(response => response.text())
   .then(text => {
-    historical = text
-      .trim()
-      .split('\n')
-      .map(line => line.split(',').map(Number));
+    historical = text.trim().split('\n').map(line => line.split(',').map(Number));
 
     for (let i = 1; i <= 49; i++) {
       ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
@@ -75,23 +83,16 @@ fetch('totoResult.csv')
     document.getElementById('additional').value = recent[6];
     document.getElementById('includeAdd').checked = false;
 
-    const today = new Date();
-    const dateStr = today.toLocaleDateString('en-SG', {
-      day: '2-digit', month: '2-digit', year: 'numeric'
-    });
     updateLatestResult(recent.slice(0, 6), recent[6]);
+
+    fetchLatestTotoResults();
   });
 
 async function fetchLatestTotoResults() {
   const resultElement = document.getElementById('recentResult');
-  const refreshButton = document.querySelector('button[onclick="fetchLatestTotoResults()"]');
 
   try {
     if (resultElement) resultElement.textContent = 'RECENT RESULT: Fetching latest results...';
-    if (refreshButton) {
-      refreshButton.textContent = 'Fetching...';
-      refreshButton.disabled = true;
-    }
 
     const response = await fetch('https://www.singaporepools.com.sg/en/product/Pages/toto_results.aspx');
     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -119,150 +120,13 @@ async function fetchLatestTotoResults() {
         document.getElementById(id).value = winningNumbers[idx];
       });
       document.getElementById('additional').value = additionalNumber;
-    }
 
-    if (refreshButton) {
-      refreshButton.textContent = 'Refresh';
-      refreshButton.disabled = false;
+      // Save to CSV
+      downloadCSV();
     }
   } catch (error) {
     console.log('Error fetching latest TOTO results:', error);
   }
-}
-
-function updateLatestResult(winningNumbers, additionalNumber) {
-  const resultText = `${winningNumbers.join(',')}(${additionalNumber})`;
-  const resultElement = document.getElementById('recentResult');
-  if (resultElement) {
-    resultElement.textContent = `RECENT RESULT: ${resultText}`;
-  }
-}
-
-let chartInstance = null;
-
-function predict() {
-  const hasHistoricalMatch = checkHistoricalAndMaybePredict();
-  if (!hasHistoricalMatch) {
-    runFrequencyCompatibilityPrediction();
-  }
-}
-
-function checkHistoricalAndMaybePredict() {
-  const bases = getSelectedBases().sort((a, b) => a - b);
-  const mostRecentDraw = historical[0].slice(0, 6).sort((a, b) => a - b);
-  if (arraysEqual(bases, mostRecentDraw)) return false;
-  for (let i = historical.length - 1; i > 0; i--) {
-    const draw = historical[i].slice(0, 6).sort((a, b) => a - b);
-    if (arraysEqual(draw, mostRecentDraw)) continue;
-    if (arraysEqual(draw, bases)) {
-      const prevDraw = historical[i - 1];
-      calculateScoresAndDisplay(prevDraw.slice(0, 6), prevDraw[6]);
-      return true;
-    }
-  }
-  return false;
-}
-
-function getSelectedBases() {
-  return ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].map(id => parseInt(document.getElementById(id).value)).sort((a, b) => a - b);
-}
-
-function arraysEqual(a, b) {
-  return a.length === b.length && a.every((val, index) => val === b[index]);
-}
-
-function calculateScoresAndDisplay(numbers, additional = null) {
-  const range = parseInt(document.getElementById('drawRange').value);
-  const includeAdd = document.getElementById('includeAdd').checked;
-  const draws = historical.slice(0, range);
-  const freq = Array(50).fill(0);
-  const compat = Array(50).fill(0);
-
-  draws.forEach(draw => {
-    const pool = includeAdd ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
-    pool.forEach(n => freq[n]++);
-    numbers.forEach(b => {
-      if (pool.includes(b)) {
-        pool.filter(n => n !== b).forEach(n => compat[n]++);
-      }
-    });
-  });
-
-  const scores = numbers.map(n => freq[n] + compat[n]);
-  displayPredictedNumbers(numbers, additional, scores, freq, compat);
-}
-
-function runFrequencyCompatibilityPrediction() {
-  const bases = getSelectedBases();
-  const range = parseInt(document.getElementById('drawRange').value);
-  const includeAdd = document.getElementById('includeAdd').checked;
-  const draws = historical.slice(0, range);
-  const freq = Array(50).fill(0);
-  const compat = Array(50).fill(0);
-
-  draws.forEach(draw => {
-    const pool = includeAdd ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
-    pool.forEach(n => freq[n]++);
-    bases.forEach(b => {
-      if (pool.includes(b)) {
-        pool.filter(n => n !== b).forEach(n => compat[n]++);
-      }
-    });
-  });
-
-  const suggestions = freq.map((count, n) => ({ n, count, compat: compat[n] }))
-    .filter(o => o.n)
-    .sort((a, b) => (b.compat + b.count) - (a.compat + a.count) || b.count - a.count || a.n - b.n)
-    .slice(0, 6);
-
-  const scores = suggestions.map(o => o.count + o.compat);
-  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat);
-}
-
-function displayPredictedNumbers(numbers, additional = null, scores, freq, compat) {
-  const rs = document.getElementById('results');
-  const sorted = numbers.map((n, i) => ({
-    n, score: scores[i], freq: freq[n], compat: compat[n]
-  })).sort((a, b) => a.n - b.n);
-
-  const sortedNumbers = sorted.map(o => o.n);
-  const sortedScores = sorted.map(o => o.score);
-  const sortedFreq = sorted.map(o => o.freq);
-  const sortedCompat = sorted.map(o => o.compat);
-
-  rs.innerHTML = '<h3>Predicted Numbers:</h3><p>' + sortedNumbers.join(', ') + '</p>';
-
-  const ctx = document.getElementById('freqChart').getContext('2d');
-  if (chartInstance) chartInstance.destroy();
-  chartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: sortedNumbers.map((n, i) => `${n}\n(freq: ${sortedFreq[i]}, compat: ${sortedCompat[i]})`),
-      datasets: [{
-        label: 'Total Score',
-        data: sortedScores,
-        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-        borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              const index = context.dataIndex;
-              return `Freq: ${sortedFreq[index]}, Compat: ${sortedCompat[index]}, Total: ${sortedScores[index]}`;
-            }
-          }
-        }
-      },
-      scales: {
-        y: { beginAtZero: true, ticks: { stepSize: 1 } }
-      }
-    }
-  });
 }
 </script>
 </body>
