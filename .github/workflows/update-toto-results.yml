@@ -37,84 +37,27 @@ jobs:
           try {
             console.log('Fetching TOTO results...');
             
-            // Try multiple approaches to get TOTO results
-            let resultData = null;
+            // Singapore Pools website scraping (since API might not be public)
+            const response = await axios.get('https://www.singaporepools.com.sg/en/product/sr/Pages/toto_results.aspx');
+            const $ = cheerio.load(response.data);
             
-            // Method 1: Try Singapore Pools main results page
-            try {
-              const response1 = await axios.get('https://www.singaporepools.com.sg/en/product/sr/Pages/toto_results.aspx', {
-                headers: {
-                  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-                },
-                timeout: 10000
-              });
-              
-              const $ = cheerio.load(response1.data);
-              
-              // Try different selectors for TOTO results
-              const selectors = [
-                '.winning-numbers',
-                '.result-number', 
-                '[class*="number"]',
-                '.drawResults',
-                '.latest-result',
-                'table tr:first-child td',
-                '.toto-result'
-              ];
-              
-              for (const selector of selectors) {
-                const element = $(selector).first();
-                if (element.length > 0) {
-                  const text = element.text().trim();
-                  const numbers = text.match(/\d+/g);
-                  if (numbers && numbers.length >= 7) {
-                    resultData = numbers;
-                    console.log('Found results with selector:', selector);
-                    break;
-                  }
-                }
-              }
-            } catch (error) {
-              console.log('Method 1 failed:', error.message);
+            // Parse the latest result (this selector might need adjustment)
+            const resultText = $('.winning-numbers').first().text() || 
+                              $('.result-number').first().text() ||
+                              $('[class*="number"]').first().text();
+            
+            if (!resultText) {
+              throw new Error('Could not find TOTO results on page');
             }
             
-            // Method 2: Try alternative Singapore Pools URL
-            if (!resultData) {
-              try {
-                const response2 = await axios.get('https://www.singaporepools.com.sg/DataFileArchive/Lottery/Output/toto_results_today.xml', {
-                  headers: {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                  },
-                  timeout: 10000
-                });
-                
-                // Parse XML for results
-                const xmlData = response2.data;
-                const numberMatches = xmlData.match(/<number>\d+<\/number>/g);
-                if (numberMatches && numberMatches.length >= 7) {
-                  resultData = numberMatches.map(match => match.replace(/<\/?number>/g, ''));
-                  console.log('Found results from XML data');
-                }
-              } catch (error) {
-                console.log('Method 2 failed:', error.message);
-              }
+            // Extract numbers (adjust regex as needed)
+            const numbers = resultText.match(/\d+/g);
+            if (!numbers || numbers.length < 7) {
+              throw new Error('Invalid result format');
             }
             
-            // Method 3: Use a fallback or mock data for testing
-            if (!resultData) {
-              console.log('All methods failed. Using current CSV data (no update needed).');
-              return; // Exit gracefully without updating
-            }
-            
-            // Process the found data
-            const winningNumbers = resultData.slice(0, 6).map(n => parseInt(n));
-            const additionalNumber = parseInt(resultData[6]);
-            
-            // Validate the numbers
-            if (winningNumbers.some(n => isNaN(n) || n < 1 || n > 49) || 
-                isNaN(additionalNumber) || additionalNumber < 1 || additionalNumber > 49) {
-              throw new Error('Invalid number range detected');
-            }
+            const winningNumbers = numbers.slice(0, 6).map(n => parseInt(n));
+            const additionalNumber = parseInt(numbers[6]);
             
             // Read current CSV
             const csvPath = './totoResult.csv';
@@ -126,7 +69,7 @@ jobs:
             
             // Check if result already exists
             if (lines[0] === newLine) {
-              console.log('Result already exists in CSV:', newLine);
+              console.log('Result already exists in CSV');
               return;
             }
             
@@ -138,14 +81,12 @@ jobs:
             
             console.log('CSV updated with new result:', newLine);
             
-            // Set environment variable for commit message
-            fs.writeFileSync(process.env.GITHUB_ENV, `NEW_RESULT=${newLine}\n`, { flag: 'a' });
+            // Set output for commit message
+            process.env.NEW_RESULT = newLine;
             
           } catch (error) {
             console.error('Error fetching TOTO results:', error.message);
-            console.log('No update will be performed.');
-            // Don't exit with error - just skip update
-            return;
+            process.exit(1);
           }
         }
         
@@ -167,5 +108,5 @@ jobs:
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
         git add totoResult.csv
-        git commit -m "Update TOTO results: $(date '+%Y-%m-%d %H:%M:%S') ${NEW_RESULT:-}"
+        git commit -m "Update TOTO results: $(date '+%Y-%m-%d %H:%M:%S')"
         git push
