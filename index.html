@@ -90,56 +90,31 @@ fetch('totoResult.csv')
       try {
         console.log('Fetching latest TOTO results...');
         
-        // Singapore Pools TOTO API endpoint
-        const response = await fetch('https://www.singaporepools.com.sg/api/toto/latest', {
-          method: 'GET',
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
+        // For GitHub Pages, we'll rely on the GitHub Action to update the CSV
+        // and just reload the CSV data to get the latest results
+        const response = await fetch('totoResult.csv?' + Date.now()); // Cache busting
+        const text = await response.text();
+        const newHistorical = text
+          .trim()
+          .split('\n')
+          .map(line => line.split(',').map(Number));
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        
-        // Extract winning numbers and additional number
-        let winningNumbers, additionalNumber;
-        
-        if (data.results && data.results[0]) {
-          const result = data.results[0];
-          winningNumbers = result.winningNumbers || result.numbers;
-          additionalNumber = result.additionalNumber || result.additional;
-        } else if (data.winningNumbers || data.numbers) {
-          winningNumbers = data.winningNumbers || data.numbers;
-          additionalNumber = data.additionalNumber || data.additional;
-        } else {
-          throw new Error('Unexpected API response format');
-        }
-        
-        if (!winningNumbers || winningNumbers.length !== 6) {
-          throw new Error('Invalid winning numbers format');
-        }
-        
-        // Check if this is newer than our current data
+        // Check if we have new data
         const currentLatest = historical[0];
-        const newResult = [...winningNumbers, additionalNumber];
+        const fetchedLatest = newHistorical[0];
         
-        // Only update if the result is different from what we have
-        if (!arraysEqual(newResult, currentLatest)) {
-          // Update the page display
-          updateLatestResult(winningNumbers, additionalNumber);
+        if (!arraysEqual(fetchedLatest, currentLatest)) {
+          // Update historical data
+          historical = newHistorical;
           
-          // Update the historical data array
-          historical.unshift(newResult);
+          // Update the page display
+          updateLatestResult(fetchedLatest.slice(0, 6), fetchedLatest[6]);
           
           // Auto-select the new result
           ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
-            document.getElementById(id).value = winningNumbers[idx];
+            document.getElementById(id).value = fetchedLatest[idx];
           });
-          document.getElementById('additional').value = additionalNumber;
+          document.getElementById('additional').value = fetchedLatest[6];
           
           console.log('Latest TOTO results updated successfully!');
         } else {
@@ -182,7 +157,7 @@ fetch('totoResult.csv')
           });
           document.getElementById('additional').value = additionalNumber;
           
-          alert('Results updated successfully!');
+          alert('Results updated successfully! (Note: This is temporary - GitHub Action will provide permanent updates)');
           
         } catch (error) {
           alert('Error: ' + error.message);
