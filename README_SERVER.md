@@ -57,11 +57,13 @@ You can manually trigger the workflow:
 
 ```
 ├── .github/workflows/
-│   └── update-toto-results.yml  # GitHub Action workflow
-├── index.html                   # Frontend application
-├── totoResult.csv              # Historical TOTO results data
-├── README_SERVER.md            # This file
-└── README.md                   # Original README
+│   ├── update-toto-results.yml      # Primary GitHub Action workflow
+│   └── update-toto-alternative.yml  # Robust fallback workflow
+├── index.html                       # Frontend application
+├── totoResult.csv                  # Historical TOTO results data
+├── README_SERVER.md                # This file
+├── SETUP.md                        # Quick setup guide
+└── README.md                       # Original README
 ```
 
 ## Features
@@ -87,6 +89,27 @@ You can manually trigger the workflow:
 
 ## Troubleshooting
 
+### Workflow Failed with Exit Code 1
+This usually means the web scraping couldn't find TOTO results. Here are solutions:
+
+#### Quick Fix - Manual Trigger with Numbers
+1. Go to "Actions" tab → "Update TOTO Results (Alternative)" 
+2. Click "Run workflow"
+3. Enter manual TOTO numbers in format: `1,2,3,4,5,6,7` (last number is additional)
+4. Click "Run workflow"
+
+#### Check Singapore Pools Website
+- The website structure may have changed
+- Try visiting: https://www.singaporepools.com.sg/en/product/sr/Pages/toto_results.aspx
+- Check if results are available
+
+#### Use Alternative Workflow
+We've created a more robust workflow (`update-toto-alternative.yml`) that:
+- ✅ Tries multiple URLs and methods
+- ✅ Has better error handling
+- ✅ Supports manual number input
+- ✅ Doesn't fail if no new results found
+
 ### Workflow Not Running
 - Ensure GitHub Actions are enabled in repository settings
 - Check if the workflow file is in the correct location
@@ -100,6 +123,7 @@ You can manually trigger the workflow:
 ### Manual Override
 - Use the manual entry function in the frontend for immediate updates
 - Manual entries are temporary (until next workflow run)
+- Use the manual workflow trigger for permanent updates
 
 ## Notes
 
