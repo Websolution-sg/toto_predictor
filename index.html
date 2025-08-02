@@ -222,10 +222,10 @@ fetch('totoResult.csv')
     function updateLatestResult(winningNumbers, additionalNumber, status = 'success', drawDate = null) {
       const resultElement = document.getElementById('recentResult');
       if (resultElement) {
-        const dateDisplay = drawDate || 'Latest Draw';
+        const timestamp = new Date().toLocaleString();
         const resultText = `${winningNumbers.join(', ')} + ${additionalNumber}`;
         resultElement.className = status;
-        resultElement.innerHTML = `DRAW RESULT (${dateDisplay}): ${resultText}`;
+        resultElement.innerHTML = `RECENT RESULT (${timestamp}): ${resultText}`;
       }
     }
     
