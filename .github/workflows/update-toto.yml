@@ -25,12 +25,19 @@ jobs:
         with:
           node-version: '18'
           cache: 'npm'
+          cache-dependency-path: 'package-lock.json'
 
       # ✅ STEP 3: Install dependencies (from package.json)
       - name: Install dependencies
         run: |
           echo "📦 Installing dependencies..."
-          npm ci --only=production
+          if [ -f package-lock.json ]; then
+            echo "🔒 Using package-lock.json for faster install"
+            npm ci --only=production
+          else
+            echo "📋 No lock file found, using npm install"
+            npm install --production
+          fi
           echo "✅ Dependencies installed"
 
       # ✅ STEP 4: Run your TOTO update script
