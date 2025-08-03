@@ -1,0 +1,9 @@
+{
+  "name": "toto-updater",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "jsdom": "^22.1.0",
+    "node-fetch": "^2.6.7"
+  }
+}
