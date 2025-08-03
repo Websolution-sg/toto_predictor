@@ -1,9 +1,57 @@
 {
-  "name": "toto-updater",
+  "name": "singapore-toto-predictor",
   "version": "1.0.0",
-  "type": "module",
+  "description": "A Singapore TOTO lottery number predictor using historical data and frequency analysis",
+  "main": "index.html",
+  "type": "commonjs",
+  "scripts": {
+    "start": "python -m http.server 8000",
+    "serve": "python -m http.server 8000", 
+    "dev": "python -m http.server 8000",
+    "test": "echo \"No tests specified\" && exit 0",
+    "build": "echo \"Static HTML project - no build process needed\" && exit 0",
+    "lint": "echo \"No linting configured\" && exit 0",
+    "fetch-results": "node updateTotoCSV.cjs",
+    "update-csv": "node updateTotoCSV.cjs"
+  },
+  "keywords": [
+    "singapore",
+    "toto", 
+    "lottery",
+    "predictor",
+    "gambling",
+    "numbers",
+    "chart.js",
+    "javascript"
+  ],
+  "author": "Timothy",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Websolution-sg/toto_predictor.git"
+  },
+  "homepage": "https://websolution-sg.github.io/toto_predictor/",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1",
+    "live-server": "^1.2.2"
+  },
   "dependencies": {
-    "jsdom": "^22.1.0",
-    "node-fetch": "^2.6.7"
-  }
+    "axios": "^1.7.2",
+    "cheerio": "^1.0.0-rc.12", 
+    "csv-parse": "^5.5.6",
+    "csv-stringify": "^6.4.6",
+    "jsdom": "^24.1.0",
+    "node-fetch": "^2.7.0"
+  },
+  "optionalDependencies": {
+    "puppeteer": "^22.12.1"
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead"
+  ]
 }
