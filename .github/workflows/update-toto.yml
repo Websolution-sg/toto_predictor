@@ -22,7 +22,7 @@ jobs:
       run: npm install
 
     - name: Run update script
-      run: node updateTotoCSV.js
+      run: node updateTotoCSV.cjs
 
     - name: Commit and push if changed
       run: |
