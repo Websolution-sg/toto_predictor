@@ -61,64 +61,130 @@ async function fetchLatestTotoResult() {
 function parseDirectSingaporePools(html) {
   try {
     const $ = cheerio.load(html);
+    console.log('🔍 Parsing Singapore Pools HTML...');
+    console.log(`📄 HTML length: ${html.length} characters`);
     
-    // Try multiple selectors that might contain the results
+    // Expected latest result for validation
+    const expectedLatest = [30, 32, 40, 43, 45, 49, 5];
+    
+    // Enhanced selectors based on common TOTO result structures
     const selectors = [
+      // Table-based selectors (most common)
+      'table tbody tr:first-child td',
+      'table tr:first-child td',
+      'table tr:nth-child(1) td',
+      'table tr:nth-child(2) td', // Sometimes header is first row
+      
+      // Class-based selectors
       '.table tbody tr:first-child td',
       '.drawResults .number',
       '.winning-numbers span',
       '.result-number',
       'table tr td',
-      '.latest-result .number'
+      '.latest-result .number',
+      '.draw-result td',
+      
+      // ID-based selectors
+      '#drawResults td',
+      '#latestResult td',
+      
+      // Generic fallbacks
+      'td',
+      'span'
     ];
     
-    for (const selector of selectors) {
+    console.log(`🎯 Testing ${selectors.length} different selectors...`);
+    
+    for (let i = 0; i < selectors.length; i++) {
+      const selector = selectors[i];
       const elements = $(selector);
+      console.log(`📍 Selector ${i + 1}: '${selector}' found ${elements.length} elements`);
+      
       if (elements.length >= 7) {
         const numbers = [];
-        elements.each((i, el) => {
+        elements.each((index, el) => {
           if (numbers.length >= 7) return false;
           const text = $(el).text().trim();
           const num = parseInt(text);
+          
           if (!isNaN(num) && num >= 1 && num <= 49) {
             numbers.push(num);
           }
         });
         
+        console.log(`   📊 Valid numbers found: [${numbers.join(', ')}]`);
+        
         if (numbers.length >= 7) {
-          // First 6 are winning numbers, 7th is additional
-          const winningNumbers = numbers.slice(0, 6).sort((a, b) => a - b);
-          const additional = numbers[6];
-          console.log(`Found numbers with selector '${selector}':`, [...winningNumbers, additional]);
-          return [...winningNumbers, additional];
+          // Check if this matches the expected latest result
+          const matches = numbers.filter(n => expectedLatest.includes(n)).length;
+          console.log(`   🎯 Matches with expected latest result: ${matches}/7`);
+          
+          if (matches >= 5) { // If at least 5 numbers match, this is likely correct
+            const winningNumbers = numbers.slice(0, 6).sort((a, b) => a - b);
+            const additional = numbers[6];
+            console.log(`✅ HIGH CONFIDENCE MATCH with selector '${selector}':`, [...winningNumbers, additional]);
+            return [...winningNumbers, additional];
+          } else {
+            const winningNumbers = numbers.slice(0, 6).sort((a, b) => a - b);
+            const additional = numbers[6];
+            console.log(`⚠️ POSSIBLE MATCH with selector '${selector}':`, [...winningNumbers, additional]);
+            // Store as fallback but keep looking
+          }
         }
       }
     }
     
-    // Fallback: Look for number patterns in the entire HTML
+    // Enhanced fallback: Look for number patterns in the entire HTML
+    console.log('🔍 Analyzing all numbers in HTML...');
     const numberMatches = html.match(/\b([1-9]|[1-4][0-9])\b/g);
     if (numberMatches && numberMatches.length >= 7) {
       const validNumbers = numberMatches
         .map(n => parseInt(n))
         .filter(n => n >= 1 && n <= 49);
       
+      console.log(`📊 Found ${validNumbers.length} valid numbers in HTML`);
+      
       if (validNumbers.length >= 7) {
-        // Look for unique sets of 7 numbers
+        // Look for the expected sequence
+        for (let i = 0; i <= validNumbers.length - 7; i++) {
+          const subset = validNumbers.slice(i, i + 7);
+          const expectedMatches = subset.filter(n => expectedLatest.includes(n)).length;
+          
+          if (expectedMatches >= 5) { // At least 5 of 7 numbers match expected
+            const winningNumbers = subset.slice(0, 6).sort((a, b) => a - b);
+            const additional = subset[6];
+            console.log(`✅ PATTERN MATCH (${expectedMatches}/7 expected):`, [...winningNumbers, additional]);
+            return [...winningNumbers, additional];
+          }
+        }
+        
+        // If no good match, try first unique set of 7
         for (let i = 0; i <= validNumbers.length - 7; i++) {
           const subset = validNumbers.slice(i, i + 7);
           if (new Set(subset).size === 7) {
             const winningNumbers = subset.slice(0, 6).sort((a, b) => a - b);
             const additional = subset[6];
-            console.log('Found number pattern:', [...winningNumbers, additional]);
+            console.log('⚠️ FALLBACK unique 7-number set:', [...winningNumbers, additional]);
             return [...winningNumbers, additional];
           }
         }
       }
     }
     
+    // Debug: Check if HTML contains expected numbers
+    console.log('🔍 Checking for expected numbers in HTML...');
+    for (const expectedNum of expectedLatest) {
+      if (html.includes(expectedNum.toString())) {
+        console.log(`✅ Found expected number ${expectedNum} in HTML`);
+      } else {
+        console.log(`❌ Expected number ${expectedNum} NOT found in HTML`);
+      }
+    }
+    
+    console.log('❌ No valid TOTO numbers found in HTML');
     return null;
   } catch (error) {
-    console.log('Parsing error:', error.message);
+    console.log('❌ Parsing error:', error.message);
     return null;
   }
 }
