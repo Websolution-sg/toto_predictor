@@ -40,26 +40,39 @@ jobs:
           fi
           echo "✅ Dependencies installed"
 
-      # ✅ STEP 4: Run your TOTO update script
+      # ✅ STEP 4: Debug environment (helps troubleshoot issues)
+      - name: Debug environment
+        run: |
+          echo "🔍 Environment debugging..."
+          node --version
+          npm --version
+          pwd
+          ls -la
+          echo "📄 CSV current state:"
+          head -3 totoResult.csv || echo "CSV read failed"
+
+      # ✅ STEP 5: Run your TOTO update script
       - name: Run update script
         run: |
           echo "🎯 Running TOTO update script..."
           node updateTotoCSV.cjs
           echo "✅ Update script completed"
 
-      # ✅ STEP 5: Check if CSV file was modified
+      # ✅ STEP 6: Check if CSV file was modified
       - name: Check for changes
         id: verify-changed-files
         run: |
           if [ -n "$(git status --porcelain)" ]; then
             echo "changed=true" >> $GITHUB_OUTPUT
             echo "📝 Changes detected in repository"
+            echo "📊 Git status:"
+            git status --porcelain
           else
             echo "changed=false" >> $GITHUB_OUTPUT
             echo "📋 No changes detected"
           fi
 
-      # ✅ STEP 6: Commit & push if the CSV has changed
+      # ✅ STEP 7: Commit & push if the CSV has changed
       - name: Commit and push if changed
         if: steps.verify-changed-files.outputs.changed == 'true'
         run: |
@@ -71,12 +84,16 @@ jobs:
           git push
           echo "✅ Changes pushed to repository"
 
-      # ✅ STEP 7: Summary
+      # ✅ STEP 8: Summary
       - name: Summary
         run: |
           echo "🎉 TOTO update workflow completed successfully!"
           if [ "${{ steps.verify-changed-files.outputs.changed }}" == "true" ]; then
             echo "📊 CSV file was updated with new results"
+            echo "🔄 Website will refresh automatically"
           else
             echo "📋 No new results found - CSV file unchanged"
+            echo "💡 This is normal if no new TOTO draw occurred"
           fi
+          echo "📈 Current CSV state:"
+          head -2 totoResult.csv || echo "Could not read CSV"
