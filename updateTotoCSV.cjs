@@ -67,23 +67,32 @@ function parseDirectSingaporePools(html) {
     // Dynamically load known recent results from CSV for validation
     const knownRecentResults = getKnownRecentResults(CSV_FILE);
     
-    // Enhanced selectors based on common TOTO result structures
-    // Focus on more specific selectors for the latest result first
+    // Enhanced selectors based on actual Singapore Pools structure
+    // Target only the result tables, not navigation or other numbers
     const selectors = [
-      // Most specific - target the first/top result row with number-specific classes
-      'table:first-of-type tbody tr:first-child td:not([class*="date"]):not([class*="draw"])',
-      'table:first tbody tr:first-child td[class*="number"], table:first tbody tr:first-child td[class*="ball"]',
+      // Most specific - target result tables with TOTO numbers (avoid navigation/pagination)
+      'table[summary*="result"] tbody tr:first-child td',
+      'table[class*="result"] tbody tr:first-child td',  
+      '.results table tbody tr:first-child td',
+      '.toto-results table tbody tr:first-child td',
+      
+      // Target first table in results area, skip navigation elements
+      'div[class*="result"] table:first-of-type tbody tr:first-child td',
+      'div[id*="result"] table:first-of-type tbody tr:first-child td',
+      'main table:first-of-type tbody tr:first-child td',
+      'section table:first-of-type tbody tr:first-child td',
+      
+      // More specific selectors - target tables with 6+ columns (TOTO results have 6 main numbers + 1 additional)
+      'table tbody tr:first-child td:nth-child(-n+7)',
+      'table:has(td:nth-child(7)) tbody tr:first-child td',
+      
+      // Target tables that contain numbers in expected range, avoid headers
+      'table tbody tr:not(:has(th)):first-child td[align="center"]',
+      'table tbody tr:not(:has(th)):first-child td:not([class*="date"]):not([class*="text"])',
+      
+      // Generic table selectors with validation
       'table:first-of-type tbody tr:first-child td',
       'table:first tbody tr:first-child td',
-      '.result-table:first tbody tr:first-child td',
-      '.results-container table:first tbody tr:first-child td',
-      
-      // Table-based selectors (most common) - avoid header rows
-      'table tbody tr:not(:has(th)):first td',
-      'table tbody tr:first-child td',
-      'table tr:not(:has(th)):first td', 
-      'table tr:first-child td',
-      'table tr:nth-child(2) td', // Sometimes header is first row
       
       // Class-based selectors for numbers
       '.drawResults .number, .drawResults td[class*="num"]',
@@ -132,6 +141,27 @@ function parseDirectSingaporePools(html) {
           if (new Set(numbers).size !== numbers.length) {
             console.log(`   ❌ REJECTED: Contains duplicate numbers [${numbers.join(', ')}]`);
             continue; // Skip this selector
+          }
+          
+          // Reject sequential numbers (like 1,2,3,4,5,6,7) - likely from navigation/pagination
+          const sortedNumbers = [...numbers].sort((a, b) => a - b);
+          let isSequential = true;
+          for (let j = 1; j < sortedNumbers.length; j++) {
+            if (sortedNumbers[j] !== sortedNumbers[j-1] + 1) {
+              isSequential = false;
+              break;
+            }
+          }
+          if (isSequential) {
+            console.log(`   ❌ REJECTED: Sequential numbers (likely navigation) [${numbers.join(', ')}]`);
+            continue;
+          }
+          
+          // Reject if numbers are too small (1,2,3,4,5,6,etc) - likely page elements
+          const smallNumbers = numbers.filter(n => n <= 10).length;
+          if (smallNumbers >= 6) {
+            console.log(`   ❌ REJECTED: Too many small numbers (${smallNumbers}/7 ≤ 10) [${numbers.join(', ')}]`);
+            continue;
           }
           
           // Check confidence against known recent results
@@ -294,7 +324,26 @@ function isValidNewResult(numbers, knownResults) {
     return { valid: false, reason: `Invalid numbers outside 1-49 range: ${invalidNumbers.join(', ')}` };
   }
   
-  // Fourth check: Don't allow exact duplicates of known results
+  // Fourth check: Reject sequential numbers (likely from navigation/pagination)
+  const sortedNumbers = [...numbers].sort((a, b) => a - b);
+  let isSequential = true;
+  for (let i = 1; i < sortedNumbers.length; i++) {
+    if (sortedNumbers[i] !== sortedNumbers[i-1] + 1) {
+      isSequential = false;
+      break;
+    }
+  }
+  if (isSequential) {
+    return { valid: false, reason: `Sequential numbers detected (likely navigation): [${sortedNumbers.join(', ')}]` };
+  }
+  
+  // Fifth check: Reject if too many small numbers (likely page elements)
+  const smallNumbers = numbers.filter(n => n <= 10).length;
+  if (smallNumbers >= 6) {
+    return { valid: false, reason: `Too many small numbers (${smallNumbers}/7 ≤ 10), likely page navigation` };
+  }
+  
+  // Sixth check: Don't allow exact duplicates of known results
   for (const known of knownResults) {
     if (numbers.length === known.length && 
         numbers.slice(0, 6).sort().join(',') === known.slice(0, 6).sort().join(',') &&
