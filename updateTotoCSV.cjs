@@ -395,8 +395,9 @@ function arraysEqual(a, b) {
         console.log('📊 Known correct result added to maintain data integrity');
         console.log(`📈 New CSV top entry: [${knownCorrectResult.join(', ')}]`);
       } else {
-        console.log('✅ Known correct result already present at top of CSV');
-        console.log('📊 No failsafe update needed');
+        console.log('✅ Known correct result already matches CSV top entry');
+        console.log('📊 No failsafe update needed - data is already correct');
+        console.log('🎯 CSV maintains proper data integrity');
       }
       
       console.log('');
@@ -410,33 +411,59 @@ function arraysEqual(a, b) {
     
     console.log('');
     console.log('='.repeat(60));
-    console.log('STEP 3: UPDATING CSV WITH FETCHED RESULTS');
+    console.log('STEP 3: COMPARING WITH EXISTING CSV DATA');
     console.log('='.repeat(60));
     
     const existing = readExistingCSV(CSV_FILE);
     console.log(`📊 Current CSV entries: ${existing.length}`);
     console.log(`📊 Current top entry: ${existing.length > 0 ? `[${existing[0].join(', ')}]` : 'EMPTY'}`);
-    console.log(`🎯 New result to add: [${latestResult.join(', ')}]`);
+    console.log(`🎯 New result from Singapore Pools: [${latestResult.join(', ')}]`);
 
+    // Check if the results match
     if (existing.length > 0 && arraysEqual(latestResult, existing[0])) {
-      console.log('✅ Already up to date – no changes made.');
-      console.log('📊 Latest result:', existing[0].join(','));
-      console.log('🔄 CSV file remains unchanged');
+      console.log('');
+      console.log('='.repeat(60));
+      console.log('RESULTS MATCH - GRACEFUL EXIT');
+      console.log('='.repeat(60));
+      console.log('✅ Singapore Pools result matches CSV top entry');
+      console.log('📊 Latest result from website:', latestResult.join(','));
+      console.log('📊 Latest result from CSV:', existing[0].join(','));
+      console.log('🔄 No update needed - data is already current');
+      console.log('💡 This indicates the system is working correctly');
+      console.log('');
+      console.log('✅ WORKFLOW COMPLETED SUCCESSFULLY (NO CHANGES)');
+      console.log('🎯 Both sources show the same latest result');
+      console.log('🏁 Graceful exit - no CSV modification required');
+      process.exit(0);
     } else {
-      console.log('🔄 Adding new result to top of CSV...');
-      existing.unshift(latestResult);
-      writeCSV(CSV_FILE, existing);
-      console.log('🎉 Updated with latest result:', latestResult.join(','));
-      console.log('📈 Total results in database:', existing.length);
-      console.log('✨ CSV file successfully updated');
+      console.log('');
+      console.log('='.repeat(60));
+      console.log('RESULTS DIFFER - CSV UPDATE REQUIRED');
+      console.log('='.repeat(60));
+      console.log('🔄 Singapore Pools has different result than CSV');
+      console.log('📊 Will update CSV with new result');
     }
     
     console.log('');
     console.log('='.repeat(60));
-    console.log('WORKFLOW COMPLETED SUCCESSFULLY');
+    console.log('STEP 4: UPDATING CSV WITH NEW RESULTS');
     console.log('='.repeat(60));
-    console.log('🏁 TOTO update process completed successfully');
-    console.log(`🎯 Final result: [${latestResult.join(', ')}]`);
+    
+    console.log('🔄 Adding new result to top of CSV...');
+    existing.unshift(latestResult);
+    writeCSV(CSV_FILE, existing);
+    console.log('🎉 Updated with latest result:', latestResult.join(','));
+    console.log('📈 Total results in database:', existing.length);
+    console.log('✨ CSV file successfully updated');
+    
+    console.log('');
+    console.log('='.repeat(60));
+    console.log('WORKFLOW COMPLETED SUCCESSFULLY - CSV UPDATED');
+    console.log('='.repeat(60));
+    console.log('🏁 TOTO update process completed with CSV changes');
+    console.log(`🎯 Updated result: [${latestResult.join(', ')}]`);
+    console.log('📊 New data added to CSV file');
+    console.log('🌐 Website will reflect updated results');
     process.exit(0);
     
   } catch (err) {
