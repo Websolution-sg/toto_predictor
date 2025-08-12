@@ -64,12 +64,8 @@ function parseDirectSingaporePools(html) {
     console.log('🔍 Parsing Singapore Pools HTML...');
     console.log(`📄 HTML length: ${html.length} characters`);
     
-    // Check for any current latest result (don't assume specific numbers)
-    // The script will find whatever is newest and compare with CSV
-    const knownRecentResults = [
-      [30, 32, 40, 43, 45, 49, 5], // Most recent from our analysis
-      [7, 19, 20, 21, 22, 29, 37], // Previous known result
-    ];
+    // Dynamically load known recent results from CSV for validation
+    const knownRecentResults = getKnownRecentResults(CSV_FILE);
     
     // Enhanced selectors based on common TOTO result structures
     const selectors = [
@@ -212,6 +208,27 @@ function readExistingCSV(path) {
   } catch (error) {
     console.log('❌ Error reading CSV:', error.message);
     return [];
+  }
+}
+
+function getKnownRecentResults(csvPath, fallbackResults = [[2, 15, 28, 39, 42, 44, 5]]) {
+  try {
+    const existingResults = readExistingCSV(csvPath);
+    if (existingResults.length > 0) {
+      // Use the 3 most recent results from CSV for pattern matching
+      const recentResults = existingResults.slice(0, Math.min(3, existingResults.length));
+      console.log('📊 Using recent results from CSV for validation:');
+      recentResults.forEach((result, index) => {
+        console.log(`   ${index + 1}: [${result.join(', ')}]`);
+      });
+      return recentResults;
+    } else {
+      console.log('⚠️ CSV empty, using fallback known results');
+      return fallbackResults;
+    }
+  } catch (error) {
+    console.log('⚠️ CSV read error, using fallback known results:', error.message);
+    return fallbackResults;
   }
 }
 
