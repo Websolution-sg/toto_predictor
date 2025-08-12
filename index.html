@@ -14,6 +14,7 @@
 <body>
   <h1>Singapore TOTO Predictor</h1>
   <p id="recentResult">RECENT RESULT: Loading...</p>
+  <button onclick="refreshData()" style="font-size: 0.9em; margin-bottom: 10px;">🔄 Refresh Latest Results</button>
   <p>By default, the previous lottery result is selected:</p>
   <div>
     <select id="base1"></select>
@@ -49,7 +50,9 @@
 let historical = [];
 let chartInstance = null;
 
-fetch('totoResult.csv')
+// Add cache-busting parameter to ensure fresh CSV data
+const cacheBuster = new Date().getTime();
+fetch(`totoResult.csv?v=${cacheBuster}`)
   .then(response => response.text())
   .then(text => {
     historical = text.trim().split('\n').map(line => line.split(',').map(Number));
@@ -206,6 +209,38 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
       scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
     }
   });
+}
+
+function refreshData() {
+  const recentResult = document.getElementById('recentResult');
+  recentResult.textContent = 'RECENT RESULT: Refreshing...';
+  
+  // Force fresh load with new cache-busting parameter
+  const cacheBuster = new Date().getTime();
+  fetch(`totoResult.csv?v=${cacheBuster}`)
+    .then(response => response.text())
+    .then(text => {
+      historical = text.trim().split('\n').map(line => line.split(',').map(Number));
+      const recent = historical[0];
+      
+      // Update the dropdowns with new data
+      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
+        document.getElementById(id).value = recent[idx];
+      });
+      document.getElementById('additional').value = recent[6];
+      
+      // Update the display
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-SG', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      updateLatestResult(recent.slice(0, 6), recent[6], dateStr);
+      
+      console.log('Data refreshed successfully. Latest result:', recent);
+    })
+    .catch(error => {
+      recentResult.textContent = 'RECENT RESULT: Refresh failed';
+      console.error('Refresh failed:', error);
+      alert("Failed to refresh data. Please check your connection and try again.");
+    });
 }
 </script>
 </body>
