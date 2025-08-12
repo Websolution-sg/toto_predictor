@@ -70,29 +70,30 @@ function parseDirectSingaporePools(html) {
     // Enhanced selectors based on common TOTO result structures
     // Focus on more specific selectors for the latest result first
     const selectors = [
-      // Most specific - target the first/top result row
+      // Most specific - target the first/top result row with number-specific classes
+      'table:first-of-type tbody tr:first-child td:not([class*="date"]):not([class*="draw"])',
+      'table:first tbody tr:first-child td[class*="number"], table:first tbody tr:first-child td[class*="ball"]',
       'table:first-of-type tbody tr:first-child td',
       'table:first tbody tr:first-child td',
       '.result-table:first tbody tr:first-child td',
       '.results-container table:first tbody tr:first-child td',
       
-      // Table-based selectors (most common)
+      // Table-based selectors (most common) - avoid header rows
+      'table tbody tr:not(:has(th)):first td',
       'table tbody tr:first-child td',
+      'table tr:not(:has(th)):first td', 
       'table tr:first-child td',
-      'table tr:nth-child(1) td',
       'table tr:nth-child(2) td', // Sometimes header is first row
       
-      // Class-based selectors
-      '.table tbody tr:first-child td',
-      '.drawResults .number',
-      '.winning-numbers span',
-      '.result-number',
-      '.draw-result td',
-      '.latest-result .number',
+      // Class-based selectors for numbers
+      '.drawResults .number, .drawResults td[class*="num"]',
+      '.winning-numbers span, .winning-numbers td',
+      '.result-number, .ball-number',
+      '.draw-result td:not([class*="date"])',
+      '.latest-result .number, .latest-result td',
       
       // ID-based selectors
-      '#drawResults td',
-      '#latestResult td',
+      '#drawResults td, #latestResult td',
       
       // Generic fallbacks (use with caution)
       'table tr td',
@@ -111,19 +112,28 @@ function parseDirectSingaporePools(html) {
       
       if (elements.length >= 7) {
         const numbers = [];
+        const seenNumbers = new Set(); // Prevent duplicates during extraction
+        
         elements.each((index, el) => {
           if (numbers.length >= 7) return false;
           const text = $(el).text().trim();
           const num = parseInt(text);
           
-          if (!isNaN(num) && num >= 1 && num <= 49) {
+          if (!isNaN(num) && num >= 1 && num <= 49 && !seenNumbers.has(num)) {
             numbers.push(num);
+            seenNumbers.add(num);
           }
         });
         
         console.log(`   📊 Valid numbers found: [${numbers.join(', ')}]`);
         
         if (numbers.length >= 7) {
+          // Immediate validation - reject if duplicates found
+          if (new Set(numbers).size !== numbers.length) {
+            console.log(`   ❌ REJECTED: Contains duplicate numbers [${numbers.join(', ')}]`);
+            continue; // Skip this selector
+          }
+          
           // Check confidence against known recent results
           let maxMatches = 0;
           let isExistingResult = false;
@@ -266,24 +276,31 @@ function getKnownRecentResults(csvPath, fallbackResults = [[9, 24, 31, 34, 43, 4
 
 function isValidNewResult(numbers, knownResults) {
   // Check if this is a valid new result (not a duplicate, reasonable pattern)
+  
+  // First check: Must have exactly 7 numbers
+  if (!Array.isArray(numbers) || numbers.length !== 7) {
+    return { valid: false, reason: `Invalid length: expected 7 numbers, got ${numbers?.length || 0}` };
+  }
+  
+  // Second check: No duplicate numbers within the result
+  if (new Set(numbers).size !== numbers.length) {
+    const duplicates = numbers.filter((num, index) => numbers.indexOf(num) !== index);
+    return { valid: false, reason: `Contains duplicate numbers: ${duplicates.join(', ')}` };
+  }
+  
+  // Third check: All numbers must be in valid range
+  const invalidNumbers = numbers.filter(n => n < 1 || n > 49 || !Number.isInteger(n));
+  if (invalidNumbers.length > 0) {
+    return { valid: false, reason: `Invalid numbers outside 1-49 range: ${invalidNumbers.join(', ')}` };
+  }
+  
+  // Fourth check: Don't allow exact duplicates of known results
   for (const known of knownResults) {
-    // Check for exact match (should be rejected)
     if (numbers.length === known.length && 
         numbers.slice(0, 6).sort().join(',') === known.slice(0, 6).sort().join(',') &&
         numbers[6] === known[6]) {
       return { valid: false, reason: `Exact duplicate of existing result [${known.join(', ')}]` };
     }
-  }
-  
-  // Check if numbers are in valid range
-  const invalidNumbers = numbers.filter(n => n < 1 || n > 49);
-  if (invalidNumbers.length > 0) {
-    return { valid: false, reason: `Invalid numbers outside 1-49 range: ${invalidNumbers.join(', ')}` };
-  }
-  
-  // Check for duplicates within the result
-  if (new Set(numbers).size !== numbers.length) {
-    return { valid: false, reason: 'Contains duplicate numbers' };
   }
   
   return { valid: true, reason: 'Valid new result' };
