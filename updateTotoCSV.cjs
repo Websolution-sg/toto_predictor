@@ -68,7 +68,14 @@ function parseDirectSingaporePools(html) {
     const knownRecentResults = getKnownRecentResults(CSV_FILE);
     
     // Enhanced selectors based on common TOTO result structures
+    // Focus on more specific selectors for the latest result first
     const selectors = [
+      // Most specific - target the first/top result row
+      'table:first-of-type tbody tr:first-child td',
+      'table:first tbody tr:first-child td',
+      '.result-table:first tbody tr:first-child td',
+      '.results-container table:first tbody tr:first-child td',
+      
       // Table-based selectors (most common)
       'table tbody tr:first-child td',
       'table tr:first-child td',
@@ -80,15 +87,15 @@ function parseDirectSingaporePools(html) {
       '.drawResults .number',
       '.winning-numbers span',
       '.result-number',
-      'table tr td',
-      '.latest-result .number',
       '.draw-result td',
+      '.latest-result .number',
       
       // ID-based selectors
       '#drawResults td',
       '#latestResult td',
       
-      // Generic fallbacks
+      // Generic fallbacks (use with caution)
+      'table tr td',
       'td',
       'span'
     ];
@@ -119,27 +126,52 @@ function parseDirectSingaporePools(html) {
         if (numbers.length >= 7) {
           // Check confidence against known recent results
           let maxMatches = 0;
+          let isExistingResult = false;
+          
           for (const knownResult of knownRecentResults) {
             const matches = numbers.filter(n => knownResult.includes(n)).length;
             maxMatches = Math.max(maxMatches, matches);
+            
+            // Check if this is exactly an existing result (should be rejected)
+            if (matches === 7 && numbers.slice(0, 6).sort().join(',') === knownResult.slice(0, 6).sort().join(',') && numbers[6] === knownResult[6]) {
+              isExistingResult = true;
+              console.log(`   ⚠️ DUPLICATE: This exactly matches existing result [${knownResult.join(', ')}]`);
+            }
           }
           
           console.log(`   🎯 Best match score: ${maxMatches}/7`);
           
-          if (maxMatches >= 4 && maxMatches > bestScore) { // Good confidence
+          // Only accept if it's not a duplicate and has reasonable confidence
+          if (!isExistingResult && maxMatches >= 2 && maxMatches <= 5 && maxMatches > bestScore) { 
+            // Changed criteria: 2-5 matches (not too low, not exact duplicate)
             const winningNumbers = numbers.slice(0, 6).sort((a, b) => a - b);
             const additional = numbers[6];
             bestMatch = [...winningNumbers, additional];
             bestScore = maxMatches;
             console.log(`✅ NEW BEST MATCH with selector '${selector}':`, bestMatch);
+          } else if (isExistingResult) {
+            console.log(`   ❌ REJECTED: Exact duplicate of existing result`);
+          } else if (maxMatches > 5) {
+            console.log(`   ❌ REJECTED: Too similar to existing result (${maxMatches}/7 matches)`);
+          } else if (maxMatches < 2) {
+            console.log(`   ❌ REJECTED: Too different from recent patterns (${maxMatches}/7 matches)`);
           }
         }
       }
     }
     
     if (bestMatch) {
-      console.log(`🎉 FINAL RESULT (confidence ${bestScore}/7):`, bestMatch);
-      return bestMatch;
+      // Final validation check
+      const validation = isValidNewResult(bestMatch, knownRecentResults);
+      if (validation.valid) {
+        console.log(`🎉 FINAL RESULT (confidence ${bestScore}/7):`, bestMatch);
+        console.log(`✅ Validation: ${validation.reason}`);
+        return bestMatch;
+      } else {
+        console.log(`❌ FINAL RESULT REJECTED: ${validation.reason}`);
+        console.log(`🚫 Rejected result was:`, bestMatch);
+        bestMatch = null; // Reset to continue with fallback
+      }
     }
     
     // Enhanced fallback: Look for number patterns in the entire HTML
@@ -211,7 +243,7 @@ function readExistingCSV(path) {
   }
 }
 
-function getKnownRecentResults(csvPath, fallbackResults = [[2, 15, 28, 39, 42, 44, 5]]) {
+function getKnownRecentResults(csvPath, fallbackResults = [[9, 24, 31, 34, 43, 44, 1]]) {
   try {
     const existingResults = readExistingCSV(csvPath);
     if (existingResults.length > 0) {
@@ -230,6 +262,31 @@ function getKnownRecentResults(csvPath, fallbackResults = [[2, 15, 28, 39, 42, 4
     console.log('⚠️ CSV read error, using fallback known results:', error.message);
     return fallbackResults;
   }
+}
+
+function isValidNewResult(numbers, knownResults) {
+  // Check if this is a valid new result (not a duplicate, reasonable pattern)
+  for (const known of knownResults) {
+    // Check for exact match (should be rejected)
+    if (numbers.length === known.length && 
+        numbers.slice(0, 6).sort().join(',') === known.slice(0, 6).sort().join(',') &&
+        numbers[6] === known[6]) {
+      return { valid: false, reason: `Exact duplicate of existing result [${known.join(', ')}]` };
+    }
+  }
+  
+  // Check if numbers are in valid range
+  const invalidNumbers = numbers.filter(n => n < 1 || n > 49);
+  if (invalidNumbers.length > 0) {
+    return { valid: false, reason: `Invalid numbers outside 1-49 range: ${invalidNumbers.join(', ')}` };
+  }
+  
+  // Check for duplicates within the result
+  if (new Set(numbers).size !== numbers.length) {
+    return { valid: false, reason: 'Contains duplicate numbers' };
+  }
+  
+  return { valid: true, reason: 'Valid new result' };
 }
 
 function writeCSV(path, rows) {
