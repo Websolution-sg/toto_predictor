@@ -6,7 +6,6 @@ The website at https://websolution-sg.github.io/toto_predictor/ was not showing 
 
 1. **Browser Caching**: Browsers were caching the old CSV file
 2. **GitHub Pages Caching**: CDN caching was serving stale data
-3. **No Manual Refresh**: Users had no way to force refresh the latest data
 
 ## ✅ **Fixes Implemented**
 
@@ -20,28 +19,11 @@ const cacheBuster = new Date().getTime();
 fetch(`totoResult.csv?v=${cacheBuster}`)
 ```
 
-### **2. Manual Refresh Button**
-Added a refresh button to the website interface:
-```html
-<button onclick="refreshData()">🔄 Refresh Latest Results</button>
-```
-
-### **3. Refresh Function**
-```javascript
-function refreshData() {
-  // Force fresh load with new cache-busting parameter
-  const cacheBuster = new Date().getTime();
-  fetch(`totoResult.csv?v=${cacheBuster}`)
-    .then(response => response.text())
-    .then(text => {
-      // Update all data with fresh CSV content
-      historical = text.trim().split('\n').map(line => line.split(',').map(Number));
-      const recent = historical[0];
-      // Update display with latest result
-      updateLatestResult(recent.slice(0, 6), recent[6], dateStr);
-    });
-}
-```
+### **2. Automatic Refresh on Page Load**
+**Updated:** Removed manual refresh button per user request
+- Website now automatically refreshes data when opened
+- No user intervention required
+- Cache-busting ensures latest results are always displayed
 
 ## 🎯 **Expected Results**
 
@@ -49,15 +31,11 @@ function refreshData() {
 - ✅ **Page loads** always fetch fresh CSV data
 - ✅ **Timestamp parameter** prevents browser caching
 - ✅ **Latest results** display immediately on page load
-
-### **Manual Refresh Option:**
-- ✅ **Refresh button** allows users to force update
-- ✅ **Status feedback** shows "Refreshing..." during load
-- ✅ **Error handling** if refresh fails
+- ✅ **No manual refresh needed** - fully automatic
 
 ### **Data Verification:**
 - ✅ **CSV contains**: `9,24,31,34,43,44,1` at top (✅ Confirmed)
-- ✅ **Website shows**: Same latest result
+- ✅ **Website shows**: Same latest result automatically
 - ✅ **Dropdowns update**: With latest numbers as defaults
 
 ## 🔍 **How to Verify Fix**
@@ -66,13 +44,12 @@ function refreshData() {
 1. **Wait 2-3 minutes** for GitHub Pages to deploy changes
 2. **Visit**: https://websolution-sg.github.io/toto_predictor/
 3. **Check display**: Should show "RECENT RESULT: 9,24,31,34,43,44(1)"
-4. **Test refresh**: Click "🔄 Refresh Latest Results" button
+4. **Refresh page**: Latest data loads automatically
 
 ### **If Still Not Updated:**
 1. **Hard refresh browser**: Ctrl+F5 (Windows) or Cmd+Shift+R (Mac)
 2. **Clear browser cache**: For the specific site
 3. **Use incognito/private mode**: To bypass all caching
-4. **Click manual refresh**: Use the new refresh button
 
 ## 📊 **Technical Details**
 
@@ -86,15 +63,17 @@ function refreshData() {
 ### **Website Updates:**
 ```
 ✅ Cache-busting: Forces fresh CSV loads
-✅ Manual refresh: User-controlled data update
+✅ Automatic refresh: Data loads automatically on page visit
 ✅ Error handling: Graceful failures with feedback
 ✅ Console logging: Debug information for troubleshooting
+✅ Simplified UI: No manual refresh button needed
 ```
 
 ## 🚀 **Deployment Status**
 
 ### **Changes Pushed:**
-- ✅ **index.html**: Updated with cache-busting and refresh functionality
+- ✅ **index.html**: Updated with automatic cache-busting refresh
+- ✅ **Manual refresh button**: Removed per user request
 - ✅ **totoResult.csv**: Already contains correct latest result
 - ✅ **Git status**: All changes committed and pushed to main branch
 
