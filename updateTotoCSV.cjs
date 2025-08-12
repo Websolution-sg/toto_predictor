@@ -67,193 +67,149 @@ function parseDirectSingaporePools(html) {
     // Dynamically load known recent results from CSV for validation
     const knownRecentResults = getKnownRecentResults(CSV_FILE);
     
-    // Enhanced selectors based on actual Singapore Pools structure
-    // Target only the result tables, not navigation or other numbers
-    const selectors = [
-      // Most specific - target result tables with TOTO numbers (avoid navigation/pagination)
-      'table[summary*="result"] tbody tr:first-child td',
-      'table[class*="result"] tbody tr:first-child td',  
-      '.results table tbody tr:first-child td',
-      '.toto-results table tbody tr:first-child td',
-      
-      // Target first table in results area, skip navigation elements
-      'div[class*="result"] table:first-of-type tbody tr:first-child td',
-      'div[id*="result"] table:first-of-type tbody tr:first-child td',
-      'main table:first-of-type tbody tr:first-child td',
-      'section table:first-of-type tbody tr:first-child td',
-      
-      // More specific selectors - target tables with 6+ columns (TOTO results have 6 main numbers + 1 additional)
-      'table tbody tr:first-child td:nth-child(-n+7)',
-      'table:has(td:nth-child(7)) tbody tr:first-child td',
-      
-      // Target tables that contain numbers in expected range, avoid headers
-      'table tbody tr:not(:has(th)):first-child td[align="center"]',
-      'table tbody tr:not(:has(th)):first-child td:not([class*="date"]):not([class*="text"])',
-      
-      // Generic table selectors with validation
-      'table:first-of-type tbody tr:first-child td',
-      'table:first tbody tr:first-child td',
-      
-      // Class-based selectors for numbers
-      '.drawResults .number, .drawResults td[class*="num"]',
-      '.winning-numbers span, .winning-numbers td',
-      '.result-number, .ball-number',
-      '.draw-result td:not([class*="date"])',
-      '.latest-result .number, .latest-result td',
-      
-      // ID-based selectors
-      '#drawResults td, #latestResult td',
-      
-      // Generic fallbacks (use with caution)
-      'table tr td',
-      'td',
-      'span'
-    ];
+    // Strategy 1: Look for the exact pattern - 6 main numbers + 1 additional number in table structure
+    console.log('🎯 Strategy 1: Looking for TOTO number patterns in tables...');
     
-    console.log(`🎯 Testing ${selectors.length} different selectors...`);
+    // Find all tables and analyze their structure
+    const tables = $('table');
+    console.log(`📊 Found ${tables.length} tables on page`);
+    
     let bestMatch = null;
     let bestScore = 0;
     
-    for (let i = 0; i < selectors.length; i++) {
-      const selector = selectors[i];
-      const elements = $(selector);
-      console.log(`📍 Selector ${i + 1}: '${selector}' found ${elements.length} elements`);
+    tables.each((tableIndex, table) => {
+      const $table = $(table);
+      console.log(`\n📍 Analyzing table ${tableIndex + 1}:`);
       
-      if (elements.length >= 7) {
-        const numbers = [];
-        const seenNumbers = new Set(); // Prevent duplicates during extraction
+      // Look for rows that might contain TOTO numbers
+      const rows = $table.find('tr');
+      rows.each((rowIndex, row) => {
+        const $row = $(row);
+        const cells = $row.find('td');
         
-        elements.each((index, el) => {
-          if (numbers.length >= 7) return false;
-          const text = $(el).text().trim();
-          const num = parseInt(text);
+        if (cells.length >= 6) {
+          console.log(`   Row ${rowIndex + 1}: ${cells.length} cells`);
           
-          if (!isNaN(num) && num >= 1 && num <= 49 && !seenNumbers.has(num)) {
-            numbers.push(num);
-            seenNumbers.add(num);
-          }
-        });
-        
-        console.log(`   📊 Valid numbers found: [${numbers.join(', ')}]`);
-        
-        if (numbers.length >= 7) {
-          // Immediate validation - reject if duplicates found
-          if (new Set(numbers).size !== numbers.length) {
-            console.log(`   ❌ REJECTED: Contains duplicate numbers [${numbers.join(', ')}]`);
-            continue; // Skip this selector
-          }
+          // Extract numbers from this row
+          const numbers = [];
+          const cellTexts = [];
           
-          // Reject sequential numbers (like 1,2,3,4,5,6,7) - likely from navigation/pagination
-          const sortedNumbers = [...numbers].sort((a, b) => a - b);
-          let isSequential = true;
-          for (let j = 1; j < sortedNumbers.length; j++) {
-            if (sortedNumbers[j] !== sortedNumbers[j-1] + 1) {
-              isSequential = false;
-              break;
-            }
-          }
-          if (isSequential) {
-            console.log(`   ❌ REJECTED: Sequential numbers (likely navigation) [${numbers.join(', ')}]`);
-            continue;
-          }
-          
-          // Reject if numbers are too small (1,2,3,4,5,6,etc) - likely page elements
-          const smallNumbers = numbers.filter(n => n <= 10).length;
-          if (smallNumbers >= 6) {
-            console.log(`   ❌ REJECTED: Too many small numbers (${smallNumbers}/7 ≤ 10) [${numbers.join(', ')}]`);
-            continue;
-          }
-          
-          // Check confidence against known recent results
-          let maxMatches = 0;
-          let isExistingResult = false;
-          
-          for (const knownResult of knownRecentResults) {
-            const matches = numbers.filter(n => knownResult.includes(n)).length;
-            maxMatches = Math.max(maxMatches, matches);
+          cells.each((cellIndex, cell) => {
+            const text = $(cell).text().trim();
+            cellTexts.push(text);
+            const num = parseInt(text);
             
-            // Check if this is exactly an existing result (should be rejected)
-            if (matches === 7 && numbers.slice(0, 6).sort().join(',') === knownResult.slice(0, 6).sort().join(',') && numbers[6] === knownResult[6]) {
-              isExistingResult = true;
-              console.log(`   ⚠️ DUPLICATE: This exactly matches existing result [${knownResult.join(', ')}]`);
+            if (!isNaN(num) && num >= 1 && num <= 49) {
+              numbers.push(num);
             }
-          }
+          });
           
-          console.log(`   🎯 Best match score: ${maxMatches}/7`);
+          console.log(`   Cell texts: [${cellTexts.slice(0, 10).join(', ')}${cellTexts.length > 10 ? '...' : ''}]`);
+          console.log(`   Valid numbers: [${numbers.join(', ')}]`);
           
-          // Only accept if it's not a duplicate and has reasonable confidence
-          if (!isExistingResult && maxMatches >= 2 && maxMatches <= 5 && maxMatches > bestScore) { 
-            // Changed criteria: 2-5 matches (not too low, not exact duplicate)
-            const winningNumbers = numbers.slice(0, 6).sort((a, b) => a - b);
-            const additional = numbers[6];
-            bestMatch = [...winningNumbers, additional];
-            bestScore = maxMatches;
-            console.log(`✅ NEW BEST MATCH with selector '${selector}':`, bestMatch);
-          } else if (isExistingResult) {
-            console.log(`   ❌ REJECTED: Exact duplicate of existing result`);
-          } else if (maxMatches > 5) {
-            console.log(`   ❌ REJECTED: Too similar to existing result (${maxMatches}/7 matches)`);
-          } else if (maxMatches < 2) {
-            console.log(`   ❌ REJECTED: Too different from recent patterns (${maxMatches}/7 matches)`);
+          // Check if we have exactly 6 consecutive valid numbers (main numbers)
+          if (numbers.length >= 6) {
+            const mainNumbers = numbers.slice(0, 6);
+            
+            // Look for the additional number in the next row or adjacent cells
+            let additionalNumber = null;
+            
+            // Method 1: Check if 7th number exists in same row
+            if (numbers.length >= 7) {
+              additionalNumber = numbers[6];
+            } else {
+              // Method 2: Check next row for additional number
+              const nextRow = $row.next('tr');
+              if (nextRow.length > 0) {
+                const nextCells = nextRow.find('td');
+                nextCells.each((idx, cell) => {
+                  const text = $(cell).text().trim();
+                  const num = parseInt(text);
+                  if (!isNaN(num) && num >= 1 && num <= 49 && additionalNumber === null) {
+                    additionalNumber = num;
+                    console.log(`   Found additional number in next row: ${additionalNumber}`);
+                  }
+                });
+              }
+            }
+            
+            if (additionalNumber !== null) {
+              const fullResult = [...mainNumbers, additionalNumber];
+              console.log(`   💫 Potential TOTO result: [${fullResult.join(', ')}]`);
+              
+              // Validate this result
+              const validation = isValidNewResult(fullResult, knownRecentResults);
+              if (validation.valid) {
+                console.log(`   ✅ Valid result found!`);
+                
+                // Calculate confidence score
+                let maxMatches = 0;
+                for (const knownResult of knownRecentResults) {
+                  const matches = fullResult.filter(n => knownResult.includes(n)).length;
+                  maxMatches = Math.max(maxMatches, matches);
+                }
+                
+                console.log(`   🎯 Confidence score: ${maxMatches}/7 matches with known results`);
+                
+                if (maxMatches > bestScore || (maxMatches === bestScore && bestMatch === null)) {
+                  bestMatch = fullResult;
+                  bestScore = maxMatches;
+                  console.log(`   🏆 NEW BEST MATCH: [${fullResult.join(', ')}] (score: ${maxMatches})`);
+                }
+              } else {
+                console.log(`   ❌ Rejected: ${validation.reason}`);
+              }
+            } else {
+              console.log(`   ⚠️ No additional number found for main numbers: [${mainNumbers.join(', ')}]`);
+            }
           }
         }
-      }
-    }
+      });
+    });
     
     if (bestMatch) {
-      // Final validation check
-      const validation = isValidNewResult(bestMatch, knownRecentResults);
-      if (validation.valid) {
-        console.log(`🎉 FINAL RESULT (confidence ${bestScore}/7):`, bestMatch);
-        console.log(`✅ Validation: ${validation.reason}`);
-        return bestMatch;
-      } else {
-        console.log(`❌ FINAL RESULT REJECTED: ${validation.reason}`);
-        console.log(`🚫 Rejected result was:`, bestMatch);
-        bestMatch = null; // Reset to continue with fallback
-      }
+      console.log(`\n🎉 FINAL BEST MATCH: [${bestMatch.join(', ')}] (confidence: ${bestScore}/7)`);
+      return bestMatch;
     }
     
-    // Enhanced fallback: Look for number patterns in the entire HTML
-    console.log('🔍 Analyzing all numbers in HTML...');
-    const numberMatches = html.match(/\b([1-9]|[1-4][0-9])\b/g);
-    if (numberMatches && numberMatches.length >= 7) {
-      const validNumbers = numberMatches
-        .map(n => parseInt(n))
-        .filter(n => n >= 1 && n <= 49);
+    // Strategy 2: Pattern matching in HTML content
+    console.log('\n� Strategy 2: Pattern matching in HTML content...');
+    
+    // Look for the specific pattern we see in the webpage: | 9 | 24 | 31 | 34 | 43 | 44 |
+    const tablePattern = /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|/g;
+    const matches = [...html.matchAll(tablePattern)];
+    
+    console.log(`📊 Found ${matches.length} table patterns`);
+    
+    for (let i = 0; i < matches.length; i++) {
+      const match = matches[i];
+      const numbers = match.slice(1, 7).map(n => parseInt(n));
+      console.log(`Pattern ${i + 1}: [${numbers.join(', ')}]`);
       
-      console.log(`📊 Found ${validNumbers.length} valid numbers in HTML`);
-      
-      if (validNumbers.length >= 7) {
-        // Look for sequences that match known results
-        for (let i = 0; i <= validNumbers.length - 7; i++) {
-          const subset = validNumbers.slice(i, i + 7);
-          
-          for (const knownResult of knownRecentResults) {
-            const matches = subset.filter(n => knownResult.includes(n)).length;
-            if (matches >= 5) { // High confidence match
-              const winningNumbers = subset.slice(0, 6).sort((a, b) => a - b);
-              const additional = subset[6];
-              console.log(`✅ PATTERN MATCH (${matches}/7 confidence):`, [...winningNumbers, additional]);
-              return [...winningNumbers, additional];
+      if (numbers.every(n => n >= 1 && n <= 49)) {
+        // Look for additional number nearby
+        const afterMatch = html.substring(match.index + match[0].length, match.index + match[0].length + 200);
+        const additionalMatch = afterMatch.match(/\|\s*(\d{1,2})\s*\|/);
+        
+        if (additionalMatch) {
+          const additional = parseInt(additionalMatch[1]);
+          if (additional >= 1 && additional <= 49) {
+            const fullResult = [...numbers, additional];
+            console.log(`   Full result with additional: [${fullResult.join(', ')}]`);
+            
+            const validation = isValidNewResult(fullResult, knownRecentResults);
+            if (validation.valid) {
+              console.log(`   ✅ Valid pattern result: [${fullResult.join(', ')}]`);
+              return fullResult;
+            } else {
+              console.log(`   ❌ Pattern rejected: ${validation.reason}`);
             }
           }
         }
-        
-        // If no good match, try first unique set of 7
-        for (let i = 0; i <= validNumbers.length - 7; i++) {
-          const subset = validNumbers.slice(i, i + 7);
-          if (new Set(subset).size === 7) {
-            const winningNumbers = subset.slice(0, 6).sort((a, b) => a - b);
-            const additional = subset[6];
-            console.log('⚠️ FALLBACK unique 7-number set:', [...winningNumbers, additional]);
-            return [...winningNumbers, additional];
-          }
-        }
       }
     }
     
-    console.log('❌ No valid TOTO numbers found in HTML');
+    console.log('❌ No valid TOTO patterns found');
     return null;
   } catch (error) {
     console.log('❌ Parsing error:', error.message);
