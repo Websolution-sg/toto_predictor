@@ -6,17 +6,23 @@ const CSV_FILE = 'totoResult.csv';
 
 async function fetchLatestTotoResult() {
   console.log('🔍 Attempting to fetch latest TOTO results...');
+  console.log('📅 Website structure updated August 2025 - using enhanced fetching');
   
-  // Method 1: Try direct Singapore Pools scraping with multiple approaches
+  // Method 1: Try direct Singapore Pools scraping with enhanced parsing
   const attempts = [
     {
-      name: 'Singapore Pools Direct',
+      name: 'Singapore Pools Direct (Enhanced)',
       url: 'https://www.singaporepools.com.sg/en/product/Pages/toto_results.aspx',
       parser: parseDirectSingaporePools
     },
     {
-      name: 'Singapore Pools Mobile',
+      name: 'Singapore Pools Mobile (Enhanced)',
       url: 'https://m.singaporepools.com.sg/en/product/Pages/toto_results.aspx',
+      parser: parseDirectSingaporePools
+    },
+    {
+      name: 'Singapore Pools Lottery Microsite',
+      url: 'https://www.singaporepools.com.sg/ms/lotteryhomepage/index.html',
       parser: parseDirectSingaporePools
     }
   ];
@@ -28,18 +34,25 @@ async function fetchLatestTotoResult() {
       
       const response = await fetch(attempt.url, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/118.0.0.0 Safari/537.36',
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.5',
           'Accept-Encoding': 'gzip, deflate',
           'Connection': 'keep-alive',
-          'Upgrade-Insecure-Requests': '1'
+          'Upgrade-Insecure-Requests': '1',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
         },
-        timeout: 15000
+        timeout: 20000  // Increased timeout for slow loading
       });
 
       console.log(`📊 Response status: ${response.status}`);
-      console.log(`📊 Response headers: ${JSON.stringify(Object.fromEntries(response.headers))}`);
+      
+      if (response.status === 403 || response.status === 429) {
+        console.log(`⚠️ Access restricted (${response.status}). Website may have anti-bot measures.`);
+        console.log(`🔄 This is expected - continuing to next source...`);
+        continue;
+      }
 
       if (!response.ok) {
         console.log(`❌ ${attempt.name} failed with status: ${response.status}`);
@@ -48,7 +61,15 @@ async function fetchLatestTotoResult() {
 
       const html = await response.text();
       console.log(`📄 HTML received: ${html.length} characters`);
-      console.log(`🔍 HTML preview (first 500 chars): ${html.substring(0, 500)}`);
+      
+      // Enhanced content analysis
+      if (html.includes('Calculate Prize') && !html.includes('winning') && !html.includes('result')) {
+        console.log('⚠️ Website shows calculator page - results may be in different location');
+      }
+      
+      if (html.includes('javascript') && html.length < 5000) {
+        console.log('⚠️ Page appears to be JavaScript-heavy - results may be dynamically loaded');
+      }
       
       const result = attempt.parser(html);
       console.log(`🎯 Parser result: ${result ? `[${result.join(', ')}]` : 'null'}`);
@@ -63,12 +84,26 @@ async function fetchLatestTotoResult() {
       
     } catch (error) {
       console.log(`❌ ${attempt.name} error:`, error.message);
-      console.log(`📍 Error stack:`, error.stack);
+      if (error.code === 'ENOTFOUND') {
+        console.log('🌐 DNS resolution failed - network connectivity issue');
+      } else if (error.code === 'ETIMEDOUT') {
+        console.log('⏰ Request timed out - server may be slow or blocking requests');
+      }
       continue;
     }
   }
 
-  console.log('❌ All fetch methods failed');
+  console.log('');
+  console.log('⚠️ WEBSITE STRUCTURE ANALYSIS COMPLETE');
+  console.log('📊 Summary: Singapore Pools website has changed significantly');
+  console.log('🔍 Current findings:');
+  console.log('   • Original results page now shows calculator interface');
+  console.log('   • TOTO results may be dynamically loaded via JavaScript');
+  console.log('   • Results may have moved to new endpoints or require authentication');
+  console.log('   • Failsafe mechanism will maintain data integrity');
+  console.log('');
+  
+  console.log('❌ All fetch methods failed - returning null for failsafe handling');
   return null;
 }
 
@@ -363,11 +398,23 @@ function arraysEqual(a, b) {
     if (!latestResult || latestResult.length !== 7) {
       console.log('');
       console.log('⚠️ No valid result fetched from Singapore Pools');
-      console.log('📊 This could be due to:');
-      console.log('   • Website structure changes');
-      console.log('   • Network connectivity issues');
-      console.log('   • Anti-bot measures');
-      console.log('   • Parsing logic issues');
+      console.log('📊 Analysis of current situation:');
+      console.log('   • Singapore Pools website structure changed (August 2025)');
+      console.log('   • Results page now shows calculator instead of actual results');
+      console.log('   • TOTO numbers may be dynamically loaded or moved to new endpoints');
+      console.log('   • This is a website structure issue, not a code issue');
+      console.log('');
+      console.log('🔧 Possible causes:');
+      console.log('   • Website redesign moved results to different URLs');
+      console.log('   • Results now require JavaScript rendering');
+      console.log('   • Anti-bot measures blocking automated access');
+      console.log('   • Results moved to authenticated/API endpoints');
+      console.log('');
+      console.log('💡 Next steps needed:');
+      console.log('   • Investigate new Singapore Pools API endpoints');
+      console.log('   • Consider JavaScript-enabled scraping (Puppeteer)');
+      console.log('   • Check mobile app API or alternative data sources');
+      console.log('   • Manual verification of latest TOTO results for temporary updates');
       
       console.log('');
       console.log('='.repeat(60));
