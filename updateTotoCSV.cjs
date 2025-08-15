@@ -41,11 +41,6 @@ async function fetchLatestTotoResult() {
       name: 'Singapore Pools API (Potential)',
       url: 'https://online.singaporepools.com/api/lottery/results',
       parser: parseAPIResponse
-    },
-    {
-      name: 'Singapore Pools Mobile (Legacy)',
-      url: 'https://m.singaporepools.com.sg/en/product/Pages/toto_results.aspx',
-      parser: parseDirectSingaporePools
     }
   ];
 
@@ -439,8 +434,36 @@ function parseDirectSingaporePools(html) {
       }
     }
     
-    // Strategy 1: Look for the exact pattern - 6 main numbers + 1 additional number in table structure
-    console.log('🎯 Strategy 1: Looking for TOTO number patterns in tables...');
+    // FALLBACK STRATEGY: More aggressive number extraction
+    console.log('🔥 FALLBACK: Aggressive number extraction...');
+    const allNumbers = html.match(/\b(?:[1-9]|[1-4][0-9])\b/g)
+      ?.map(n => parseInt(n))
+      .filter(n => n >= 1 && n <= 49) || [];
+    
+    console.log(`Found ${allNumbers.length} valid numbers in HTML`);
+    
+    // Look for sequences of 7 numbers that could be TOTO results
+    for (let i = 0; i <= allNumbers.length - 7; i++) {
+      const sequence = allNumbers.slice(i, i + 7);
+      
+      // Check if this could be a valid TOTO result
+      const mainNumbers = sequence.slice(0, 6);
+      const additionalNumber = sequence[6];
+      
+      // Basic validation - no duplicates in main numbers
+      if (new Set(mainNumbers).size === 6) {
+        console.log(`🎯 Potential TOTO sequence: [${sequence.join(', ')}]`);
+        
+        const validation = isValidNewResult(sequence, knownRecentResults);
+        if (validation.valid) {
+          console.log('✅ FALLBACK MATCH: Valid new result found!');
+          return sequence;
+        }
+      }
+    }
+    
+    console.log('⚠️  No valid TOTO results found in legacy page parsing');
+    return null;
     
     // Find all tables and analyze their structure
     const tables = $('table');
