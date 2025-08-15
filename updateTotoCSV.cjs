@@ -11,18 +11,33 @@ async function fetchLatestTotoResult() {
   // Method 1: Try direct Singapore Pools scraping with enhanced parsing
   const attempts = [
     {
-      name: 'Singapore Pools Direct (Enhanced)',
+      name: 'Singapore Pools Online Lottery Platform',
+      url: 'https://online.singaporepools.com/en/lottery',
+      parser: parseOnlineSingaporePools
+    },
+    {
+      name: 'Singapore Pools Lottery Draws',
+      url: 'https://online.singaporepools.com/en/lottery/lottery-draws', 
+      parser: parseOnlineSingaporePools
+    },
+    {
+      name: 'Singapore Pools TOTO Self-Pick',
+      url: 'https://online.singaporepools.com/en/lottery/toto-self-pick',
+      parser: parseOnlineSingaporePools
+    },
+    {
+      name: 'Singapore Pools API (Potential)',
+      url: 'https://online.singaporepools.com/api/lottery/results',
+      parser: parseAPIResponse
+    },
+    {
+      name: 'Singapore Pools Direct (Legacy)',
       url: 'https://www.singaporepools.com.sg/en/product/Pages/toto_results.aspx',
       parser: parseDirectSingaporePools
     },
     {
-      name: 'Singapore Pools Mobile (Enhanced)',
+      name: 'Singapore Pools Mobile (Legacy)',
       url: 'https://m.singaporepools.com.sg/en/product/Pages/toto_results.aspx',
-      parser: parseDirectSingaporePools
-    },
-    {
-      name: 'Singapore Pools Lottery Microsite',
-      url: 'https://www.singaporepools.com.sg/ms/lotteryhomepage/index.html',
       parser: parseDirectSingaporePools
     }
   ];
@@ -104,6 +119,274 @@ async function fetchLatestTotoResult() {
   console.log('');
   
   console.log('❌ All fetch methods failed - returning null for failsafe handling');
+  return null;
+}
+
+function parseOnlineSingaporePools(html) {
+  try {
+    const $ = cheerio.load(html);
+    console.log('🔍 Parsing Online Singapore Pools platform...');
+    console.log(`📄 HTML length: ${html.length} characters`);
+    
+    // Dynamically load known recent results from CSV for validation
+    const knownRecentResults = getKnownRecentResults(CSV_FILE);
+    
+    // Strategy 1: Look for TOTO results in the online platform structure
+    console.log('🎯 Strategy 1: Looking for results in online platform...');
+    
+    // Check for results in various possible containers
+    const resultSelectors = [
+      '.lottery-results',
+      '.toto-results', 
+      '.winning-numbers',
+      '.draw-results',
+      '[data-toto-results]',
+      '[data-lottery-results]',
+      '.result-numbers',
+      '.latest-results'
+    ];
+    
+    for (const selector of resultSelectors) {
+      const elements = $(selector);
+      if (elements.length > 0) {
+        console.log(`📊 Found ${elements.length} elements with selector: ${selector}`);
+        
+        elements.each((index, element) => {
+          const $element = $(element);
+          const text = $element.text().trim();
+          const numbers = extractNumbersFromText(text);
+          
+          if (numbers && numbers.length === 7) {
+            console.log(`   Potential result from ${selector}: [${numbers.join(', ')}]`);
+            const validation = isValidNewResult(numbers, knownRecentResults);
+            if (validation.valid) {
+              console.log(`   ✅ Valid online platform result: [${numbers.join(', ')}]`);
+              return numbers;
+            } else {
+              console.log(`   ❌ Online platform result rejected: ${validation.reason}`);
+            }
+          }
+        });
+      }
+    }
+    
+    // Strategy 2: Look for JavaScript variables containing results
+    console.log('🎯 Strategy 2: Searching for JavaScript data...');
+    
+    const scriptTags = $('script');
+    scriptTags.each((i, script) => {
+      const content = $(script).html();
+      if (content && (content.includes('toto') || content.includes('TOTO') || content.includes('lottery'))) {
+        console.log(`📜 Found lottery-related script content (${content.length} chars)`);
+        
+        // Look for number arrays in JavaScript
+        const jsNumberPattern = /(?:toto|TOTO|lottery|results?).*?[\[\{].*?(\d{1,2})[,\s]+(\d{1,2})[,\s]+(\d{1,2})[,\s]+(\d{1,2})[,\s]+(\d{1,2})[,\s]+(\d{1,2})[,\s]+(\d{1,2})/gi;
+        let match;
+        
+        while ((match = jsNumberPattern.exec(content)) !== null) {
+          const numbers = match.slice(1, 8).map(n => parseInt(n));
+          if (numbers.every(n => n >= 1 && n <= 49)) {
+            console.log(`   JavaScript pattern found: [${numbers.join(', ')}]`);
+            const validation = isValidNewResult(numbers, knownRecentResults);
+            if (validation.valid) {
+              console.log(`   ✅ Valid JavaScript result: [${numbers.join(', ')}]`);
+              return numbers;
+            } else {
+              console.log(`   ❌ JavaScript result rejected: ${validation.reason}`);
+            }
+          }
+        }
+      }
+    });
+    
+    // Strategy 3: Look for API endpoints or data attributes
+    console.log('🎯 Strategy 3: Checking for API endpoints...');
+    
+    const dataElements = $('[data-*]');
+    dataElements.each((i, element) => {
+      const $element = $(element);
+      const attributes = element.attribs;
+      
+      for (const [key, value] of Object.entries(attributes)) {
+        if (key.startsWith('data-') && (key.includes('toto') || key.includes('result') || key.includes('lottery'))) {
+          console.log(`📊 Found data attribute: ${key}="${value}"`);
+          
+          // Try to extract numbers from the data attribute value
+          const numbers = extractNumbersFromText(value);
+          if (numbers && numbers.length === 7) {
+            console.log(`   Data attribute result: [${numbers.join(', ')}]`);
+            const validation = isValidNewResult(numbers, knownRecentResults);
+            if (validation.valid) {
+              console.log(`   ✅ Valid data attribute result: [${numbers.join(', ')}]`);
+              return numbers;
+            }
+          }
+        }
+      }
+    });
+    
+    // Strategy 4: Check for embedded JSON data
+    console.log('🎯 Strategy 4: Looking for JSON data...');
+    
+    const jsonPattern = /\{[^}]*(?:toto|TOTO|lottery|result)[^}]*\}/gi;
+    let jsonMatch;
+    
+    while ((jsonMatch = jsonPattern.exec(html)) !== null) {
+      try {
+        const jsonData = JSON.parse(jsonMatch[0]);
+        console.log('📊 Found JSON data:', Object.keys(jsonData));
+        
+        // Look for numbers in the JSON structure
+        const jsonStr = JSON.stringify(jsonData);
+        const numbers = extractNumbersFromText(jsonStr);
+        
+        if (numbers && numbers.length === 7) {
+          console.log(`   JSON result: [${numbers.join(', ')}]`);
+          const validation = isValidNewResult(numbers, knownRecentResults);
+          if (validation.valid) {
+            console.log(`   ✅ Valid JSON result: [${numbers.join(', ')}]`);
+            return numbers;
+          }
+        }
+      } catch (e) {
+        // Invalid JSON, continue
+      }
+    }
+    
+    console.log('❌ No valid TOTO results found in online platform');
+    return null;
+    
+  } catch (error) {
+    console.log('❌ Online platform parsing error:', error.message);
+    return null;
+  }
+}
+
+// Helper function to extract numbers from text
+function extractNumbersFromText(text) {
+  if (!text) return null;
+  
+  // Look for sequences of 6-7 numbers between 1-49
+  const numberPattern = /(?:^|[^\d])(\d{1,2})(?:[,\s\|\-]+(\d{1,2})){5}(?:[,\s\|\-]+(\d{1,2}))?(?:[^\d]|$)/g;
+  let match;
+  
+  while ((match = numberPattern.exec(text)) !== null) {
+    const numbers = [];
+    for (let i = 1; i < match.length && match[i] !== undefined; i++) {
+      const num = parseInt(match[i]);
+      if (num >= 1 && num <= 49) {
+        numbers.push(num);
+      }
+    }
+    
+    if (numbers.length >= 6 && numbers.length <= 7) {
+      return numbers.length === 6 ? [...numbers, null] : numbers;
+    }
+  }
+  
+  return null;
+}
+
+function parseAPIResponse(responseText) {
+  try {
+    console.log('🔍 Parsing potential API response...');
+    console.log(`📄 Response length: ${responseText.length} characters`);
+    
+    // Try to parse as JSON first
+    try {
+      const jsonData = JSON.parse(responseText);
+      console.log('📊 Successfully parsed JSON response');
+      
+      // Look for TOTO results in various JSON structures
+      const possiblePaths = [
+        jsonData.results,
+        jsonData.toto,
+        jsonData.lottery,
+        jsonData.data,
+        jsonData.latest,
+        jsonData.draw,
+        jsonData
+      ];
+      
+      for (const data of possiblePaths) {
+        if (data && typeof data === 'object') {
+          console.log(`🎯 Checking JSON path with keys: ${Object.keys(data)}`);
+          
+          // Look for number arrays
+          const numbers = extractNumbersFromJSON(data);
+          if (numbers && numbers.length === 7) {
+            console.log(`   API result: [${numbers.join(', ')}]`);
+            
+            const knownRecentResults = getKnownRecentResults(CSV_FILE);
+            const validation = isValidNewResult(numbers, knownRecentResults);
+            if (validation.valid) {
+              console.log(`   ✅ Valid API result: [${numbers.join(', ')}]`);
+              return numbers;
+            } else {
+              console.log(`   ❌ API result rejected: ${validation.reason}`);
+            }
+          }
+        }
+      }
+      
+    } catch (jsonError) {
+      console.log('📄 Not JSON format, trying text parsing...');
+      
+      // If not JSON, try to extract numbers from text
+      const numbers = extractNumbersFromText(responseText);
+      if (numbers && numbers.length === 7) {
+        console.log(`   Text API result: [${numbers.join(', ')}]`);
+        
+        const knownRecentResults = getKnownRecentResults(CSV_FILE);
+        const validation = isValidNewResult(numbers, knownRecentResults);
+        if (validation.valid) {
+          console.log(`   ✅ Valid text API result: [${numbers.join(', ')}]`);
+          return numbers;
+        } else {
+          console.log(`   ❌ Text API result rejected: ${validation.reason}`);
+        }
+      }
+    }
+    
+    console.log('❌ No valid TOTO results found in API response');
+    return null;
+    
+  } catch (error) {
+    console.log('❌ API parsing error:', error.message);
+    return null;
+  }
+}
+
+// Helper function to extract numbers from JSON structure
+function extractNumbersFromJSON(obj) {
+  if (!obj) return null;
+  
+  // Look for arrays of numbers
+  if (Array.isArray(obj)) {
+    if (obj.length >= 6 && obj.length <= 7 && obj.every(n => typeof n === 'number' && n >= 1 && n <= 49)) {
+      return obj.length === 6 ? [...obj, null] : obj;
+    }
+  }
+  
+  // Look for number properties
+  const numberKeys = ['numbers', 'winning_numbers', 'result', 'draw_numbers', 'toto_numbers'];
+  for (const key of numberKeys) {
+    if (obj[key] && Array.isArray(obj[key])) {
+      const numbers = obj[key];
+      if (numbers.length >= 6 && numbers.length <= 7 && numbers.every(n => typeof n === 'number' && n >= 1 && n <= 49)) {
+        return numbers.length === 6 ? [...numbers, null] : numbers;
+      }
+    }
+  }
+  
+  // Recursively search nested objects
+  for (const value of Object.values(obj)) {
+    if (typeof value === 'object' && value !== null) {
+      const result = extractNumbersFromJSON(value);
+      if (result) return result;
+    }
+  }
+  
   return null;
 }
 
