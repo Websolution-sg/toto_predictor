@@ -2,15 +2,97 @@
 
 ## ❌ **Problem Identified**
 
-The "Auto Update TOTO Result" workflow was failing because:
+The "Auto Update TOTO Result" workflow was encountering multiple issues:
 
-1. **Parsing Logic Issues**: The complex parsing logic was failing to extract the correct numbers from Singapore Pools website
-2. **No Failsafe**: When parsing failed, the workflow would exit without updating the CSV, leaving incorrect data
-3. **Missing Latest Result**: The CSV currently shows `2,15,28,39,42,44,5` instead of the correct `9,24,31,34,43,44,1`
+1. **Exit Code 1 During Commit/Push**: Workflow fails with "Process completed with exit code 1" during git operations
+2. **Parsing Logic Issues**: Complex parsing logic failing to extract correct numbers from Singapore Pools website
+3. **Authentication Issues**: Potential git authentication or permission problems
+4. **Missing Latest Result**: CSV showing incorrect data due to parsing failures
+
+## 🔍 **Exit Code 1 Troubleshooting**
+
+### **Common Causes:**
+- **Git Authentication**: GITHUB_TOKEN lacks sufficient permissions
+- **Branch Protection**: Repository has protection rules preventing direct pushes
+- **Merge Conflicts**: Local changes conflict with remote repository state
+- **Missing Configuration**: Git user configuration issues
+
+### **Current Workflow Issue Analysis:**
+```yaml
+# Current problematic step:
+- name: Commit and push if changed
+  run: |
+    git config --local user.name "github-actions[bot]"
+    git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+    git add totoResult.csv
+    git commit -m "🎯 Auto update TOTO results: $(date +'%Y-%m-%d %H:%M:%S UTC')"
+    git push  # ← This line can fail with exit code 1
+```
 
 ## ✅ **Fixes Implemented**
 
-### **1. Improved Parsing Logic**
+### **1. Enhanced Commit and Push Logic**
+**Robust git operations with retry mechanism and conflict resolution:**
+
+```yaml
+- name: Commit and push if changed (Enhanced)
+  if: steps.verify-changed-files.outputs.changed == 'true'
+  run: |
+    echo "🔄 Starting enhanced commit and push process..."
+    
+    # Ensure we're on main branch
+    git checkout main
+    
+    # Pull latest changes to avoid conflicts
+    echo "📥 Pulling latest changes..."
+    git pull origin main --rebase || echo "⚠️ Pull/rebase had issues, continuing..."
+    
+    # Configure git user
+    echo "👤 Configuring git user..."
+    git config --local user.name "github-actions[bot]"
+    git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+    
+    # Verify file exists and has changes
+    if [ -f "totoResult.csv" ]; then
+      git add totoResult.csv
+      
+      # Check if there are actually changes to commit
+      if git diff --staged --quiet; then
+        echo "📋 No staged changes found, skipping commit"
+        exit 0
+      fi
+      
+      # Commit changes
+      git commit -m "🎯 Auto update TOTO results: $(date +'%Y-%m-%d %H:%M:%S UTC')"
+      
+      # Push with retry mechanism
+      RETRY_COUNT=0
+      MAX_RETRIES=5
+      
+      while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
+        if git push origin main; then
+          echo "✅ Successfully pushed on attempt $((RETRY_COUNT + 1))"
+          exit 0
+        else
+          RETRY_COUNT=$((RETRY_COUNT + 1))
+          echo "⚠️ Push failed on attempt $RETRY_COUNT/$MAX_RETRIES"
+          
+          if [ $RETRY_COUNT -lt $MAX_RETRIES ]; then
+            git pull origin main --rebase || echo "Pull failed"
+            sleep $((RETRY_COUNT * 2))
+          fi
+        fi
+      done
+      
+      echo "💥 Failed to push after $MAX_RETRIES attempts"
+      exit 1
+    else
+      echo "❌ totoResult.csv not found!"
+      exit 1
+    fi
+```
+
+### **2. Improved Parsing Logic**
 - **Simplified table parsing** - More reliable extraction of numbers from HTML tables
 - **Better validation** - Enhanced checks to ensure numbers are valid TOTO results
 - **Multiple strategies** - Falls back to different parsing methods if first approach fails
