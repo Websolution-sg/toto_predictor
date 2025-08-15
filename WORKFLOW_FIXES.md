@@ -117,19 +117,61 @@ if (existing.length === 0 || !arraysEqual(knownCorrectResult, existing[0])) {
 
 ## 🎯 **Expected Behavior Now**
 
-### **Scenario 1: Parsing Success**
-1. ✅ Script connects to Singapore Pools website
-2. ✅ Successfully extracts latest TOTO result
-3. ✅ Validates the result against known patterns
-4. ✅ Updates CSV with new result if different from current top entry
+### **Enhanced Commit/Push Process:**
+1. ✅ **Conflict Prevention**: Pulls latest changes before committing
+2. ✅ **Retry Logic**: Up to 5 attempts with exponential backoff
+3. ✅ **Detailed Logging**: Shows exactly what's happening at each step
+4. ✅ **Error Handling**: Graceful failure with diagnostic information
 
-### **Scenario 2: Parsing Failure (Now with Failsafe)**
-1. ❌ Script fails to parse or finds invalid result
-2. ✅ **FAILSAFE ACTIVATES**: Checks if known correct result `[9,24,31,34,43,44,1]` is at top of CSV
-3. ✅ **Auto-correction**: If not present, adds the known correct result to maintain data integrity
-4. ✅ Workflow completes successfully instead of failing
+### **Scenario 1: Normal Operation**
+1. ✅ Script updates CSV with new TOTO results
+2. ✅ Git detects changes and stages totoResult.csv
+3. ✅ Commits with timestamp message
+4. ✅ Successfully pushes to repository on first attempt
 
-## 🔍 **How to Verify Fixes**
+### **Scenario 2: Merge Conflicts (Now Handled)**
+1. ⚠️ Push fails due to remote changes
+2. ✅ **Auto-recovery**: Pulls and rebases latest changes
+3. ✅ **Retry**: Attempts push again with updated repository state
+4. ✅ **Success**: Push succeeds on retry
+
+### **Scenario 3: Authentication Issues**
+1. ❌ GITHUB_TOKEN lacks permissions
+2. ✅ **Enhanced debugging**: Detailed diagnostic output
+3. ✅ **Clear error messages**: Shows exact cause of failure
+4. 🔧 **Manual intervention**: Clear instructions for resolution
+
+## 🔍 **Diagnostic Features Added**
+
+### **Pre-commit Debugging:**
+- Git version and branch information
+- Remote repository status
+- File permissions check
+- Recent commit history
+
+### **Enhanced Error Reporting:**
+- Retry attempt counts
+- Exponential backoff timing
+- Final status on all retry failures
+- Complete git diagnostic dump
+
+## ✅ **Resolution Status**
+
+**✅ IMPLEMENTED:**
+- Enhanced commit and push logic with retry mechanism
+- Conflict resolution through automatic rebase
+- Comprehensive error logging and diagnostics
+- Exponential backoff for transient failures
+
+**🔄 TESTING:**
+- Updated workflow deployed to repository
+- Ready for next scheduled run (Monday/Thursday 1:00 AM UTC)
+- Manual trigger available for immediate testing
+
+**� MONITORING:**
+- Watch GitHub Actions tab for next workflow execution
+- Verify successful CSV updates without exit code 1 errors
+- Confirm automated TOTO result updates resume normal operation
 
 ### **Manual Workflow Trigger:**
 1. Go to GitHub Actions tab in your repository
