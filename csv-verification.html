@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CSV Verification</title>
+</head>
+<body>
+    <h1>TOTO CSV Verification</h1>
+    <div id="status">Loading...</div>
+    <div id="csvContent"></div>
+    
+    <script>
+        const cacheBuster = new Date().getTime();
+        console.log('Fetching CSV with cache buster:', cacheBuster);
+        
+        fetch(`totoResult.csv?v=${cacheBuster}`)
+            .then(response => {
+                console.log('Response status:', response.status);
+                return response.text();
+            })
+            .then(text => {
+                console.log('CSV content loaded, length:', text.length);
+                const lines = text.trim().split('\n');
+                console.log('Total lines:', lines.length);
+                console.log('First line (latest result):', lines[0]);
+                
+                document.getElementById('status').innerHTML = `
+                    <h2>CSV Status: ✅ LOADED</h2>
+                    <p><strong>Total entries:</strong> ${lines.length}</p>
+                    <p><strong>Latest result:</strong> ${lines[0]}</p>
+                    <p><strong>Cache buster:</strong> ${cacheBuster}</p>
+                    <p><strong>Fetch time:</strong> ${new Date().toISOString()}</p>
+                `;
+                
+                const firstFive = lines.slice(0, 5);
+                document.getElementById('csvContent').innerHTML = `
+                    <h3>First 5 Results:</h3>
+                    <ol>
+                        ${firstFive.map(line => `<li>${line}</li>`).join('')}
+                    </ol>
+                `;
+            })
+            .catch(error => {
+                console.error('Error loading CSV:', error);
+                document.getElementById('status').innerHTML = `
+                    <h2>CSV Status: ❌ ERROR</h2>
+                    <p>${error.message}</p>
+                `;
+            });
+    </script>
+</body>
+</html>

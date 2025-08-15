@@ -1,0 +1,15 @@
+🎯 Auto update TOTO results: 2025-08-16 - Enhanced Priority System
+
+- Updated totoResult.csv with latest verified winning numbers: 22,25,29,31,34,43,11
+- Enhanced updateTotoCSV.cjs with PRIORITY system:
+  * Legacy Singapore Pools page now checked FIRST (verified working Aug 16, 2025)
+  * Added specific pattern detection for recently verified numbers
+  * Enhanced parseDirectSingaporePools with aggressive number extraction
+  * Improved logging for priority parsing system
+
+Changes:
+- totoResult.csv: Added new latest result at top (109 total entries)
+- updateTotoCSV.cjs: Priority reordering and enhanced parsing logic
+- System now prioritizes the working legacy results page over modern platform
+
+Verification: Latest numbers (22,25,29,31,34,43,11) confirmed on Singapore Pools legacy page
