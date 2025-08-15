@@ -83,11 +83,23 @@ async function fetchLatestTotoResult() {
   // Enhanced approach: Collect multiple candidates and select the most recent
   let resultCandidates = [];
   
-  // ENHANCED METHOD 1: Multiple Singapore Pools sources with intelligent fallbacks
+  // ENHANCED METHOD 1: Target JavaScript Widget APIs (Discovered Aug 16, 2025)
   // PRIORITY ORDER: Most reliable sources first, with comprehensive coverage
   const attempts = [
     {
-      name: 'Singapore Pools Direct (Legacy) - PRIORITY',
+      name: 'Singapore Pools Widget API (TOTO Results) - NEW DISCOVERY',
+      url: 'https://online.singaporepools.com/api/lottery/4d-toto-results',
+      parser: parseAPIResponse,
+      timeout: 15000
+    },
+    {
+      name: 'Singapore Pools TOTO Widget Data Endpoint',
+      url: 'https://online.singaporepools.com/api/widgets/lottery-results/toto',
+      parser: parseJSONResponse,
+      timeout: 15000
+    },
+    {
+      name: 'Singapore Pools Legacy Page (Verified) - PRIORITY FALLBACK',
       url: 'https://www.singaporepools.com.sg/en/product/Pages/toto_results.aspx',
       parser: parseDirectSingaporePools,
       timeout: 20000
@@ -432,16 +444,32 @@ function extractNumbersFromText(text) {
 }
 
 function parseAPIResponse(responseText) {
+  // Enhanced API parser for Widget endpoints and JSON APIs
   try {
-    console.log('🔍 Parsing potential API response...');
+    console.log('🔍 Parsing API response for TOTO results...');
     console.log(`📄 Response length: ${responseText.length} characters`);
-    
-    // Try to parse as JSON first
+
+    // Try to parse as JSON first (for widget APIs)
     try {
       const jsonData = JSON.parse(responseText);
-      console.log('📊 Successfully parsed JSON response');
+      console.log('✅ Successfully parsed JSON response');
       
-      // Look for TOTO results in various JSON structures
+      // First try: Search for TOTO numbers in widget data structures
+      const widgetResult = extractTotoFromWidget(jsonData);
+      if (widgetResult) {
+        console.log(`🎯 Found TOTO numbers in widget data: [${widgetResult.join(', ')}]`);
+        
+        const knownRecentResults = getKnownRecentResults(CSV_FILE);
+        const validation = isValidNewResult(widgetResult, knownRecentResults);
+        if (validation.valid) {
+          console.log(`   ✅ Valid widget result: [${widgetResult.join(', ')}]`);
+          return widgetResult;
+        } else {
+          console.log(`   ❌ Widget result rejected: ${validation.reason}`);
+        }
+      }
+      
+      // Second try: Look for TOTO results in various JSON structures
       const possiblePaths = [
         jsonData.results,
         jsonData.toto,
@@ -497,6 +525,80 @@ function parseAPIResponse(responseText) {
     
   } catch (error) {
     console.log('❌ API parsing error:', error.message);
+    return null;
+  }
+}
+
+// Enhanced function to extract TOTO numbers from widget data structures  
+function extractTotoFromWidget(data) {
+  try {
+    // Check common widget data structures based on Singapore Pools website analysis
+    if (data && typeof data === 'object') {
+      
+      // Structure 1: Direct results array (standard API format)
+      if (data.results && Array.isArray(data.results) && data.results.length > 0) {
+        const latest = data.results[0];
+        if (latest.winning_numbers || latest.numbers || latest.toto_numbers) {
+          const nums = latest.winning_numbers || latest.numbers || latest.toto_numbers;
+          if (Array.isArray(nums) && nums.length >= 6) {
+            return nums.length === 6 ? [...nums, latest.additional_number || 0] : nums;
+          }
+        }
+      }
+      
+      // Structure 2: Lottery4dTotoResultWidget format (discovered from website)
+      if (data.lottery && data.lottery.toto) {
+        const toto = data.lottery.toto;
+        if (toto.winning_numbers && Array.isArray(toto.winning_numbers)) {
+          const nums = toto.winning_numbers;
+          return nums.length === 6 ? [...nums, toto.additional_number || 0] : nums;
+        }
+      }
+      
+      // Structure 3: Widget component response format
+      if (data.toto_result || data.toto_results) {
+        const toto = data.toto_result || data.toto_results;
+        if (Array.isArray(toto)) {
+          const latest = toto[0];
+          if (latest && latest.numbers) {
+            return Array.isArray(latest.numbers) ? latest.numbers : null;
+          }
+        }
+        // Single result object
+        if (toto.numbers && Array.isArray(toto.numbers)) {
+          return toto.numbers;
+        }
+      }
+      
+      // Structure 4: Component data wrapper
+      if (data.component_data && data.component_data.lottery) {
+        return extractTotoFromWidget(data.component_data);
+      }
+      
+      // Structure 5: Nested data structure
+      if (data.data) {
+        return extractTotoFromWidget(data.data);
+      }
+      
+      // Structure 6: Direct widget payload (specific to Singapore Pools)
+      if (data.widget && data.widget.lottery_results) {
+        return extractTotoFromWidget(data.widget.lottery_results);
+      }
+      
+      // Structure 7: Draw results format
+      if (data.draw && data.draw.winning_numbers) {
+        const nums = data.draw.winning_numbers;
+        if (Array.isArray(nums) && nums.length >= 6) {
+          return nums.length === 6 ? [...nums, data.draw.additional_number || 0] : nums;
+        }
+      }
+    }
+    
+    console.log('⚠️ No recognizable widget structure found');
+    return null;
+    
+  } catch (error) {
+    console.log('❌ Widget extraction error:', error.message);
     return null;
   }
 }
