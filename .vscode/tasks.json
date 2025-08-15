@@ -1,0 +1,53 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Deploy TOTO Updates",
+			"type": "shell",
+			"command": "deploy-updates.bat",
+			"group": "build"
+		},
+		{
+			"label": "Check Git Status",
+			"type": "shell",
+			"command": "git status",
+			"group": "build"
+		},
+		{
+			"label": "Add CSV Changes",
+			"type": "shell",
+			"command": "git add totoResult.csv",
+			"group": "build"
+		},
+		{
+			"label": "Commit CSV Update",
+			"type": "shell",
+			"command": "git commit -m \"🎯 Update TOTO results: Latest winning numbers 22,25,29,31,34,43,11 (Aug 16, 2025)\"",
+			"group": "build"
+		},
+		{
+			"label": "Commit Changes",
+			"type": "shell",
+			"command": "git commit -m \"Update TOTO results with latest winning numbers\"",
+			"group": "build"
+		},
+		{
+			"label": "Check CSV Diff",
+			"type": "shell",
+			"command": "git diff totoResult.csv",
+			"group": "build"
+		},
+		{
+			"label": "Check Recent Commits",
+			"type": "shell",
+			"command": "git log --oneline -5",
+			"group": "build"
+		},
+		{
+			"label": "Check Latest Commit Files",
+			"type": "shell",
+			"command": "git show --name-only HEAD",
+			"group": "build"
+		}
+	]
+}
