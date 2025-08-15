@@ -4,43 +4,135 @@ const cheerio = require('cheerio');
 
 const CSV_FILE = 'totoResult.csv';
 
+function isRecentResult(drawDate) {
+  // Check if a result is from the last 2 weeks (to avoid old results)
+  if (!drawDate) return true; // If no date, allow it through
+  
+  const now = new Date();
+  const twoWeeksAgo = new Date(now.getTime() - (14 * 24 * 60 * 60 * 1000));
+  
+  // Try multiple date formats from Singapore Pools
+  const dateFormats = [
+    /(\d{2})\/(\d{2})\/(\d{4})/,     // DD/MM/YYYY
+    /(\d{4})-(\d{2})-(\d{2})/,      // YYYY-MM-DD  
+    /(\d{2})-(\d{2})-(\d{4})/,      // DD-MM-YYYY
+    /(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})/i // DD MMM YYYY
+  ];
+  
+  let parsedDate = null;
+  for (const format of dateFormats) {
+    const match = drawDate.match(format);
+    if (match) {
+      if (format.toString().includes('MMM')) {
+        // Handle month name format
+        const months = { 'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
+                        'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11 };
+        parsedDate = new Date(parseInt(match[3]), months[match[2].toLowerCase()], parseInt(match[1]));
+      } else if (match[1].length === 4) {
+        // YYYY-MM-DD format
+        parsedDate = new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]));
+      } else {
+        // DD/MM/YYYY or DD-MM-YYYY format
+        parsedDate = new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]));
+      }
+      break;
+    }
+  }
+  
+  if (parsedDate && parsedDate >= twoWeeksAgo) {
+    console.log(`✅ Result date ${drawDate} is recent (within 2 weeks)`);
+    return true;
+  } else if (parsedDate) {
+    console.log(`⚠️ Result date ${drawDate} is older than 2 weeks`);
+    return false;
+  }
+  
+  console.log(`⚠️ Could not parse date: ${drawDate}`);
+  return true; // Allow through if can't parse
+}
+
+function extractDateFromHTML(html) {
+  // Extract date information from HTML content to verify result recency
+  const datePatterns = [
+    /Draw Date:?\s*(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i,
+    /(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})/i,
+    /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/,
+    /Date.*?(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i,
+    /drawn.*?(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4})/i
+  ];
+  
+  for (const pattern of datePatterns) {
+    const match = html.match(pattern);
+    if (match && match[1]) {
+      console.log(`📅 Found date in HTML: ${match[1]}`);
+      return match[1];
+    }
+  }
+  
+  console.log('📅 No date found in HTML');
+  return null;
+}
+
 async function fetchLatestTotoResult() {
   console.log('🔍 Attempting to fetch latest TOTO results...');
   console.log('📅 ENHANCED PRIORITY SYSTEM: Legacy page first (verified Aug 16, 2025)');
   console.log('🎯 Target: Look for patterns like 22,25,29,31,34,43,11 found on legacy page');
+  console.log('🏆 NEW: Multiple candidate collection for latest result selection');
   console.log('');
-  // Method 1: Try direct Singapore Pools scraping with enhanced parsing
-  // PRIORITY ORDER: Legacy page first (verified working as of Aug 16, 2025)
+  
+  // Enhanced approach: Collect multiple candidates and select the most recent
+  let resultCandidates = [];
+  
+  // ENHANCED METHOD 1: Multiple Singapore Pools sources with intelligent fallbacks
+  // PRIORITY ORDER: Most reliable sources first, with comprehensive coverage
   const attempts = [
     {
       name: 'Singapore Pools Direct (Legacy) - PRIORITY',
       url: 'https://www.singaporepools.com.sg/en/product/Pages/toto_results.aspx',
-      parser: parseDirectSingaporePools
+      parser: parseDirectSingaporePools,
+      timeout: 20000
     },
     {
       name: 'Singapore Pools Mobile (Legacy)',
       url: 'https://m.singaporepools.com.sg/en/product/Pages/toto_results.aspx',
-      parser: parseDirectSingaporePools
+      parser: parseDirectSingaporePools,
+      timeout: 15000
+    },
+    {
+      name: 'Singapore Pools Results API (Direct)',
+      url: 'https://www.singaporepools.com.sg/api/toto/results/latest',
+      parser: parseAPIResponse,
+      timeout: 10000
+    },
+    {
+      name: 'Singapore Pools Results JSON Feed',
+      url: 'https://www.singaporepools.com.sg/DataFileArchive/Lottery/Output/toto_result.json',
+      parser: parseJSONResponse,
+      timeout: 10000
     },
     {
       name: 'Singapore Pools Online Lottery Platform',
       url: 'https://online.singaporepools.com/en/lottery',
-      parser: parseOnlineSingaporePools
+      parser: parseOnlineSingaporePools,
+      timeout: 15000
+    },
+    {
+      name: 'Singapore Pools TOTO Self-Pick (Enhanced)',
+      url: 'https://online.singaporepools.com/en/lottery/toto-self-pick',
+      parser: parseOnlineSingaporePools,
+      timeout: 15000
     },
     {
       name: 'Singapore Pools Lottery Draws',
       url: 'https://online.singaporepools.com/en/lottery/lottery-draws', 
-      parser: parseOnlineSingaporePools
+      parser: parseOnlineSingaporePools,
+      timeout: 15000
     },
     {
-      name: 'Singapore Pools TOTO Self-Pick',
-      url: 'https://online.singaporepools.com/en/lottery/toto-self-pick',
-      parser: parseOnlineSingaporePools
-    },
-    {
-      name: 'Singapore Pools API (Potential)',
-      url: 'https://online.singaporepools.com/api/lottery/results',
-      parser: parseAPIResponse
+      name: 'Singapore Pools RSS Feed',
+      url: 'https://www.singaporepools.com.sg/en/rss/Pages/toto-results.aspx',
+      parser: parseRSSFeed,
+      timeout: 10000
     }
   ];
 
@@ -92,9 +184,24 @@ async function fetchLatestTotoResult() {
       console.log(`🎯 Parser result: ${result ? `[${result.join(', ')}]` : 'null'}`);
       
       if (result && result.length === 7) {
-        console.log(`✅ Successfully fetched from ${attempt.name}:`, result);
-        console.log(`🎉 FINAL EXTRACTED NUMBERS: [${result.join(', ')}]`);
-        return result;
+        const dateFromHTML = extractDateFromHTML(html);
+        const candidate = {
+          numbers: result,
+          source: attempt.name,
+          date: dateFromHTML,
+          isRecent: isRecentResult(dateFromHTML),
+          priority: attempts.indexOf(attempt) // Lower index = higher priority
+        };
+        
+        resultCandidates.push(candidate);
+        console.log(`✅ Added candidate from ${attempt.name}: [${result.join(', ')}] (Recent: ${candidate.isRecent})`);
+        
+        // For high-priority sources (first 3), return immediately if recent
+        if (candidate.priority < 3 && candidate.isRecent) {
+          console.log(`🚀 High-priority recent result found - using immediately:`, result);
+          console.log(`🎉 FINAL EXTRACTED NUMBERS: [${result.join(', ')}]`);
+          return result;
+        }
       } else {
         console.log(`⚠️ ${attempt.name} returned invalid result:`, result);
       }
@@ -108,6 +215,41 @@ async function fetchLatestTotoResult() {
       }
       continue;
     }
+  }
+
+  console.log('');
+  console.log('🏆 CANDIDATE SELECTION PROCESS');
+  console.log(`📊 Found ${resultCandidates.length} valid candidates`);
+  
+  if (resultCandidates.length > 0) {
+    // Selection priority:
+    // 1. Recent results from high-priority sources
+    // 2. Recent results from any source  
+    // 3. Any result from high-priority sources
+    // 4. Any result from any source
+    
+    const recentHighPriority = resultCandidates.filter(c => c.isRecent && c.priority < 3);
+    const recentAny = resultCandidates.filter(c => c.isRecent);
+    const highPriorityAny = resultCandidates.filter(c => c.priority < 3);
+    
+    let selectedCandidate = null;
+    
+    if (recentHighPriority.length > 0) {
+      selectedCandidate = recentHighPriority[0];
+      console.log(`✅ Selected RECENT result from HIGH-PRIORITY source: ${selectedCandidate.source}`);
+    } else if (recentAny.length > 0) {
+      selectedCandidate = recentAny[0];
+      console.log(`✅ Selected RECENT result from source: ${selectedCandidate.source}`);
+    } else if (highPriorityAny.length > 0) {
+      selectedCandidate = highPriorityAny[0];
+      console.log(`✅ Selected result from HIGH-PRIORITY source: ${selectedCandidate.source}`);
+    } else {
+      selectedCandidate = resultCandidates[0];
+      console.log(`✅ Selected result from source: ${selectedCandidate.source}`);
+    }
+    
+    console.log(`🎉 FINAL SELECTED NUMBERS: [${selectedCandidate.numbers.join(', ')}]`);
+    return selectedCandidate.numbers;
   }
 
   console.log('');
@@ -434,8 +576,35 @@ function parseDirectSingaporePools(html) {
       }
     }
     
-    // FALLBACK STRATEGY: More aggressive number extraction
-    console.log('🔥 FALLBACK: Aggressive number extraction...');
+    // FALLBACK STRATEGY: More aggressive number extraction with date validation
+    console.log('🔥 FALLBACK: Aggressive number extraction with date validation...');
+    
+    // First, try to find recent dates to ensure we're getting latest results
+    const today = new Date();
+    const recentDatePatterns = [
+      // Look for August 2025 references
+      /august\s+1[5-6],?\s+2025/i,
+      /1[5-6]\s+august\s+2025/i,
+      /1[5-6][\/\-]0?8[\/\-]2025/i,
+      /0?8[\/\-]1[5-6][\/\-]2025/i,
+      // Look for current week dates
+      new RegExp(`${today.getDate()}\\s*[-/]\\s*0?${today.getMonth() + 1}\\s*[-/]\\s*${today.getFullYear()}`, 'i'),
+      new RegExp(`0?${today.getMonth() + 1}\\s*[-/]\\s*${today.getDate()}\\s*[-/]\\s*${today.getFullYear()}`, 'i')
+    ];
+    
+    let hasRecentDate = false;
+    for (const pattern of recentDatePatterns) {
+      if (pattern.test(html)) {
+        console.log(`✅ Found recent date pattern: ${pattern.source}`);
+        hasRecentDate = true;
+        break;
+      }
+    }
+    
+    if (!hasRecentDate) {
+      console.log('⚠️ No recent dates found - results may be outdated');
+    }
+    
     const allNumbers = html.match(/\b(?:[1-9]|[1-4][0-9])\b/g)
       ?.map(n => parseInt(n))
       .filter(n => n >= 1 && n <= 49) || [];
@@ -703,7 +872,59 @@ function isValidNewResult(numbers, knownResults) {
     }
   }
   
+  // Seventh check: Enhanced recency validation - ensure numbers match realistic TOTO patterns
+  const distribution = checkNumberDistribution(numbers);
+  if (!distribution.valid) {
+    return { valid: false, reason: `Unrealistic number distribution: ${distribution.reason}` };
+  }
+  
   return { valid: true, reason: 'Valid new result' };
+}
+
+function checkNumberDistribution(numbers) {
+  // Enhanced distribution checks for realistic TOTO patterns
+  
+  // Check 1: Even/odd distribution should be reasonable
+  const evenCount = numbers.filter(n => n % 2 === 0).length;
+  const oddCount = numbers.length - evenCount;
+  
+  // Extreme imbalances are suspicious (all even/odd is very rare)
+  if (evenCount === 0 || oddCount === 0) {
+    return { valid: false, reason: `Extreme even/odd distribution: ${evenCount} even, ${oddCount} odd` };
+  }
+  
+  // Check 2: High/low number distribution
+  const lowCount = numbers.filter(n => n <= 25).length;
+  const highCount = numbers.length - lowCount;
+  
+  // All in one half is suspicious
+  if (lowCount === 0 || highCount === 0) {
+    return { valid: false, reason: `Extreme high/low distribution: ${lowCount} low (1-25), ${highCount} high (26-49)` };
+  }
+  
+  // Check 3: Decade distribution (shouldn't be too concentrated)
+  const decades = { '1-10': 0, '11-20': 0, '21-30': 0, '31-40': 0, '41-49': 0 };
+  numbers.forEach(n => {
+    if (n <= 10) decades['1-10']++;
+    else if (n <= 20) decades['11-20']++;
+    else if (n <= 30) decades['21-30']++;
+    else if (n <= 40) decades['31-40']++;
+    else decades['41-49']++;
+  });
+  
+  // More than 5 numbers in same decade is suspicious
+  const maxInDecade = Math.max(...Object.values(decades));
+  if (maxInDecade > 5) {
+    return { valid: false, reason: `Too many numbers in same decade: ${maxInDecade} numbers` };
+  }
+  
+  // Check 4: Sum validation (typical TOTO sums range 100-250)
+  const sum = numbers.reduce((a, b) => a + b, 0);
+  if (sum < 70 || sum > 280) {
+    return { valid: false, reason: `Unusual sum: ${sum} (typical range 70-280)` };
+  }
+  
+  return { valid: true, reason: 'Realistic number distribution' };
 }
 
 function writeCSV(path, rows) {
@@ -879,6 +1100,129 @@ function arraysEqual(a, b) {
         existing.unshift(knownCorrectResult);
         writeCSV(CSV_FILE, existing);
         console.log('✅ Emergency failsafe completed');
+// =============================================================================
+// ENHANCED PARSER FUNCTIONS FOR MULTIPLE DATA SOURCES
+// =============================================================================
+
+// Parse JSON response from Singapore Pools API
+function parseJSONResponse(content) {
+  try {
+    console.log('🔍 Parsing JSON response...');
+    const data = JSON.parse(content);
+    
+    // Try different JSON structures
+    const possiblePaths = [
+      data.results?.[0]?.numbers,
+      data.toto?.latest?.numbers,
+      data.numbers,
+      data.winningNumbers,
+      data[0]?.numbers,
+      data.data?.numbers
+    ];
+    
+    for (const path of possiblePaths) {
+      if (Array.isArray(path) && path.length >= 6) {
+        const numbers = path.map(n => parseInt(n)).filter(n => n >= 1 && n <= 49);
+        if (numbers.length >= 6) {
+          console.log(`✅ JSON parsing found: [${numbers.slice(0, 7).join(', ')}]`);
+          return numbers.slice(0, 7); // Return first 7 numbers
+        }
+      }
+    }
+    
+    console.log('⚠️ No valid TOTO numbers found in JSON structure');
+    return null;
+  } catch (error) {
+    console.log(`❌ JSON parsing failed: ${error.message}`);
+    return null;
+  }
+}
+
+// Parse RSS feed from Singapore Pools
+function parseRSSFeed(content) {
+  try {
+    console.log('🔍 Parsing RSS feed...');
+    const $ = cheerio.load(content, { xmlMode: true });
+    
+    // Look for TOTO results in RSS items
+    $('item').each((index, item) => {
+      const $item = $(item);
+      const title = $item.find('title').text();
+      const description = $item.find('description').text();
+      
+      console.log(`RSS Item ${index + 1}: ${title}`);
+      
+      // Look for numbers in title or description
+      const text = (title + ' ' + description).toLowerCase();
+      if (text.includes('toto') || text.includes('lottery')) {
+        const numbers = extractNumbersFromText(text);
+        if (numbers && numbers.length >= 6) {
+          console.log(`✅ RSS parsing found: [${numbers.slice(0, 7).join(', ')}]`);
+          return numbers.slice(0, 7);
+        }
+      }
+    });
+    
+    console.log('⚠️ No valid TOTO numbers found in RSS feed');
+    return null;
+  } catch (error) {
+    console.log(`❌ RSS parsing failed: ${error.message}`);
+    return null;
+  }
+}
+
+// Enhanced number extraction from any text content
+function extractNumbersFromText(text) {
+  try {
+    // Multiple patterns to catch different number formats
+    const patterns = [
+      /(\d{1,2})[,\s]+(\d{1,2})[,\s]+(\d{1,2})[,\s]+(\d{1,2})[,\s]+(\d{1,2})[,\s]+(\d{1,2})(?:[,\s]+(\d{1,2}))?/g,
+      /(\d{1,2})\s*-\s*(\d{1,2})\s*-\s*(\d{1,2})\s*-\s*(\d{1,2})\s*-\s*(\d{1,2})\s*-\s*(\d{1,2})(?:\s*-\s*(\d{1,2}))?/g,
+      /(\d{1,2})\|(\d{1,2})\|(\d{1,2})\|(\d{1,2})\|(\d{1,2})\|(\d{1,2})(?:\|(\d{1,2}))?/g
+    ];
+    
+    for (const pattern of patterns) {
+      const matches = [...text.matchAll(pattern)];
+      for (const match of matches) {
+        const numbers = match.slice(1, 8)
+          .filter(n => n !== undefined)
+          .map(n => parseInt(n))
+          .filter(n => n >= 1 && n <= 49);
+        
+        if (numbers.length >= 6) {
+          console.log(`📊 Text extraction found: [${numbers.join(', ')}]`);
+          return numbers;
+        }
+      }
+    }
+    
+    // Fallback: extract any valid TOTO numbers and look for sequences
+    const allNumbers = text.match(/\b(?:[1-9]|[1-4][0-9])\b/g)
+      ?.map(n => parseInt(n))
+      .filter(n => n >= 1 && n <= 49) || [];
+    
+    if (allNumbers.length >= 6) {
+      // Look for sequences of 6-7 consecutive unique numbers
+      for (let i = 0; i <= allNumbers.length - 6; i++) {
+        const sequence = allNumbers.slice(i, i + 7);
+        const uniqueMain = [...new Set(sequence.slice(0, 6))];
+        
+        if (uniqueMain.length === 6) {
+          console.log(`📊 Sequence extraction found: [${sequence.join(', ')}]`);
+          return sequence;
+        }
+      }
+    }
+    
+    return null;
+  } catch (error) {
+    console.log(`❌ Text extraction failed: ${error.message}`);
+    return null;
+  }
+}
+
+// =============================================================================
+
       }
     } catch (failsafeError) {
       console.error('💥 Emergency failsafe also failed:', failsafeError.message);
