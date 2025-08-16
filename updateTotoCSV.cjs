@@ -678,10 +678,18 @@ function parseDirectSingaporePools(html) {
           
           // Show sample of what we're matching against for first pattern
           if (p === 0) {
+            console.log(`   📋 Searching for exact pattern: | 22 | 25 | 29 | 31 | 34 | 43 |`);
             const sampleIndex = html.indexOf('| 22 |');
             if (sampleIndex !== -1) {
-              const sample = html.substring(sampleIndex, sampleIndex + 200);
-              console.log(`   📋 Sample content around '| 22 |': ${sample.substring(0, 100)}...`);
+              const sample = html.substring(sampleIndex, sampleIndex + 300);
+              console.log(`   ✅ Found '| 22 |' at position ${sampleIndex}`);
+              console.log(`   📋 Sample content: ${sample.substring(0, 150)}...`);
+            } else {
+              console.log(`   ❌ Could not find '| 22 |' in HTML`);
+              // Try alternative search
+              const alt1 = html.indexOf('22');
+              const alt2 = html.indexOf('25');
+              console.log(`   🔍 Plain '22' found at: ${alt1}, '25' found at: ${alt2}`);
             }
           }
           
