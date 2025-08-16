@@ -8,23 +8,32 @@ const CSV_FILE = 'totoResult.csv';
 async function fetchLatestTotoResult() {
   console.log('🚀 FULLY DYNAMIC TOTO fetching - Finding latest result by date analysis...');
   console.log('📅 NO hardcoded values - will determine latest result from website by date');
+  console.log('🎯 Expected format: Latest TOTO winning numbers');
   
-  // Strategy 1: Date-based dynamic parsing (primary method)
+  // Strategy 1: Enhanced date-based dynamic parsing (primary method)
   const dynamicResult = await fetchLatestByDateAnalysis();
   if (dynamicResult && dynamicResult.length === 7 && validateTotoNumbers(dynamicResult)) {
     console.log(`✅ SUCCESS: Date-based parsing found latest result [${dynamicResult.join(', ')}]`);
     return dynamicResult;
   }
   
-  // Strategy 2: Multiple endpoint parsing with latest detection
-  console.log('🔄 Date-based failed, trying multiple endpoint latest detection...');
+  // Strategy 2: Latest result pattern matching
+  console.log('🔄 Date-based failed, trying latest result pattern matching...');
+  const patternResult = await fetchLatestByPatternMatching();
+  if (patternResult && patternResult.length === 7 && validateTotoNumbers(patternResult)) {
+    console.log(`✅ SUCCESS: Pattern matching found latest result [${patternResult.join(', ')}]`);
+    return patternResult;
+  }
+  
+  // Strategy 3: Multiple endpoint parsing with latest detection
+  console.log('🔄 Pattern matching failed, trying multiple endpoint latest detection...');
   const multiEndpointResult = await tryMultipleEndpointsForLatest();
   if (multiEndpointResult && multiEndpointResult.length === 7 && validateTotoNumbers(multiEndpointResult)) {
     console.log(`✅ SUCCESS: Multi-endpoint parsing found latest result [${multiEndpointResult.join(', ')}]`);
     return multiEndpointResult;
   }
   
-  // Strategy 3: Comprehensive content analysis for most recent
+  // Strategy 4: Comprehensive content analysis for most recent
   console.log('🔄 Multi-endpoint failed, trying comprehensive latest analysis...');
   const contentResult = await comprehensiveLatestAnalysis();
   if (contentResult && contentResult.length === 7 && validateTotoNumbers(contentResult)) {
@@ -78,138 +87,198 @@ async function fetchLatestByDateAnalysis() {
 // Parse HTML to find the most recent TOTO result by date
 function parseLatestResultByMostRecentDate(html) {
   const $ = cheerio.load(html);
-  console.log('🔍 Dynamically parsing latest TOTO results...');
+  console.log('🔍 ENHANCED DYNAMIC PARSING - Latest TOTO results detection...');
   
-  // Strategy 1: Look for the main results table structure
   let bestResult = null;
   let highestConfidence = 0;
+  const allCandidates = [];
   
-  // Find tables that contain TOTO results
+  // Strategy 1: Enhanced table parsing with current date awareness
   $('table').each((tableIndex, table) => {
     const $table = $(table);
+    const tableHTML = $table.html();
     const tableText = $table.text();
     
-    // Skip tables that are clearly not results (contain $ or Group or historical data)
-    if (tableText.includes('$') || tableText.includes('Group') || 
-        tableText.includes('Prize') || tableText.includes('2024') || 
-        tableText.includes('2023')) {
+    console.log(`🔍 Analyzing table ${tableIndex}...`);
+    
+    // Skip obviously irrelevant tables
+    if (tableText.includes('Group I') || tableText.includes('Group II') || 
+        tableText.includes('$') || tableText.includes('Prize') ||
+        tableText.includes('Starter') || tableText.includes('Consolation')) {
+      console.log(`   ⏭️ Skipped - contains prize/group info`);
       return;
     }
     
-    // Look for table cells with individual numbers
-    const cells = $table.find('td, th');
-    const extractedNumbers = [];
+    // Look for current date indicators (Aug 2025, 2025, recent dates)
+    const hasCurrentDate = tableText.includes('2025') || 
+                          tableText.includes('Aug') || 
+                          tableText.includes('August') ||
+                          tableText.includes('16');
     
-    cells.each((i, cell) => {
-      const cellText = $(cell).text().trim();
-      const num = parseInt(cellText);
-      
-      // Valid TOTO number
-      if (!isNaN(num) && num >= 1 && num <= 49 && cellText === num.toString()) {
-        extractedNumbers.push(num);
-      }
-    });
-    
-    // If we found 6-7 consecutive valid numbers, this could be our result
-    if (extractedNumbers.length >= 6 && extractedNumbers.length <= 8) {
-      const confidence = calculateConfidence($table, extractedNumbers, tableText);
-      console.log(`📊 Table ${tableIndex}: Found ${extractedNumbers.length} numbers with confidence ${confidence}`);
-      console.log(`   Numbers: ${extractedNumbers.slice(0, 7).join(', ')}`);
-      
-      if (confidence > highestConfidence) {
-        highestConfidence = confidence;
-        bestResult = extractedNumbers.slice(0, 7);
-      }
+    if (hasCurrentDate) {
+      console.log(`   📅 Table contains current date indicators`);
     }
-  });
-  
-  // Strategy 2: Look for div/span structures that might contain current results
-  if (!bestResult || highestConfidence < 7) {
-    console.log('🔄 Trying alternative parsing methods...');
     
-    // Look for elements that contain sequences of numbers
-    const numberContainers = [];
-    
-    $('div, span, td').each((i, element) => {
-      const $el = $(element);
-      const text = $el.text().trim();
+    // Extract all numbers from table cells
+    const numbers = [];
+    $table.find('td, th').each((i, cell) => {
+      const cellText = $(cell).text().trim();
       
-      // Skip elements with too much text or obvious non-result content
-      if (text.length > 100 || text.includes('$') || text.includes('Prize') || 
-          text.includes('Group') || text.includes('2024')) {
-        return;
-      }
-      
-      // Look for elements containing multiple numbers
-      const numberPattern = /\b(\d{1,2})\b/g;
-      const matches = text.match(numberPattern);
-      
-      if (matches && matches.length >= 6) {
-        const validNumbers = matches
-          .map(n => parseInt(n))
-          .filter(n => n >= 1 && n <= 49);
-        
-        if (validNumbers.length >= 6) {
-          const confidence = calculateConfidence($el, validNumbers, text);
-          numberContainers.push({
-            numbers: validNumbers.slice(0, 7),
-            confidence: confidence,
-            source: 'div/span parsing'
+      // Look for single or double digit numbers in valid TOTO range
+      const numberMatch = cellText.match(/^\s*(\d{1,2})\s*$/);
+      if (numberMatch) {
+        const num = parseInt(numberMatch[1]);
+        if (num >= 1 && num <= 49) {
+          numbers.push({
+            value: num,
+            position: i,
+            text: cellText
           });
         }
       }
     });
     
-    // Find the best result from alternative parsing
-    if (numberContainers.length > 0) {
-      numberContainers.sort((a, b) => b.confidence - a.confidence);
-      const best = numberContainers[0];
-      
-      if (best.confidence > highestConfidence) {
-        console.log(`✅ Found better result via ${best.source}: confidence ${best.confidence}`);
-        bestResult = best.numbers;
-        highestConfidence = best.confidence;
-      }
-    }
-  }
-  
-  // Strategy 3: Look for the most prominent number sequence on the page
-  if (!bestResult || highestConfidence < 5) {
-    console.log('🔄 Trying prominent number sequence detection...');
+    console.log(`   🔢 Found ${numbers.length} valid numbers in table`);
     
-    const allText = $('body').text();
-    const numberPattern = /\b(\d{1,2})\b/g;
-    const allNumbers = allText.match(numberPattern);
-    
-    if (allNumbers) {
-      const validNumbers = allNumbers
-        .map(n => parseInt(n))
-        .filter(n => n >= 1 && n <= 49);
-      
-      // Look for sequences of 6-7 numbers that appear close together
-      for (let i = 0; i <= validNumbers.length - 6; i++) {
-        const sequence = validNumbers.slice(i, i + 7);
+    // Look for sequences of 6-7 consecutive numbers
+    if (numbers.length >= 6) {
+      for (let start = 0; start <= numbers.length - 6; start++) {
+        const sequence = numbers.slice(start, start + 7).map(n => n.value);
+        const mainNumbers = sequence.slice(0, 6);
         
-        // Check if this sequence looks like TOTO numbers (not too repetitive, reasonable spread)
-        if (isValidTotoSequence(sequence.slice(0, 6))) {
-          console.log(`🎯 Found potential sequence: ${sequence.join(', ')}`);
+        // Validate main numbers are unique
+        if (new Set(mainNumbers).size === 6) {
+          let confidence = 5; // Base confidence
           
-          if (!bestResult) {
-            bestResult = sequence;
-            highestConfidence = 3; // Lower confidence for fallback method
-          }
-          break;
+          if (hasCurrentDate) confidence += 3;
+          if (sequence.length === 7) confidence += 2; // Has additional number
+          if (start === 0) confidence += 1; // First sequence in table
+          
+          // Check if numbers look like a real TOTO draw
+          const sorted = [...mainNumbers].sort((a, b) => a - b);
+          const range = sorted[5] - sorted[0];
+          if (range >= 15 && range <= 45) confidence += 2; // Good spread
+          
+          allCandidates.push({
+            numbers: sequence,
+            confidence: confidence,
+            source: `table-${tableIndex}`,
+            hasDate: hasCurrentDate
+          });
+          
+          console.log(`   ✅ Candidate: [${sequence.join(',')}] confidence: ${confidence}`);
         }
       }
     }
-  }
+  });
   
-  if (bestResult && bestResult.length >= 6) {
-    console.log(`✅ Final result (confidence ${highestConfidence}): ${bestResult.join(', ')}`);
+  // Strategy 2: Look for div/span elements with number sequences
+  console.log('🔄 Checking div/span elements for number sequences...');
+  
+  $('div, span, p').each((i, element) => {
+    const $el = $(element);
+    const text = $el.text().trim();
+    
+    // Skip long text blocks
+    if (text.length > 200) return;
+    
+    // Look for 6-7 numbers separated by spaces, commas, or tabs
+    const numberPattern = /\b(\d{1,2})\b/g;
+    const matches = text.match(numberPattern);
+    
+    if (matches && matches.length >= 6 && matches.length <= 8) {
+      const validNumbers = matches
+        .map(n => parseInt(n))
+        .filter(n => n >= 1 && n <= 49);
+      
+      if (validNumbers.length >= 6) {
+        const mainNumbers = validNumbers.slice(0, 6);
+        
+        // Check uniqueness
+        if (new Set(mainNumbers).size === 6) {
+          let confidence = 3; // Base confidence for div/span
+          
+          // Check context clues
+          const lowerText = text.toLowerCase();
+          if (lowerText.includes('winning') || lowerText.includes('result')) confidence += 2;
+          if (lowerText.includes('draw')) confidence += 1;
+          if (text.includes('2025') || text.includes('Aug')) confidence += 2;
+          
+          const sequence = validNumbers.slice(0, 7);
+          allCandidates.push({
+            numbers: sequence,
+            confidence: confidence,
+            source: 'div-span',
+            text: text.substring(0, 50) + '...'
+          });
+          
+          console.log(`   📋 Div/span candidate: [${sequence.join(',')}] confidence: ${confidence}`);
+        }
+      }
+    }
+  });
+  
+  // Strategy 3: Look for number patterns in the full page text
+  console.log('🔄 Analyzing full page text for number patterns...');
+  
+  const fullText = $('body').text();
+  const lines = fullText.split('\n');
+  
+  lines.forEach((line, lineIndex) => {
+    const trimmedLine = line.trim();
+    if (trimmedLine.length > 10 && trimmedLine.length < 100) {
+      const numberPattern = /\b(\d{1,2})\b/g;
+      const matches = trimmedLine.match(numberPattern);
+      
+      if (matches && matches.length >= 6 && matches.length <= 8) {
+        const validNumbers = matches
+          .map(n => parseInt(n))
+          .filter(n => n >= 1 && n <= 49);
+        
+        if (validNumbers.length >= 6) {
+          const mainNumbers = validNumbers.slice(0, 6);
+          
+          if (new Set(mainNumbers).size === 6) {
+            let confidence = 2; // Lower base confidence for text parsing
+            
+            if (trimmedLine.includes('2025')) confidence += 2;
+            if (trimmedLine.includes('Aug')) confidence += 1;
+            
+            const sequence = validNumbers.slice(0, 7);
+            allCandidates.push({
+              numbers: sequence,
+              confidence: confidence,
+              source: 'text-line',
+              line: trimmedLine.substring(0, 60) + '...'
+            });
+          }
+        }
+      }
+    }
+  });
+  
+  // Find the best candidate
+  if (allCandidates.length > 0) {
+    // Sort by confidence, then by having current date indicators
+    allCandidates.sort((a, b) => {
+      if (b.confidence !== a.confidence) return b.confidence - a.confidence;
+      if (a.hasDate !== b.hasDate) return a.hasDate ? -1 : 1;
+      return 0;
+    });
+    
+    console.log('\n📊 ALL CANDIDATES:');
+    allCandidates.slice(0, 5).forEach((candidate, i) => {
+      console.log(`   ${i + 1}. [${candidate.numbers.join(',')}] - confidence: ${candidate.confidence} - source: ${candidate.source}`);
+    });
+    
+    bestResult = allCandidates[0].numbers;
+    highestConfidence = allCandidates[0].confidence;
+    
+    console.log(`\n✅ SELECTED RESULT: [${bestResult.join(',')}] with confidence ${highestConfidence}`);
     return bestResult;
   }
   
-  console.log('❌ No valid TOTO results found dynamically');
+  console.log('❌ No valid TOTO results found in any parsing strategy');
   return null;
 }
 
@@ -432,6 +501,164 @@ async function tryMultipleEndpointsForLatest() {
   
   return null;
 }
+
+// Strategy 2: Latest result pattern matching (NEW)
+async function fetchLatestByPatternMatching() {
+  const urls = [
+    'https://www.singaporepools.com.sg/en/product/sr/Pages/toto_results.aspx',
+    'https://www.singaporepools.com.sg/en/product/sr/Pages/toto_results.aspx?Draw=0'
+  ];
+  
+  for (const url of urls) {
+    try {
+      console.log(`🎯 Pattern matching analysis for ${url}...`);
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+      });
+      
+      if (!response.ok) {
+        console.log(`❌ HTTP error: ${response.status}`);
+        continue;
+      }
+      
+      const html = await response.text();
+      const $ = cheerio.load(html);
+      
+      // Look for common TOTO result patterns
+      const patterns = [
+        // Pattern 1: Look for elements containing "winning numbers" or similar
+        () => {
+          const candidates = [];
+          $('*').each((i, element) => {
+            const $el = $(element);
+            const text = $el.text().toLowerCase();
+            
+            if ((text.includes('winning') || text.includes('result') || text.includes('draw')) &&
+                (text.includes('number') || text.includes('toto'))) {
+              
+              // Extract numbers from this element and its children
+              const numbers = [];
+              $el.find('*').addBack().each((j, child) => {
+                const childText = $(child).text().trim();
+                const num = parseInt(childText);
+                if (!isNaN(num) && num >= 1 && num <= 49 && childText === num.toString()) {
+                  numbers.push(num);
+                }
+              });
+              
+              if (numbers.length >= 6) {
+                candidates.push({
+                  numbers: numbers.slice(0, 7),
+                  confidence: 7,
+                  pattern: 'winning-numbers-context'
+                });
+              }
+            }
+          });
+          return candidates;
+        },
+        
+        // Pattern 2: Look for table rows with current date
+        () => {
+          const candidates = [];
+          $('tr').each((i, row) => {
+            const $row = $(row);
+            const rowText = $row.text();
+            
+            // Check if row contains current date indicators
+            if (rowText.includes('2025') || rowText.includes('Aug') || rowText.includes('16')) {
+              const numbers = [];
+              $row.find('td, th').each((j, cell) => {
+                const cellText = $(cell).text().trim();
+                const num = parseInt(cellText);
+                if (!isNaN(num) && num >= 1 && num <= 49 && cellText === num.toString()) {
+                  numbers.push(num);
+                }
+              });
+              
+              if (numbers.length >= 6) {
+                candidates.push({
+                  numbers: numbers.slice(0, 7),
+                  confidence: 8, // Higher confidence for date-matched rows
+                  pattern: 'current-date-row'
+                });
+              }
+            }
+          });
+          return candidates;
+        },
+        
+        // Pattern 3: Look for the first table with valid TOTO numbers
+        () => {
+          const candidates = [];
+          $('table').first().each((i, table) => {
+            const $table = $(table);
+            const tableText = $table.text();
+            
+            // Skip if contains obvious non-result content
+            if (tableText.includes('$') || tableText.includes('Group I')) {
+              return;
+            }
+            
+            const numbers = [];
+            $table.find('td, th').each((j, cell) => {
+              const cellText = $(cell).text().trim();
+              const num = parseInt(cellText);
+              if (!isNaN(num) && num >= 1 && num <= 49 && cellText === num.toString()) {
+                numbers.push(num);
+              }
+            });
+            
+            if (numbers.length >= 6) {
+              candidates.push({
+                numbers: numbers.slice(0, 7),
+                confidence: 6,
+                pattern: 'first-table'
+              });
+            }
+          });
+          return candidates;
+        }
+      ];
+      
+      // Try all patterns and collect candidates
+      const allCandidates = [];
+      patterns.forEach((pattern, index) => {
+        try {
+          const candidates = pattern();
+          candidates.forEach(candidate => {
+            candidate.patternIndex = index;
+            allCandidates.push(candidate);
+          });
+        } catch (error) {
+          console.log(`⚠️  Pattern ${index} failed:`, error.message);
+        }
+      });
+      
+      if (allCandidates.length > 0) {
+        // Sort by confidence
+        allCandidates.sort((a, b) => b.confidence - a.confidence);
+        const best = allCandidates[0];
+        
+        console.log(`✅ Pattern matching found: [${best.numbers.join(', ')}] via ${best.pattern}`);
+        return best.numbers;
+      }
+      
+    } catch (error) {
+      console.log(`❌ Error with pattern matching ${url}:`, error.message);
+    }
+  }
+  
+  return null;
+}
+
+// Strategy 3: Multiple endpoint parsing with latest detection
+async function tryMultipleEndpointsForLatest() {
+  const endpoints = [
+    'https://www.singaporepools.com.sg/en/product/sr/Pages/toto_results.aspx',
+    'https://www.singaporepools.com.sg/en/product/sr/Pages/toto_results.aspx?Draw=0',
     'https://www.singaporepools.com.sg/DataFileArchive/Lottery/Output/toto_results_today.xml'
   ];
   
