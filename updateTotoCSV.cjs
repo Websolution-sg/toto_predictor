@@ -1,12 +1,10 @@
 const fs = require('fs');
-const f  // If all dynamic methods fail, return null (no hardcoded fallback)
-  console.log('❌ All dynamic parsing strategies failed to find latest result');
-  console.log('📋 Returning null - no hardcoded values used');
-  return null;
-}ode-fetch');
+const fetch = require('node-fetch');
 const cheerio = require('cheerio');
 
 const CSV_FILE = 'totoResult.csv';
+
+// FULLY DYNAMIC TOTO result fetching - NO HARDCODED VALUES - DATE-BASED LATEST DETECTION
 
 // FULLY DYNAMIC TOTO result fetching - NO HARDCODED VALUES - DATE-BASED LATEST DETECTION
 async function fetchLatestTotoResult() {
