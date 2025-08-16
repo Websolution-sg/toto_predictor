@@ -651,25 +651,15 @@ function parseDirectSingaporePools(html) {
               const fullResult = [...mainNumbers, additional];
               console.log(`✅ COMPLETE RESULT: [${fullResult.join(', ')}]`);
               
-              // Check if this is a new result
-              const knownRecentResults = getKnownRecentResults(CSV_FILE);
-              console.log(`🔍 Known recent results count: ${knownRecentResults.length}`);
-              if (knownRecentResults.length > 0) {
-                console.log(`🔍 Most recent in CSV: [${knownRecentResults[0].join(', ')}]`);
-              }
-              
-              const validation = isValidNewResult(fullResult, knownRecentResults);
-              console.log(`🔍 Validation result: ${validation.valid} - ${validation.reason}`);
-              
-              if (validation.valid) {
-                console.log('🎉 SUCCESS: Found valid new TOTO result!');
+              // Basic validation only - let main execution handle comparison
+              if (fullResult.length === 7 && 
+                  fullResult.every(n => n >= 1 && n <= 49) && 
+                  new Set(fullResult).size === 7) {
+                console.log('🎉 SUCCESS: Found valid TOTO result format!');
+                console.log('📋 Returning result to main execution for comparison...');
                 return fullResult;
               } else {
-                console.log(`⚠️ Not a new result: ${validation.reason}`);
-                console.log(`   Fetched: [${fullResult.join(', ')}]`);
-                if (knownRecentResults.length > 0) {
-                  console.log(`   CSV Top: [${knownRecentResults[0].join(', ')}]`);
-                }
+                console.log('❌ Basic validation failed - invalid format or duplicates');
               }
             }
           } else {
@@ -782,9 +772,11 @@ function parseDirectSingaporePools(html) {
               const fullResult = [...mainNumbers, additionalNumber];
               console.log(`💫 Table-based candidate: [${fullResult.join(', ')}]`);
               
-              const validation = isValidNewResult(fullResult, knownRecentResults);
-              if (validation.valid) {
-                console.log('✅ TABLE MATCH: Valid new result found in structured table!');
+              // Basic validation only
+              if (fullResult.length === 7 && 
+                  fullResult.every(n => n >= 1 && n <= 49) && 
+                  new Set(fullResult).size === 7) {
+                console.log('✅ TABLE MATCH: Valid TOTO result format found!');
                 return fullResult;
               }
             }
@@ -903,26 +895,13 @@ function parseDirectSingaporePools(html) {
               console.log(`   💫 Potential TOTO result: [${fullResult.join(', ')}]`);
               
               // Validate this result
-              const validation = isValidNewResult(fullResult, knownRecentResults);
-              if (validation.valid) {
-                console.log(`   ✅ Valid result found!`);
-                
-                // Calculate confidence score
-                let maxMatches = 0;
-                for (const knownResult of knownRecentResults) {
-                  const matches = fullResult.filter(n => knownResult.includes(n)).length;
-                  maxMatches = Math.max(maxMatches, matches);
-                }
-                
-                console.log(`   🎯 Confidence score: ${maxMatches}/7 matches with known results`);
-                
-                if (maxMatches > bestScore || (maxMatches === bestScore && bestMatch === null)) {
-                  bestMatch = fullResult;
-                  bestScore = maxMatches;
-                  console.log(`   🏆 NEW BEST MATCH: [${fullResult.join(', ')}] (score: ${maxMatches})`);
-                }
+              if (fullResult.length === 7 && 
+                  fullResult.every(n => n >= 1 && n <= 49) && 
+                  new Set(fullResult).size === 7) {
+                console.log(`   ✅ Valid TOTO result format found!`);
+                return fullResult;
               } else {
-                console.log(`   ❌ Rejected: ${validation.reason}`);
+                console.log(`   ❌ Invalid format or duplicates`);
               }
             } else {
               console.log(`   ⚠️ No additional number found for main numbers: [${mainNumbers.join(', ')}]`);
@@ -962,12 +941,13 @@ function parseDirectSingaporePools(html) {
             const fullResult = [...numbers, additional];
             console.log(`   Full result with additional: [${fullResult.join(', ')}]`);
             
-            const validation = isValidNewResult(fullResult, knownRecentResults);
-            if (validation.valid) {
+            if (fullResult.length === 7 && 
+                fullResult.every(n => n >= 1 && n <= 49) && 
+                new Set(fullResult).size === 7) {
               console.log(`   ✅ Valid pattern result: [${fullResult.join(', ')}]`);
               return fullResult;
             } else {
-              console.log(`   ❌ Pattern rejected: ${validation.reason}`);
+              console.log(`   ❌ Invalid format or duplicates`);
             }
           }
         }
