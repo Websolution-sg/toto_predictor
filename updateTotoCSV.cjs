@@ -1155,6 +1155,9 @@ function arraysEqual(a, b) {
       console.log('STEP 2: PROCESSING FETCH RESULTS');
       console.log('='.repeat(60));
       console.log(`🎯 Fetched result: ${latestResult ? `[${latestResult.join(', ')}]` : 'NULL'}`);
+      console.log(`🔍 Result type: ${typeof latestResult}`);
+      console.log(`🔍 Result is array: ${Array.isArray(latestResult)}`);
+      console.log(`🔍 Result length: ${latestResult ? latestResult.length : 'N/A'}`);
       
       if (!latestResult || latestResult.length !== 7) {
         console.log('');
@@ -1195,26 +1198,33 @@ function arraysEqual(a, b) {
       
       const existing = readExistingCSV(CSV_FILE);
       console.log(`📊 Current CSV entries: ${existing.length}`);
-    console.log(`📊 Current top entry: ${existing.length > 0 ? `[${existing[0].join(', ')}]` : 'EMPTY'}`);
-    console.log(`🎯 New result from Singapore Pools: [${latestResult.join(', ')}]`);
-    
-    // DEBUG: Show exact comparison details
-    if (latestResult && existing.length > 0) {
-      console.log('');
-      console.log('🔍 COMPARISON DEBUG:');
-      console.log(`   Fetched: [${latestResult.join(', ')}]`);
-      console.log(`   CSV Top: [${existing[0].join(', ')}]`);
-      console.log(`   Arrays Equal: ${arraysEqual(latestResult, existing[0])}`);
-      console.log(`   Length Match: ${latestResult.length === existing[0].length}`);
-      if (latestResult.length === existing[0].length) {
-        for (let i = 0; i < latestResult.length; i++) {
-          console.log(`   Position ${i}: ${latestResult[i]} === ${existing[0][i]} = ${latestResult[i] === existing[0][i]}`);
+      console.log(`📊 Current top entry: ${existing.length > 0 ? `[${existing[0].join(', ')}]` : 'EMPTY'}`);
+      console.log(`🎯 New result from Singapore Pools: [${latestResult.join(', ')}]`);
+      
+      // DEBUG: Show exact comparison details
+      if (latestResult && existing.length > 0) {
+        console.log('');
+        console.log('🔍 COMPARISON DEBUG:');
+        console.log(`   Fetched: [${latestResult.join(', ')}]`);
+        console.log(`   CSV Top: [${existing[0].join(', ')}]`);
+        console.log(`   Arrays Equal: ${arraysEqual(latestResult, existing[0])}`);
+        console.log(`   Length Match: ${latestResult.length === existing[0].length}`);
+        if (latestResult.length === existing[0].length) {
+          for (let i = 0; i < latestResult.length; i++) {
+            console.log(`   Position ${i}: ${latestResult[i]} === ${existing[0][i]} = ${latestResult[i] === existing[0][i]}`);
+          }
         }
+        
+        // Additional debug: Check if arrays are exactly equal
+        const fetchedStr = JSON.stringify(latestResult.sort());
+        const csvStr = JSON.stringify(existing[0].sort());
+        console.log(`   Sorted Fetched: ${fetchedStr}`);
+        console.log(`   Sorted CSV:     ${csvStr}`);
+        console.log(`   JSON Equal:     ${fetchedStr === csvStr}`);
       }
-    }
 
-    // Check if the results match
-    if (existing.length > 0 && arraysEqual(latestResult, existing[0])) {
+      // Check if the results match
+      if (existing.length > 0 && arraysEqual(latestResult, existing[0])) {
       console.log('');
       console.log('='.repeat(60));
       console.log('RESULTS MATCH - GRACEFUL EXIT');
@@ -1238,19 +1248,43 @@ function arraysEqual(a, b) {
       console.log('📊 Will update CSV with new result');
     }
     
-    console.log('');
-    console.log('='.repeat(60));
-    console.log('STEP 4: UPDATING CSV WITH NEW RESULTS');
-    console.log('='.repeat(60));
-    
-    console.log('🔄 Adding new result to top of CSV...');
-    existing.unshift(latestResult);
-    writeCSV(CSV_FILE, existing);
-    console.log('🎉 Updated with latest result:', latestResult.join(','));
-    console.log('📈 Total results in database:', existing.length);
-    console.log('✨ CSV file successfully updated');
-    
-    console.log('');
+      console.log('');
+      console.log('='.repeat(60));
+      console.log('STEP 5: UPDATING CSV WITH NEW RESULTS');
+      console.log('='.repeat(60));
+      
+      console.log('🔄 Adding new result to top of CSV...');
+      console.log(`📝 Before update - CSV has ${existing.length} entries`);
+      console.log(`📝 Adding result: [${latestResult.join(', ')}]`);
+      
+      existing.unshift(latestResult);
+      console.log(`📝 After unshift - CSV has ${existing.length} entries`);
+      console.log(`📝 New top entry: [${existing[0].join(', ')}]`);
+      
+      try {
+        writeCSV(CSV_FILE, existing);
+        console.log('✅ writeCSV completed successfully');
+        
+        // Verify the write worked
+        const verification = readExistingCSV(CSV_FILE);
+        console.log(`📋 Verification - CSV now has ${verification.length} entries`);
+        console.log(`📋 Verification - Top entry: [${verification[0].join(', ')}]`);
+        
+        if (JSON.stringify(verification[0]) === JSON.stringify(latestResult)) {
+          console.log('✅ File write verification successful!');
+        } else {
+          console.log('❌ File write verification failed!');
+          console.log(`   Expected: [${latestResult.join(', ')}]`);
+          console.log(`   Got:      [${verification[0].join(', ')}]`);
+        }
+      } catch (writeError) {
+        console.error('❌ Error writing CSV:', writeError.message);
+        throw writeError;
+      }
+      
+      console.log('🎉 Updated with latest result:', latestResult.join(','));
+      console.log('📈 Total results in database:', existing.length);
+      console.log('✨ CSV file successfully updated');    console.log('');
     console.log('='.repeat(60));
     console.log('WORKFLOW COMPLETED SUCCESSFULLY - CSV UPDATED');
     console.log('='.repeat(60));
@@ -1259,14 +1293,6 @@ function arraysEqual(a, b) {
     console.log('📊 New data added to CSV file');
     console.log('🌐 Website will reflect updated results');
     process.exit(0);
-    
-    } catch (innerErr) {
-      console.log('');
-      console.log('❌ ERROR IN MAIN PROCESSING:');
-      console.error('💥 Inner error:', innerErr.message);
-      console.log('🔄 Attempting graceful recovery...');
-      process.exit(0);
-    }
     
   } catch (err) {
     console.log('');
