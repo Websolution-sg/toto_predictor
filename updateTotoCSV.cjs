@@ -83,68 +83,15 @@ async function fetchLatestTotoResult() {
   // Enhanced approach: Collect multiple candidates and select the most recent
   let resultCandidates = [];
   
-  // ENHANCED METHOD 1: Target JavaScript Widget APIs (Discovered Aug 16, 2025)
-  // PRIORITY ORDER: Most reliable sources first, with comprehensive coverage
+  // SINGLE RELIABLE SOURCE: Main Singapore Pools TOTO Results Page (Verified Aug 16, 2025)
+  // This is the ONLY source that consistently provides the latest results
+  // ROBUST: No hardcoded numbers - always fetches the topmost (latest) result by position
   const attempts = [
     {
-      name: 'Singapore Pools Widget API (TOTO Results) - NEW DISCOVERY',
-      url: 'https://online.singaporepools.com/api/lottery/4d-toto-results',
-      parser: parseAPIResponse,
-      timeout: 15000
-    },
-    {
-      name: 'Singapore Pools TOTO Widget Data Endpoint',
-      url: 'https://online.singaporepools.com/api/widgets/lottery-results/toto',
-      parser: parseJSONResponse,
-      timeout: 15000
-    },
-    {
-      name: 'Singapore Pools Legacy Page (Verified) - PRIORITY FALLBACK',
+      name: 'Singapore Pools Main TOTO Results Page (VERIFIED SOURCE)',
       url: 'https://www.singaporepools.com.sg/en/product/Pages/toto_results.aspx',
       parser: parseDirectSingaporePools,
-      timeout: 20000
-    },
-    {
-      name: 'Singapore Pools Mobile (Legacy)',
-      url: 'https://m.singaporepools.com.sg/en/product/Pages/toto_results.aspx',
-      parser: parseDirectSingaporePools,
-      timeout: 15000
-    },
-    {
-      name: 'Singapore Pools Results API (Direct)',
-      url: 'https://www.singaporepools.com.sg/api/toto/results/latest',
-      parser: parseAPIResponse,
-      timeout: 10000
-    },
-    {
-      name: 'Singapore Pools Results JSON Feed',
-      url: 'https://www.singaporepools.com.sg/DataFileArchive/Lottery/Output/toto_result.json',
-      parser: parseJSONResponse,
-      timeout: 10000
-    },
-    {
-      name: 'Singapore Pools Online Lottery Platform',
-      url: 'https://online.singaporepools.com/en/lottery',
-      parser: parseOnlineSingaporePools,
-      timeout: 15000
-    },
-    {
-      name: 'Singapore Pools TOTO Self-Pick (Enhanced)',
-      url: 'https://online.singaporepools.com/en/lottery/toto-self-pick',
-      parser: parseOnlineSingaporePools,
-      timeout: 15000
-    },
-    {
-      name: 'Singapore Pools Lottery Draws',
-      url: 'https://online.singaporepools.com/en/lottery/lottery-draws', 
-      parser: parseOnlineSingaporePools,
-      timeout: 15000
-    },
-    {
-      name: 'Singapore Pools RSS Feed',
-      url: 'https://www.singaporepools.com.sg/en/rss/Pages/toto-results.aspx',
-      parser: parseRSSFeed,
-      timeout: 10000
+      timeout: 30000  // Increased timeout for reliability
     }
   ];
 
@@ -639,69 +586,123 @@ function extractNumbersFromJSON(obj) {
 function parseDirectSingaporePools(html) {
   try {
     const $ = cheerio.load(html);
-    console.log('🔍 Parsing Singapore Pools HTML (PRIORITY PARSER)...');
+    console.log('🔍 Parsing Singapore Pools HTML (ROBUST DATE-AGNOSTIC PARSER)...');
     console.log(`📄 HTML length: ${html.length} characters`);
     
     // Dynamically load known recent results from CSV for validation
     const knownRecentResults = getKnownRecentResults(CSV_FILE);
     
-    // ENHANCED: First check for known working patterns (verified Aug 16, 2025)
-    console.log('🎯 ENHANCED: Checking for recently verified patterns...');
+    // ROBUST APPROACH: Extract the FIRST (latest) valid TOTO result from the page
+    // Singapore Pools displays results in chronological order (newest first)
+    console.log('🎯 ROBUST: Extracting first valid TOTO result (always latest by position)...');
     
-    // Look for the specific pattern we know exists: 22, 25, 29, 31, 34, 43, 11
-    const recentPattern = /22.*25.*29.*31.*34.*43.*11|25.*29.*31.*34.*43.*11/;
-    if (recentPattern.test(html)) {
-      console.log('✅ FOUND: Recent verified pattern detected in HTML!');
+    // Method 1: Extract all valid TOTO numbers (1-49) from the HTML and find first valid sequence
+    const validNumbers = html.match(/\b(?:[1-9]|[1-4][0-9])\b/g)
+      ?.map(n => parseInt(n))
+      .filter(n => n >= 1 && n <= 49) || [];
+    
+    console.log(`🔍 Found ${validNumbers.length} valid TOTO numbers in HTML`);
+    console.log(`🔍 First 15 numbers: [${validNumbers.slice(0, 15).join(', ')}${validNumbers.length > 15 ? '...' : ''}]`);
+    
+    // Look for the first valid sequence of 7 numbers (6 main + 1 additional)
+    // Since results are ordered chronologically, the first valid sequence is the latest
+    for (let i = 0; i <= validNumbers.length - 7; i++) {
+      const sequence = validNumbers.slice(i, i + 7);
+      const mainNumbers = sequence.slice(0, 6);
+      const additionalNumber = sequence[6];
       
-      // Extract numbers more aggressively from the entire HTML
-      const allNumbers = html.match(/\b(?:[1-9]|[1-4][0-9])\b/g)
-        ?.map(n => parseInt(n))
-        .filter(n => n >= 1 && n <= 49) || [];
-      
-      console.log(`🔍 All valid numbers found: [${allNumbers.slice(0, 20).join(', ')}${allNumbers.length > 20 ? '...' : ''}]`);
-      
-      // Look for the specific sequence we know works
-      const targetSequence = [22, 25, 29, 31, 34, 43, 11];
-      for (let i = 0; i <= allNumbers.length - 7; i++) {
-        const sequence = allNumbers.slice(i, i + 7);
-        const matches = sequence.filter((n, idx) => n === targetSequence[idx]).length;
+      // Validate sequence structure:
+      // 1. No duplicates in main numbers
+      // 2. All numbers within valid range
+      // 3. Not already in our known results (new result)
+      if (new Set(mainNumbers).size === 6) {
+        console.log(`🎯 Candidate TOTO sequence #${i + 1}: [${sequence.join(', ')}]`);
         
-        if (matches >= 6) { // Allow for small variations in additional number
-          console.log(`🎯 Found matching sequence: [${sequence.join(', ')}] (${matches}/7 matches)`);
+        // Check if this is a new result (not in CSV)
+        const validation = isValidNewResult(sequence, knownRecentResults);
+        if (validation.valid) {
+          console.log('✅ LATEST RESULT FOUND: First valid new sequence by position!');
+          console.log(`📅 Result: Main numbers [${mainNumbers.join(', ')}], Additional: ${additionalNumber}`);
+          return sequence;
+        } else {
+          console.log(`⚠️ Sequence already exists or invalid: ${validation.reason}`);
+        }
+      } else {
+        console.log(`❌ Invalid sequence #${i + 1}: Duplicate numbers in main set`);
+      }
+    }
+    
+    // Method 2: Table-based extraction for better structure detection
+    console.log('🔥 FALLBACK: Structured table-based extraction...');
+    
+    const tableElements = $('table');
+    console.log(`📊 Found ${tableElements.length} tables on page`);
+    
+    // Look for the first table with TOTO number patterns
+    for (let tableIndex = 0; tableIndex < tableElements.length; tableIndex++) {
+      const $table = $(tableElements[tableIndex]);
+      const rows = $table.find('tr');
+      
+      console.log(`📍 Analyzing table ${tableIndex + 1} with ${rows.length} rows`);
+      
+      for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+        const $row = $(rows[rowIndex]);
+        const cells = $row.find('td');
+        
+        if (cells.length >= 6) {
+          const numbers = [];
           
-          const validation = isValidNewResult(sequence, knownRecentResults);
-          if (validation.valid) {
-            console.log('✅ PRIORITY MATCH: Returning verified sequence');
-            return sequence;
+          cells.each((cellIndex, cell) => {
+            const text = $(cell).text().trim();
+            const num = parseInt(text);
+            
+            if (!isNaN(num) && num >= 1 && num <= 49) {
+              numbers.push(num);
+            }
+          });
+          
+          // Check if we found 6 or 7 valid numbers
+          if (numbers.length >= 6) {
+            const mainNumbers = numbers.slice(0, 6);
+            let additionalNumber = numbers.length >= 7 ? numbers[6] : null;
+            
+            // If no additional number in same row, check next row
+            if (additionalNumber === null && rowIndex + 1 < rows.length) {
+              const nextRow = $(rows[rowIndex + 1]);
+              const nextCells = nextRow.find('td');
+              
+              nextCells.each((idx, cell) => {
+                const text = $(cell).text().trim();
+                const num = parseInt(text);
+                if (!isNaN(num) && num >= 1 && num <= 49 && additionalNumber === null) {
+                  additionalNumber = num;
+                }
+              });
+            }
+            
+            if (additionalNumber !== null && new Set(mainNumbers).size === 6) {
+              const fullResult = [...mainNumbers, additionalNumber];
+              console.log(`💫 Table-based candidate: [${fullResult.join(', ')}]`);
+              
+              const validation = isValidNewResult(fullResult, knownRecentResults);
+              if (validation.valid) {
+                console.log('✅ TABLE MATCH: Valid new result found in structured table!');
+                return fullResult;
+              }
+            }
           }
         }
       }
     }
     
-    // FALLBACK STRATEGY: More aggressive number extraction with date validation
-    console.log('🔥 FALLBACK: Aggressive number extraction with date validation...');
+    console.log('⚠️ No valid new TOTO results found - page may not contain latest data');
+    return null;
     
-    // First, try to find recent dates to ensure we're getting latest results
-    const today = new Date();
-    const recentDatePatterns = [
-      // Look for August 2025 references
-      /august\s+1[5-6],?\s+2025/i,
-      /1[5-6]\s+august\s+2025/i,
-      /1[5-6][\/\-]0?8[\/\-]2025/i,
-      /0?8[\/\-]1[5-6][\/\-]2025/i,
-      // Look for current week dates
-      new RegExp(`${today.getDate()}\\s*[-/]\\s*0?${today.getMonth() + 1}\\s*[-/]\\s*${today.getFullYear()}`, 'i'),
-      new RegExp(`0?${today.getMonth() + 1}\\s*[-/]\\s*${today.getDate()}\\s*[-/]\\s*${today.getFullYear()}`, 'i')
-    ];
-    
-    let hasRecentDate = false;
-    for (const pattern of recentDatePatterns) {
-      if (pattern.test(html)) {
-        console.log(`✅ Found recent date pattern: ${pattern.source}`);
-        hasRecentDate = true;
-        break;
-      }
-    }
+  } catch (error) {
+    console.log('❌ Error parsing Singapore Pools page:', error.message);
+    return null;
+  }
+}
     
     if (!hasRecentDate) {
       console.log('⚠️ No recent dates found - results may be outdated');
@@ -872,14 +873,6 @@ function parseDirectSingaporePools(html) {
             }
           }
         }
-      }
-    }
-    
-    console.log('❌ No valid TOTO patterns found');
-    return null;
-  } catch (error) {
-    console.log('❌ Parsing error:', error.message);
-    return null;
   }
 }
 
