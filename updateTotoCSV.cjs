@@ -4,71 +4,177 @@ const cheerio = require('cheerio');
 
 const CSV_FILE = 'totoResult.csv';
 
-// Simple TOTO result fetching and CSV updating
+// Enhanced TOTO result fetching with multiple endpoints and dynamic parsing
 async function fetchLatestTotoResult() {
-  console.log('🔍 Fetching latest TOTO results...');
+  console.log('🔍 Fetching latest TOTO results with dynamic multi-endpoint approach...');
   
-  try {
-    const response = await fetch('https://www.singaporepools.com.sg/en/product/Pages/toto_results.aspx', {
+  // Multiple endpoints for better reliability
+  const endpoints = [
+    {
+      name: 'Singapore Pools Main TOTO Page',
+      url: 'https://www.singaporepools.com.sg/en/product/Pages/toto_results.aspx',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      },
-      timeout: 30000
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    },
+    {
+      name: 'Singapore Pools Alternative URL',
+      url: 'https://www.singaporepools.com.sg/en/product/sr/Pages/toto_results.aspx',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      }
+    },
+    {
+      name: 'Singapore Pools Mobile View',
+      url: 'https://www.singaporepools.com.sg/en/product/Pages/toto_results.aspx',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
+      }
     }
-    
-    const html = await response.text();
-    console.log(`📄 HTML received: ${html.length} characters`);
-    
-    return parseDirectSingaporePools(html);
-    
-  } catch (error) {
-    console.log('❌ Fetch error:', error.message);
-    return null;
+  ];
+  
+  for (const endpoint of endpoints) {
+    try {
+      console.log(`🌐 Trying ${endpoint.name}...`);
+      
+      const response = await fetch(endpoint.url, {
+        headers: endpoint.headers,
+        timeout: 30000,
+        follow: 5,
+        compress: true
+      });
+      
+      if (!response.ok) {
+        console.log(`❌ ${endpoint.name} returned status: ${response.status}`);
+        continue;
+      }
+      
+      const html = await response.text();
+      console.log(`📄 ${endpoint.name} - HTML received: ${html.length} characters`);
+      
+      // Check if HTML contains TOTO-related content
+      const hasTotoContent = html.toLowerCase().includes('toto') || 
+                            html.includes('winning numbers') || 
+                            html.includes('draw');
+      
+      if (!hasTotoContent) {
+        console.log(`⚠️ ${endpoint.name} - No TOTO content detected`);
+        continue;
+      }
+      
+      console.log(`✅ ${endpoint.name} - TOTO content confirmed, parsing...`);
+      const result = parseDirectSingaporePools(html);
+      
+      if (result && result.length === 7) {
+        console.log(`🎉 ${endpoint.name} successfully parsed result: [${result.join(', ')}]`);
+        return result;
+      } else {
+        console.log(`⚠️ ${endpoint.name} - Parsing failed or invalid result`);
+      }
+      
+    } catch (error) {
+      console.log(`❌ ${endpoint.name} error: ${error.message}`);
+      if (error.code === 'ENOTFOUND') {
+        console.log('   🌐 DNS resolution failed');
+      } else if (error.code === 'ETIMEDOUT') {
+        console.log('   ⏰ Request timed out');
+      }
+      continue;
+    }
   }
+  
+  console.log('❌ All endpoints failed to provide valid TOTO result');
+  return null;
 }
 
 function parseDirectSingaporePools(html) {
   try {
-    console.log('🔍 Parsing Singapore Pools HTML...');
+    console.log('🔍 Parsing Singapore Pools HTML with dynamic detection...');
+    console.log(`📄 HTML length: ${html.length} characters`);
     
-    // Look for table pattern: | number | number | number | number | number | number |
-    const tablePattern = /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|/g;
-    const matches = [...html.matchAll(tablePattern)];
+    // Load HTML with Cheerio for better parsing
+    const cheerio = require('cheerio');
+    const $ = cheerio.load(html);
     
-    console.log(`📊 Found ${matches.length} table patterns`);
+    // DYNAMIC APPROACH 1: Look for any table cells with TOTO numbers
+    console.log('🎯 Method 1: Dynamic table cell parsing...');
+    const tableCells = [];
     
-    if (matches.length > 0) {
-      // Get the first match (latest result)
-      const firstMatch = matches[0];
-      const mainNumbers = firstMatch.slice(1, 7).map(n => parseInt(n));
-      console.log(`🎯 Main numbers: [${mainNumbers.join(', ')}]`);
-      
-      // Look for additional number after the main numbers
-      const afterMatch = html.substring(firstMatch.index + firstMatch[0].length, firstMatch.index + firstMatch[0].length + 500);
-      const additionalPattern = /\|\s*(\d{1,2})\s*\|/;
-      const additionalMatch = afterMatch.match(additionalPattern);
-      
-      if (additionalMatch) {
-        const additional = parseInt(additionalMatch[1]);
-        const fullResult = [...mainNumbers, additional];
-        console.log(`✅ Complete result: [${fullResult.join(', ')}]`);
+    // Find all table cells and extract valid TOTO numbers
+    $('td, th').each((i, elem) => {
+      const text = $(elem).text().trim();
+      const num = parseInt(text);
+      if (!isNaN(num) && num >= 1 && num <= 49) {
+        tableCells.push({
+          number: num,
+          position: i,
+          context: $(elem).parent().text().trim()
+        });
+      }
+    });
+    
+    console.log(`📊 Found ${tableCells.length} valid TOTO numbers in table cells`);
+    
+    // Look for sequences of 6+1 pattern (main numbers + additional)
+    if (tableCells.length >= 7) {
+      // Try to find the first valid 7-number sequence
+      for (let i = 0; i <= tableCells.length - 7; i++) {
+        const sequence = tableCells.slice(i, i + 7).map(cell => cell.number);
         
-        // Validate
-        if (fullResult.length === 7 && 
-            fullResult.every(n => n >= 1 && n <= 49) && 
-            new Set(fullResult).size === 7) {
-          console.log('🎉 Valid TOTO result found!');
-          return fullResult;
+        // Check if this forms a valid TOTO result (7 unique numbers)
+        if (new Set(sequence).size === 7) {
+          console.log(`✅ Table method found: [${sequence.join(', ')}]`);
+          return sequence;
         }
       }
     }
     
-    // Fallback: Look for any sequence of 7 valid unique numbers
-    console.log('🔄 Trying fallback parsing...');
+    // DYNAMIC APPROACH 2: Text-based pattern matching with multiple formats
+    console.log('🎯 Method 2: Dynamic text pattern parsing...');
+    
+    // Multiple patterns to catch different table formats
+    const patterns = [
+      // Pattern 1: Standard table with | separators
+      /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|[\s\S]{0,300}?\|\s*(\d{1,2})\s*\|/,
+      
+      // Pattern 2: HTML table format
+      /<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>[\s\S]{0,300}?<td[^>]*>\s*(\d{1,2})\s*<\/td>/i,
+      
+      // Pattern 3: Space-separated numbers in a row
+      /(?:^|\n|\r)[\s]*(\d{1,2})[\s]+(\d{1,2})[\s]+(\d{1,2})[\s]+(\d{1,2})[\s]+(\d{1,2})[\s]+(\d{1,2})[\s\S]{0,100}?(\d{1,2})/m,
+      
+      // Pattern 4: Numbers with various separators
+      /(\d{1,2})[\s,|]+(\d{1,2})[\s,|]+(\d{1,2})[\s,|]+(\d{1,2})[\s,|]+(\d{1,2})[\s,|]+(\d{1,2})[\s\S]{0,200}?[\s,|]+(\d{1,2})/
+    ];
+    
+    for (let i = 0; i < patterns.length; i++) {
+      console.log(`   Testing pattern ${i + 1}...`);
+      const match = html.match(patterns[i]);
+      
+      if (match && match.length >= 8) {
+        const numbers = match.slice(1, 8).map(n => parseInt(n));
+        
+        // Validate TOTO result
+        if (numbers.length === 7 && 
+            numbers.every(n => n >= 1 && n <= 49) && 
+            new Set(numbers).size === 7) {
+          console.log(`✅ Pattern ${i + 1} success: [${numbers.join(', ')}]`);
+          return numbers;
+        } else {
+          console.log(`   ❌ Pattern ${i + 1} invalid: length=${numbers.length}, unique=${new Set(numbers).size}`);
+        }
+      }
+    }
+    
+    
+    // DYNAMIC APPROACH 3: Position-based number extraction with smart filtering
+    console.log('🎯 Method 3: Position-based extraction...');
     const allNumbers = [];
     const numberPattern = /(\d{1,2})/g;
     let match;
@@ -76,22 +182,87 @@ function parseDirectSingaporePools(html) {
     while ((match = numberPattern.exec(html)) !== null) {
       const num = parseInt(match[1]);
       if (num >= 1 && num <= 49) {
-        allNumbers.push(num);
+        allNumbers.push({
+          number: num,
+          position: match.index,
+          context: html.substring(Math.max(0, match.index - 20), match.index + 20)
+        });
       }
     }
     
-    console.log(`Found ${allNumbers.length} valid numbers (1-49)`);
+    console.log(`📊 Found ${allNumbers.length} valid TOTO numbers (1-49) in HTML`);
     
-    // Look for first sequence of 7 unique numbers
-    for (let i = 0; i <= allNumbers.length - 7; i++) {
-      const sequence = allNumbers.slice(i, i + 7);
-      if (new Set(sequence).size === 7) {
-        console.log(`🎯 Found valid sequence: [${sequence.join(', ')}]`);
-        return sequence;
+    // Look for clusters of 7 numbers that appear close together (likely in same table row)
+    if (allNumbers.length >= 7) {
+      for (let i = 0; i <= allNumbers.length - 7; i++) {
+        const cluster = allNumbers.slice(i, i + 7);
+        const numbers = cluster.map(item => item.number);
+        
+        // Check if it's a valid TOTO result (7 unique numbers)
+        if (new Set(numbers).size === 7) {
+          // Check if numbers are positioned close together (within 1000 characters)
+          const positionSpread = cluster[6].position - cluster[0].position;
+          
+          if (positionSpread < 1000) {
+            console.log(`✅ Position-based method found: [${numbers.join(', ')}]`);
+            console.log(`   Position spread: ${positionSpread} characters`);
+            return numbers;
+          }
+        }
       }
     }
     
-    console.log('❌ No valid TOTO result found');
+    // DYNAMIC APPROACH 4: Smart content analysis
+    console.log('🎯 Method 4: Smart content analysis...');
+    
+    // Look for recent date indicators to find the latest result section
+    const datePatterns = [
+      /(\d{1,2}[-\/]\d{1,2}[-\/]\d{4})/g,
+      /(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/g,
+      /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\s]+\d{1,2}[\s,]+\d{4}/gi
+    ];
+    
+    let latestDatePosition = -1;
+    const currentYear = new Date().getFullYear();
+    
+    for (const pattern of datePatterns) {
+      let dateMatch;
+      while ((dateMatch = pattern.exec(html)) !== null) {
+        const dateStr = dateMatch[0];
+        if (dateStr.includes(currentYear.toString())) {
+          console.log(`📅 Found recent date: ${dateStr} at position ${dateMatch.index}`);
+          latestDatePosition = dateMatch.index;
+          break;
+        }
+      }
+      if (latestDatePosition !== -1) break;
+    }
+    
+    // If we found a recent date, look for numbers near it
+    if (latestDatePosition !== -1) {
+      const nearDateSection = html.substring(latestDatePosition, latestDatePosition + 2000);
+      const nearDateNumbers = [];
+      
+      let nearMatch;
+      const nearPattern = /(\d{1,2})/g;
+      while ((nearMatch = nearPattern.exec(nearDateSection)) !== null) {
+        const num = parseInt(nearMatch[1]);
+        if (num >= 1 && num <= 49) {
+          nearDateNumbers.push(num);
+        }
+      }
+      
+      // Look for first valid 7-number sequence near the date
+      for (let i = 0; i <= nearDateNumbers.length - 7; i++) {
+        const sequence = nearDateNumbers.slice(i, i + 7);
+        if (new Set(sequence).size === 7) {
+          console.log(`✅ Date-proximity method found: [${sequence.join(', ')}]`);
+          return sequence;
+        }
+      }
+    }
+    
+    console.log('❌ All dynamic parsing methods failed - no valid TOTO result found');
     return null;
     
   } catch (error) {
