@@ -76,10 +76,10 @@ function extractDateFromHTML(html) {
 async function fetchLatestTotoResult() {
   console.log('🔍 Attempting to fetch latest TOTO results...');
   console.log('📅 ENHANCED PRIORITY SYSTEM: Legacy page first (verified Aug 16, 2025)');
-  console.log('🎯 Target: Look for patterns like 22,25,29,31,34,43,11 (current latest)');
+  console.log('🎯 Target: Look for latest TOTO result patterns in table format');
   console.log('🏆 NEW: Multiple candidate collection for latest result selection');
   console.log('🐛 DEBUG MODE: Enhanced logging for troubleshooting');
-  console.log('🧪 TESTING: CSV currently missing latest result - should detect and add it');
+  console.log('🧪 TESTING: Completely dynamic parsing - no hardcoded values');
   console.log('');
   console.log('🚨 CRITICAL DEBUG: Starting fetch process...');
   
@@ -247,7 +247,7 @@ async function fetchLatestTotoResult() {
   console.log('💡 fetchLatestTotoResult is returning NULL to main execution');
   console.log('🔍 Main execution will exit without updating CSV');
   console.log('');
-  console.log('🎯 DIAGNOSIS: Parsing logic failed to extract [22,25,29,31,34,43,11]');
+  console.log('🎯 DIAGNOSIS: Parsing logic failed to extract latest TOTO result');
   console.log('💭 Website structure may have changed or parsing logic needs adjustment');
   return null;
 }
@@ -620,14 +620,18 @@ function parseDirectSingaporePools(html) {
     try {
       console.log('🔍 DEBUG: Checking HTML for TOTO number patterns...');
       
-      // Look for common TOTO numbers that might appear
-      const commonNumbers = ['01', '02', '03', '11', '22', '25', '29', '31', '34', '43'];
-      const foundNumbers = commonNumbers.filter(num => html.includes(num));
-      console.log(`🔍 HTML contains common TOTO numbers: ${foundNumbers.length > 0 ? foundNumbers.join(', ') : 'none'}`);
+      // Look for common TOTO numbers that might appear (dynamic range check)
+      const allNumbers = [];
+      for (let i = 1; i <= 49; i++) {
+        if (html.includes(i.toString().padStart(2, '0')) || html.includes(i.toString())) {
+          allNumbers.push(i);
+        }
+      }
+      console.log(`🔍 HTML contains ${allNumbers.length} TOTO numbers (1-49): ${allNumbers.length > 10 ? allNumbers.slice(0, 10).join(', ') + '...' : allNumbers.join(', ')}`);
       
-      // TARGETED FIX: Look for the exact pattern we know is on the page
-      console.log('🎯 TARGETED: Looking for table pattern | XX | XX | XX | XX | XX | XX |');
-      console.log('🔍 Expected to find: | 22 | 25 | 29 | 31 | 34 | 43 |');
+      // Look for table patterns dynamically
+      console.log('🎯 DYNAMIC: Looking for table pattern | XX | XX | XX | XX | XX | XX |');
+      console.log('🔍 Searching for any valid 6+1 TOTO number sequences');
       
       // Enhanced regex to match the table format from Singapore Pools
       const tablePattern = /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|/g;
@@ -639,12 +643,15 @@ function parseDirectSingaporePools(html) {
       // Show sample HTML if no matches found
       if (matches.length === 0) {
         console.log('❌ NO MATCHES FOUND - Showing HTML sample for debugging:');
-        const sampleStart = html.indexOf('22');
-        if (sampleStart !== -1) {
-          console.log('📋 HTML around "22":');
+        
+        // Look for any TOTO numbers in the HTML
+        const firstTotoNum = allNumbers.find(num => html.includes(num.toString()));
+        if (firstTotoNum) {
+          const sampleStart = html.indexOf(firstTotoNum.toString());
+          console.log(`📋 HTML around first TOTO number "${firstTotoNum}":`);
           console.log(html.substring(Math.max(0, sampleStart - 100), sampleStart + 200));
         } else {
-          console.log('❌ "22" not found in HTML at all!');
+          console.log('❌ No TOTO numbers found in HTML at all!');
           console.log('📋 First 500 chars of HTML:');
           console.log(html.substring(0, 500));
         }
@@ -655,8 +662,8 @@ function parseDirectSingaporePools(html) {
         // Method 1: Enhanced table pattern matching with ROBUST real-world parsing
         console.log('🔍 Method 1: ROBUST table pattern matching...');
         
-        // STEP 1: Find the first occurrence of our target sequence using position-based parsing
-        console.log('🎯 Step 1: Looking for target sequence [22,25,29,31,34,43,11]...');
+        // STEP 1: Find the FIRST valid TOTO sequence (latest result by position)
+        console.log('🎯 Step 1: Looking for FIRST valid TOTO sequence (latest by position)...');
         
         // Extract all TOTO-range numbers (1-49) with their positions
         const numberMatches = [];
@@ -676,28 +683,24 @@ function parseDirectSingaporePools(html) {
         
         console.log(`   Found ${numberMatches.length} valid TOTO numbers in HTML`);
         
-        // STEP 2: Look for the sequence 22,25,29,31,34,43 appearing consecutively
+        // STEP 2: Find the FIRST sequence of 7 unique numbers (latest result)
         for (let i = 0; i <= numberMatches.length - 7; i++) {
           const window = numberMatches.slice(i, i + 7);
           const numbers = window.map(m => m.number);
           
-          // Check if this window contains our target sequence
-          if (numbers[0] === 22 && numbers[1] === 25 && numbers[2] === 29 && 
-              numbers[3] === 31 && numbers[4] === 34 && numbers[5] === 43) {
-            
-            const seventhNumber = numbers[6];
-            console.log(`🎯 FOUND TARGET SEQUENCE: [${numbers.join(', ')}]`);
+          // Check if this window contains 7 unique numbers (valid TOTO result)
+          if (new Set(numbers).size === 7) {
+            console.log(`🎯 FOUND FIRST VALID SEQUENCE: [${numbers.join(', ')}]`);
             console.log(`   Position range: ${window[0].position} - ${window[6].position}`);
             
-            // Validate it's a proper TOTO result
-            if (seventhNumber >= 1 && seventhNumber <= 49 && 
-                !numbers.slice(0, 6).includes(seventhNumber)) {
-              
-              console.log(`✅ SEQUENCE VALIDATION PASSED: Unique 7th number ${seventhNumber}`);
-              console.log(`🎉 SUCCESS: Found target TOTO result [${numbers.join(', ')}]`);
+            // Validate position proximity (numbers should be close together in a table)
+            const positionSpread = window[6].position - window[0].position;
+            if (positionSpread < 1000) {
+              console.log(`✅ POSITION VALIDATION PASSED: Numbers within ${positionSpread} characters`);
+              console.log(`🎉 SUCCESS: Found latest TOTO result [${numbers.join(', ')}]`);
               return numbers;
             } else {
-              console.log(`❌ SEQUENCE VALIDATION FAILED: 7th number ${seventhNumber} invalid or duplicate`);
+              console.log(`⚠️ POSITION VALIDATION FAILED: Numbers too spread out (${positionSpread} chars), trying next sequence...`);
             }
           }
         }
@@ -1094,7 +1097,7 @@ function parseDirectSingaporePools(html) {
     // Strategy 2: Pattern matching in HTML content
     console.log('\n� Strategy 2: Pattern matching in HTML content...');
     
-    // Look for the specific pattern we see in the webpage: | 9 | 24 | 31 | 34 | 43 | 44 |
+    // Look for table patterns with TOTO numbers in HTML
     const tablePattern = /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|/g;
     const matches = [...html.matchAll(tablePattern)];
     
