@@ -1366,28 +1366,14 @@ function arraysEqual(a, b) {
 
       // Check if the results match
       if (existing.length > 0 && arraysEqual(latestResult, existing[0])) {
-      console.log('');
-      console.log('='.repeat(60));
-      console.log('RESULTS MATCH - GRACEFUL EXIT');
-      console.log('='.repeat(60));
-      console.log('✅ Singapore Pools result matches CSV top entry');
-      console.log('📊 Latest result from website:', latestResult.join(','));
-      console.log('📊 Latest result from CSV:', existing[0].join(','));
-      console.log('🔄 No update needed - data is already current');
-      console.log('💡 This indicates the system is working correctly');
-      console.log('');
-      console.log('✅ WORKFLOW COMPLETED SUCCESSFULLY (NO CHANGES)');
-      console.log('🎯 Both sources show the same latest result');
-      console.log('🏁 Graceful exit - no CSV modification required');
-      process.exit(0);
-    } else {
-      console.log('');
-      console.log('='.repeat(60));
-      console.log('RESULTS DIFFER - CSV UPDATE REQUIRED');
-      console.log('='.repeat(60));
-      console.log('🔄 Singapore Pools has different result than CSV');
-      console.log('📊 Will update CSV with new result');
-    }
+        console.log('✅ Results match - no update needed');
+        console.log(`📊 Current result: [${latestResult.join(', ')}]`);
+        console.log('� Exiting gracefully');
+        process.exit(0);
+      } else {
+        console.log('🔄 Results differ - updating CSV');
+        console.log(`� New result: [${latestResult.join(', ')}]`);
+      }
     
       console.log('');
       console.log('='.repeat(60));
@@ -1404,19 +1390,14 @@ function arraysEqual(a, b) {
       
       try {
         writeCSV(CSV_FILE, existing);
-        console.log('✅ writeCSV completed successfully');
+        console.log('✅ CSV updated successfully');
         
         // Verify the write worked
         const verification = readExistingCSV(CSV_FILE);
-        console.log(`📋 Verification - CSV now has ${verification.length} entries`);
-        console.log(`📋 Verification - Top entry: [${verification[0].join(', ')}]`);
-        
         if (JSON.stringify(verification[0]) === JSON.stringify(latestResult)) {
-          console.log('✅ File write verification successful!');
+          console.log('✅ File write verification successful');
         } else {
-          console.log('❌ File write verification failed!');
-          console.log(`   Expected: [${latestResult.join(', ')}]`);
-          console.log(`   Got:      [${verification[0].join(', ')}]`);
+          console.log('❌ File write verification failed');
         }
       } catch (writeError) {
         console.error('❌ Error writing CSV:', writeError.message);
@@ -1426,23 +1407,12 @@ function arraysEqual(a, b) {
       console.log('🎉 Updated with latest result:', latestResult.join(','));
       console.log('📈 Total results in database:', existing.length);
       console.log('✨ CSV file successfully updated');    console.log('');
-    console.log('='.repeat(60));
-    console.log('WORKFLOW COMPLETED SUCCESSFULLY - CSV UPDATED');
-    console.log('='.repeat(60));
-    console.log('🏁 TOTO update process completed with CSV changes');
+    console.log('✅ Workflow completed successfully');
     console.log(`🎯 Updated result: [${latestResult.join(', ')}]`);
-    console.log('📊 New data added to CSV file');
-    console.log('🌐 Website will reflect updated results');
     process.exit(0);
     
   } catch (err) {
-    console.log('');
-    console.log('='.repeat(60));
-    console.log('ERROR HANDLING');
-    console.log('='.repeat(60));
     console.error('💥 Error during execution:', err.message);
-    console.error('📍 Stack trace:', err.stack);
-    console.log('');
     console.log('🔄 Attempting graceful recovery...');
     
     try {
@@ -1471,7 +1441,7 @@ function arraysEqual(a, b) {
   }
 } catch (mainError) {
   console.error('');
-  console.error('🚨 FATAL ERROR - MAIN EXECUTION FAILED');
+  console.error('🚨 Fatal error:', mainError.message);
   console.error('='.repeat(60));
   console.error('Error message:', mainError.message);
   console.error('Error stack:', mainError.stack);
