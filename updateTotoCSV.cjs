@@ -76,8 +76,9 @@ function extractDateFromHTML(html) {
 async function fetchLatestTotoResult() {
   console.log('🔍 Attempting to fetch latest TOTO results...');
   console.log('📅 ENHANCED PRIORITY SYSTEM: Legacy page first (verified Aug 16, 2025)');
-  console.log('🎯 Target: Look for patterns like 22,25,29,31,34,43,11 found on legacy page');
+  console.log('🎯 Target: Look for patterns like 22,25,29,31,34,43,11 (current latest)');
   console.log('🏆 NEW: Multiple candidate collection for latest result selection');
+  console.log('🐛 DEBUG MODE: Enhanced logging for troubleshooting');
   console.log('');
   
   // Enhanced approach: Collect multiple candidates and select the most recent
@@ -651,13 +652,23 @@ function parseDirectSingaporePools(html) {
               
               // Check if this is a new result
               const knownRecentResults = getKnownRecentResults(CSV_FILE);
+              console.log(`🔍 Known recent results count: ${knownRecentResults.length}`);
+              if (knownRecentResults.length > 0) {
+                console.log(`🔍 Most recent in CSV: [${knownRecentResults[0].join(', ')}]`);
+              }
+              
               const validation = isValidNewResult(fullResult, knownRecentResults);
+              console.log(`🔍 Validation result: ${validation.valid} - ${validation.reason}`);
               
               if (validation.valid) {
                 console.log('🎉 SUCCESS: Found valid new TOTO result!');
                 return fullResult;
               } else {
                 console.log(`⚠️ Not a new result: ${validation.reason}`);
+                console.log(`   Fetched: [${fullResult.join(', ')}]`);
+                if (knownRecentResults.length > 0) {
+                  console.log(`   CSV Top: [${knownRecentResults[0].join(', ')}]`);
+                }
               }
             }
           } else {
@@ -1214,6 +1225,21 @@ function arraysEqual(a, b) {
     console.log(`📊 Current CSV entries: ${existing.length}`);
     console.log(`📊 Current top entry: ${existing.length > 0 ? `[${existing[0].join(', ')}]` : 'EMPTY'}`);
     console.log(`🎯 New result from Singapore Pools: [${latestResult.join(', ')}]`);
+    
+    // DEBUG: Show exact comparison details
+    if (latestResult && existing.length > 0) {
+      console.log('');
+      console.log('🔍 COMPARISON DEBUG:');
+      console.log(`   Fetched: [${latestResult.join(', ')}]`);
+      console.log(`   CSV Top: [${existing[0].join(', ')}]`);
+      console.log(`   Arrays Equal: ${arraysEqual(latestResult, existing[0])}`);
+      console.log(`   Length Match: ${latestResult.length === existing[0].length}`);
+      if (latestResult.length === existing[0].length) {
+        for (let i = 0; i < latestResult.length; i++) {
+          console.log(`   Position ${i}: ${latestResult[i]} === ${existing[0][i]} = ${latestResult[i] === existing[0][i]}`);
+        }
+      }
+    }
 
     // Check if the results match
     if (existing.length > 0 && arraysEqual(latestResult, existing[0])) {
