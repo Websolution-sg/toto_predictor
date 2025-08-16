@@ -49,11 +49,26 @@
 let historical = [];
 let chartInstance = null;
 
-// Add cache-busting parameter to ensure fresh CSV data
+// Enhanced cache-busting with multiple parameters to ensure fresh CSV data
 const cacheBuster = new Date().getTime();
-fetch(`totoResult.csv?v=${cacheBuster}`)
-  .then(response => response.text())
+const randomId = Math.random().toString(36).substring(7);
+const csvUrl = `totoResult.csv?v=${cacheBuster}&r=${randomId}&nocache=${Date.now()}`;
+
+console.log('🔄 Fetching CSV from:', csvUrl);
+fetch(csvUrl, {
+  cache: 'no-cache',
+  headers: {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  }
+})
+  .then(response => {
+    console.log('📡 CSV fetch response status:', response.status);
+    return response.text();
+  })
   .then(text => {
+    console.log('📊 CSV content received, first line:', text.trim().split('\n')[0]);
     historical = text.trim().split('\n').map(line => line.split(',').map(Number));
     for (let i = 1; i <= 49; i++) {
       ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
@@ -63,11 +78,18 @@ fetch(`totoResult.csv?v=${cacheBuster}`)
       });
     }
     const recent = historical[0];
+    console.log('🎯 Recent result loaded:', recent);
+    console.log('📋 Main numbers:', recent.slice(0, 6));
+    console.log('📋 Additional number:', recent[6]);
+    
     ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
       document.getElementById(id).value = recent[idx];
+      console.log(`🔢 Set ${id} to:`, recent[idx]);
     });
     document.getElementById('additional').value = recent[6];
+    console.log('🔢 Set additional to:', recent[6]);
     document.getElementById('includeAdd').checked = false;
+    
     const today = new Date();
     const dateStr = today.toLocaleDateString('en-SG', { day: '2-digit', month: '2-digit', year: 'numeric' });
     updateLatestResult(recent.slice(0, 6), recent[6], dateStr);
