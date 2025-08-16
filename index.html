@@ -40,6 +40,7 @@
 
   <label><input type="checkbox" id="includeAdd"/> Include additional number</label><br/>
   <button onclick="predict()">Predict</button>
+  <button onclick="refreshData()" style="margin-left: 10px;">Refresh Data</button>
 
   <h2>Results</h2>
   <div id="results"></div>
@@ -49,20 +50,25 @@
 let historical = [];
 let chartInstance = null;
 
-// Enhanced cache-busting with multiple parameters to ensure fresh CSV data
-const cacheBuster = new Date().getTime();
-const randomId = Math.random().toString(36).substring(7);
-const csvUrl = `totoResult.csv?v=${cacheBuster}&r=${randomId}&nocache=${Date.now()}`;
+function loadCSVData() {
+  // Enhanced cache-busting with multiple parameters to ensure fresh CSV data
+  const cacheBuster = new Date().getTime();
+  const randomId = Math.random().toString(36).substring(7);
+  const csvUrl = `totoResult.csv?v=${cacheBuster}&r=${randomId}&nocache=${Date.now()}`;
 
-console.log('🔄 Fetching CSV from:', csvUrl);
-fetch(csvUrl, {
-  cache: 'no-cache',
-  headers: {
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'Pragma': 'no-cache',
-    'Expires': '0'
-  }
-})
+  console.log('🔄 Fetching CSV from:', csvUrl);
+
+  // Force reload with maximum cache-busting
+  fetch(csvUrl, {
+    method: 'GET',
+    cache: 'no-store',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'If-Modified-Since': 'Mon, 26 Jul 1997 05:00:00 GMT'
+    }
+  })
   .then(response => {
     console.log('📡 CSV fetch response status:', response.status);
     return response.text();
@@ -96,8 +102,12 @@ fetch(csvUrl, {
   })
   .catch(error => {
     alert("Failed to load historical data.");
-    console.error(error);
+    console.error('CSV loading error:', error);
   });
+}
+
+// Load CSV data on page load
+loadCSVData();
 
 function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
   const resultText = `${winningNumbers.join(',')}(${additionalNumber})`;
@@ -109,6 +119,12 @@ function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
 
 function hasDuplicates(arr) {
   return new Set(arr).size !== arr.length;
+}
+
+function refreshData() {
+  console.log('🔄 Manual refresh triggered');
+  document.getElementById('recentResult').textContent = 'RECENT RESULT: Refreshing...';
+  loadCSVData();
 }
 
 function predict() {
