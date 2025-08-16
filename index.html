@@ -49,43 +49,77 @@
 let historical = [];
 let chartInstance = null;
 
-// Enhanced cache-busting with multiple parameters to ensure fresh CSV data
-const cacheBuster = new Date().getTime();
+// Ultra-aggressive cache-busting to always fetch latest CSV from GitHub Pages
+const timestamp = Date.now();
 const randomId = Math.random().toString(36).substring(7);
-const csvUrl = `totoResult.csv?v=${cacheBuster}&r=${randomId}&nocache=${Date.now()}`;
+const sessionId = Math.floor(Math.random() * 1000000);
+const csvUrl = `totoResult.csv?v=${timestamp}&r=${randomId}&nocache=${timestamp}&bust=${sessionId}&_=${Math.random()}&force=true`;
 
-console.log('🔄 Fetching CSV from:', csvUrl);
+console.log('🔄 Fetching latest CSV from GitHub Pages:', csvUrl);
 fetch(csvUrl, {
-  cache: 'no-cache',
+  method: 'GET',
+  cache: 'no-store',
   headers: {
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
     'Pragma': 'no-cache',
-    'Expires': '0'
+    'Expires': '0',
+    'If-None-Match': '*',
+    'If-Modified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT'
   }
 })
-  .then(response => response.text())
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`Failed to fetch CSV: ${response.status} ${response.statusText}`);
+    }
+    console.log('✅ CSV fetched successfully, Last-Modified:', response.headers.get('last-modified') || 'Not available');
+    return response.text();
+  })
   .then(text => {
+    console.log('📊 Processing CSV data...');
     historical = text.trim().split('\n').map(line => line.split(',').map(Number));
+    
+    if (historical.length === 0 || !historical[0] || historical[0].length !== 7) {
+      throw new Error('Invalid CSV format or empty data received');
+    }
+    
+    console.log(`✅ CSV processed: ${historical.length} entries loaded`);
+    console.log('🎯 Latest result:', historical[0]);
+    
+    // Populate dropdown options (only if not already populated)
     for (let i = 1; i <= 49; i++) {
       ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
-        const opt = document.createElement('option');
-        opt.value = opt.textContent = i;
-        document.getElementById(id).append(opt);
+        const select = document.getElementById(id);
+        if (select.children.length === 0) {
+          const opt = document.createElement('option');
+          opt.value = opt.textContent = i;
+          select.appendChild(opt);
+        }
       });
     }
+    
+    // Set latest values and update display
     const recent = historical[0];
     ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
       document.getElementById(id).value = recent[idx];
     });
     document.getElementById('additional').value = recent[6];
     document.getElementById('includeAdd').checked = false;
+    
     const today = new Date();
     const dateStr = today.toLocaleDateString('en-SG', { day: '2-digit', month: '2-digit', year: 'numeric' });
     updateLatestResult(recent.slice(0, 6), recent[6], dateStr);
+    
+    console.log('🎉 Latest TOTO data loaded and displayed successfully!');
   })
   .catch(error => {
-    alert("Failed to load historical data.");
-    console.error(error);
+    console.error('❌ Failed to load CSV data:', error);
+    document.getElementById('recentResult').textContent = 'RECENT RESULT: Failed to load - please refresh page';
+    
+    // Retry after 3 seconds if initial load fails
+    setTimeout(() => {
+      console.log('🔄 Retrying CSV fetch...');
+      window.location.reload();
+    }, 3000);
   });
 
 function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
@@ -95,6 +129,55 @@ function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
     resultElement.textContent = `RECENT RESULT: ${resultText}${drawDate ? ' - ' + drawDate : ''}`;
   }
 }
+
+// Auto-refresh when page becomes visible (user returns to tab)
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && historical.length > 0) {
+    console.log('👀 Page visible again - checking for latest data...');
+    
+    // Quick fresh fetch to ensure we have the latest data
+    const freshTimestamp = Date.now();
+    const freshRandom = Math.random().toString(36).substring(7);
+    const freshUrl = `totoResult.csv?refresh=${freshTimestamp}&new=${freshRandom}&check=${Math.random()}`;
+    
+    fetch(freshUrl, {
+      method: 'GET',
+      cache: 'no-store',
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache'
+      }
+    })
+    .then(response => response.text())
+    .then(text => {
+      const newHistorical = text.trim().split('\n').map(line => line.split(',').map(Number));
+      const newRecent = newHistorical[0];
+      
+      // Check if data has changed
+      if (JSON.stringify(newRecent) !== JSON.stringify(historical[0])) {
+        console.log('🔄 New data detected, updating...');
+        historical = newHistorical;
+        
+        // Update dropdowns and display
+        ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
+          document.getElementById(id).value = newRecent[idx];
+        });
+        document.getElementById('additional').value = newRecent[6];
+        
+        const today = new Date();
+        const dateStr = today.toLocaleDateString('en-SG', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        updateLatestResult(newRecent.slice(0, 6), newRecent[6], dateStr);
+        
+        console.log('✅ Data updated with latest results');
+      } else {
+        console.log('✅ Data is already up to date');
+      }
+    })
+    .catch(error => {
+      console.log('ℹ️ Background refresh failed, continuing with current data:', error.message);
+    });
+  }
+});
 
 function hasDuplicates(arr) {
   return new Set(arr).size !== arr.length;
