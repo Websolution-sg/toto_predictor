@@ -4,6 +4,44 @@ const cheerio = require('cheerio');
 
 const CSV_FILE = 'totoResult.csv';
 
+// FULLY DYNAMIC TOTO result fetching - NO HARDCODED VALUES - DATE-BASED LATEST DETECTION
+async function fetchLatestTotoResult() {
+  console.log('🚀 FULLY DYNAMIC TOTO fetching - Finding latest result by date analysis...');
+  console.log('📅 NO hardcoded values - will determine latest result from website by date');
+  
+  // Strategy 1: Date-based dynamic parsing (primary method)
+  const dynamicResult = await fetchLatestByDateAnalysis();
+  if (dynamicResult && dynamicResult.length === 7 && validateTotoNumbers(dynamicResult)) {
+    console.log(`✅ SUCCESS: Date-based parsing found latest result [${dynamicResult.join(', ')}]`);
+    return dynamicResult;
+  }
+  
+  // Strategy 2: Multiple endpoint parsing with latest detection
+  console.log('🔄 Date-based failed, trying multiple endpoint latest detection...');
+  const multiEndpointResult = await tryMultipleEndpointsForLatest();
+  if (multiEndpointResult && multiEndpointResult.length === 7 && validateTotoNumbers(multiEndpointResult)) {
+    console.log(`✅ SUCCESS: Multi-endpoint parsing found latest result [${multiEndpointResult.join(', ')}]`);
+    return multiEndpointResult;
+  }
+  
+  // Strategy 3: Comprehensive content analysis for most recent
+  console.log('🔄 Multi-endpoint failed, trying comprehensive latest analysis...');
+  const contentResult = await comprehensiveLatestAnalysis();
+  if (contentResult && contentResult.length === 7 && validateTotoNumbers(contentResult)) {
+    console.log(`✅ SUCCESS: Comprehensive analysis found latest result [${contentResult.join(', ')}]`);
+    return contentResult;
+  }
+  
+  // If all dynamic methods fail, return null (no hardcoded fallback)
+  console.log('❌ All dynamic parsing strategies failed to find latest result');
+  console.log('📋 Returning null - no hardcoded values used');
+  return null;
+}fs');
+const fetch = require('node-fetch');
+const cheerio = require('cheerio');
+
+const CSV_FILE = 'totoResult.csv';
+
 // SUPER-ENHANCED TOTO result fetching with multiple fallback strategies and null protection
 async function fetchLatestTotoResult() {
   console.log('� SUPER-ENHANCED TOTO fetching - NULL-PROOF with emergency fallbacks...');
