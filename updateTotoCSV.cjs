@@ -446,7 +446,7 @@ function findAdditionalNumber($, mainNumbers) {
     });
   }
   
-  // Strategy 3: Look for patterns like "22 25 29 31 34 43 + 11" or similar
+  // Strategy 3: Look for patterns with main numbers followed by additional number
   if (!additionalNumber) {
     console.log(`   🔍 Strategy 3: Looking for patterns with main numbers + additional...`);
     
@@ -592,11 +592,15 @@ async function advancedDateAnalysis(html) {
       return;
     }
     
-    // Look for date patterns
+    // Look for date patterns (dynamic based on current date)
+    const currentDate = new Date();
+    const currentMonth = currentDate.toLocaleDateString('en-US', { month: 'short' });
+    const currentMonthFull = currentDate.toLocaleDateString('en-US', { month: 'long' });
+    
     const datePatterns = [
       /(\d{1,2}[\s\/\-]\w{3}[\s\/\-]\d{4})/gi,    // Day Month Year format
       /(\d{1,2}[\s\/\-]\d{1,2}[\s\/\-]\d{4})/g,   // DD/MM/YYYY format
-      /(Aug|August)[\s,]*\d{1,2}[\s,]*\d{4}/gi,   // Month Day Year format
+      new RegExp(`(${currentMonth}|${currentMonthFull})[\\s,]*\\d{1,2}[\\s,]*\\d{4}`, 'gi'), // Current month format
       /\d{4}[\s\-\/]\d{1,2}[\s\-\/]\d{1,2}/g      // YYYY-MM-DD format
     ];
     
@@ -1136,8 +1140,11 @@ function isNewerThanCurrent(newNumbers) {
     
     const currentFirst = lines[0].split(',').map(n => parseInt(n.trim()));
     
-    // Simple comparison - if numbers are different, consider it newer
-    return !arraysEqual(newNumbers.slice(0, 6), currentFirst.slice(0, 6));
+    // Compare all 7 numbers (including additional number) to detect corrections
+    const newFull = newNumbers.slice(0, 7);
+    const currentFull = currentFirst.slice(0, 7);
+    
+    return !arraysEqual(newFull, currentFull);
     
   } catch (error) {
     console.log('❌ Error reading current CSV:', error.message);
