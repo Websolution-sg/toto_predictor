@@ -40,7 +40,6 @@
 
   <label><input type="checkbox" id="includeAdd"/> Include additional number</label><br/>
   <button onclick="predict()">Predict</button>
-  <button onclick="refreshData()" style="margin-left: 10px;">Refresh Data</button>
 
   <h2>Results</h2>
   <div id="results"></div>
@@ -119,12 +118,6 @@ function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
 
 function hasDuplicates(arr) {
   return new Set(arr).size !== arr.length;
-}
-
-function refreshData() {
-  console.log('🔄 Manual refresh triggered');
-  document.getElementById('recentResult').textContent = 'RECENT RESULT: Refreshing...';
-  loadCSVData();
 }
 
 function predict() {
