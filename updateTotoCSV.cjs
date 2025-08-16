@@ -1,5 +1,9 @@
 const fs = require('fs');
-const fetch = require('node-fetch');
+const f  // If all dynamic methods fail, return null (no hardcoded fallback)
+  console.log('❌ All dynamic parsing strategies failed to find latest result');
+  console.log('📋 Returning null - no hardcoded values used');
+  return null;
+}ode-fetch');
 const cheerio = require('cheerio');
 
 const CSV_FILE = 'totoResult.csv';
