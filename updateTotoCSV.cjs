@@ -652,10 +652,47 @@ function parseDirectSingaporePools(html) {
         // FALLBACK: Try alternative parsing methods
         console.log('🔄 ATTEMPTING FALLBACK PARSING METHODS...');
         
-        // Method 1: Look for any 6-number sequence in pipes (more flexible)
-        const flexiblePattern = /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|/g;
-        const flexibleMatches = [...html.matchAll(flexiblePattern)];
-        console.log(`🔍 Flexible pattern found ${flexibleMatches.length} matches`);
+        // Method 1: Enhanced table pattern matching
+        console.log('🔍 Method 1: Enhanced table pattern matching...');
+        
+        // Multiple patterns to handle different table formats
+        const patterns = [
+          // Pattern A: Standard Singapore Pools format with spaces
+          /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|[\s\S]*?\|\s*(\d{1,2})\s*\|/g,
+          
+          // Pattern B: Compact format without spaces
+          /\|(\d{1,2})\|(\d{1,2})\|(\d{1,2})\|(\d{1,2})\|(\d{1,2})\|(\d{1,2})\|[\s\S]*?\|(\d{1,2})\|/g,
+          
+          // Pattern C: HTML table cells
+          /<td[^>]*>(\d{1,2})<\/td>\s*<td[^>]*>(\d{1,2})<\/td>\s*<td[^>]*>(\d{1,2})<\/td>\s*<td[^>]*>(\d{1,2})<\/td>\s*<td[^>]*>(\d{1,2})<\/td>\s*<td[^>]*>(\d{1,2})<\/td>[\s\S]*?<td[^>]*>(\d{1,2})<\/td>/g,
+          
+          // Pattern D: More flexible 6+1 pattern
+          /(?:^|\n|\r).*?(\d{1,2})\s*[|,\s]+\s*(\d{1,2})\s*[|,\s]+\s*(\d{1,2})\s*[|,\s]+\s*(\d{1,2})\s*[|,\s]+\s*(\d{1,2})\s*[|,\s]+\s*(\d{1,2}).*?(\d{1,2})/gm
+        ];
+        
+        for (let p = 0; p < patterns.length; p++) {
+          console.log(`   Testing pattern ${String.fromCharCode(65 + p)}...`);
+          
+          const matches = [...html.matchAll(patterns[p])];
+          console.log(`   Found ${matches.length} potential matches`);
+          
+          for (const match of matches) {
+            if (match.length >= 8) {
+              const numbers = match.slice(1, 8).map(n => parseInt(n));
+              console.log(`   Candidate: [${numbers.join(', ')}]`);
+              
+              // Validate TOTO result
+              if (numbers.length === 7 && 
+                  numbers.every(n => n >= 1 && n <= 49) && 
+                  new Set(numbers).size === 7) {
+                console.log(`✅ Pattern ${String.fromCharCode(65 + p)} SUCCESS: [${numbers.join(', ')}]`);
+                return numbers;
+              } else {
+                console.log(`   ❌ Invalid: length=${numbers.length}, range=${numbers.every(n => n >= 1 && n <= 49)}, unique=${new Set(numbers).size}`);
+              }
+            }
+          }
+        }
         
         // Method 2: Look for any reasonable TOTO number patterns
         const allNumbers = [];
