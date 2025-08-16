@@ -83,15 +83,33 @@ async function fetchLatestTotoResult() {
   // Enhanced approach: Collect multiple candidates and select the most recent
   let resultCandidates = [];
   
-  // SINGLE RELIABLE SOURCE: Main Singapore Pools TOTO Results Page (Verified Aug 16, 2025)
-  // This is the ONLY source that consistently provides the latest results
-  // ROBUST: No hardcoded numbers - always fetches the topmost (latest) result by position
+  // MULTIPLE DATA SOURCES: Try various Singapore Pools endpoints
+  // Website structure changed significantly in August 2025
+  // Results may be available through different endpoints or APIs
   const attempts = [
     {
-      name: 'Singapore Pools Main TOTO Results Page (VERIFIED SOURCE)',
+      name: 'Singapore Pools Main TOTO Results Page',
       url: 'https://www.singaporepools.com.sg/en/product/Pages/toto_results.aspx',
       parser: parseDirectSingaporePools,
-      timeout: 30000  // Increased timeout for reliability
+      timeout: 30000
+    },
+    {
+      name: 'Singapore Pools TOTO Results API (New)',
+      url: 'https://www.singaporepools.com.sg/api/product/toto/results',
+      parser: parseAPIResponse,
+      timeout: 20000
+    },
+    {
+      name: 'Singapore Pools Widget Endpoint',
+      url: 'https://www.singaporepools.com.sg/en/product/sr/Lottery4dTotoResultWidget',
+      parser: parseAPIResponse,
+      timeout: 20000
+    },
+    {
+      name: 'Singapore Pools Mobile API',
+      url: 'https://www.singaporepools.com.sg/mobile/api/toto/latest',
+      parser: parseAPIResponse,
+      timeout: 20000
     }
   ];
 
@@ -589,16 +607,71 @@ function parseDirectSingaporePools(html) {
     console.log('🔍 Parsing Singapore Pools HTML (ROBUST DATE-AGNOSTIC PARSER)...');
     console.log(`📄 HTML length: ${html.length} characters`);
     
-    // DEBUG: Check if key numbers are in HTML (safely)
+    // DEBUG: Check if any TOTO numbers are in HTML
     try {
-      console.log('🔍 DEBUG: Checking if target numbers exist in HTML...');
-      const has22 = html && html.includes && html.includes('22');
-      const has25 = html && html.includes && html.includes('25');
-      const has29 = html && html.includes && html.includes('29');
-      const has11 = html && html.includes && html.includes('11');
-      console.log(`🔍 HTML contains: 22=${has22}, 25=${has25}, 29=${has29}, 11=${has11}`);
+      console.log('🔍 DEBUG: Checking HTML for TOTO number patterns...');
+      
+      // Look for common TOTO numbers that might appear
+      const commonNumbers = ['01', '02', '03', '11', '22', '25', '29', '31', '34', '43'];
+      const foundNumbers = commonNumbers.filter(num => html.includes(num));
+      console.log(`🔍 HTML contains common TOTO numbers: ${foundNumbers.length > 0 ? foundNumbers.join(', ') : 'none'}`);
+      
+      // TARGETED FIX: Look for the exact pattern we know is on the page
+      console.log('🎯 TARGETED: Looking for table pattern | XX | XX | XX | XX | XX | XX |');
+      
+      // Enhanced regex to match the table format from Singapore Pools
+      const tablePattern = /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|/g;
+      const matches = [...html.matchAll(tablePattern)];
+      
+      console.log(`📊 Found ${matches.length} table patterns matching | XX | XX | XX | XX | XX | XX |`);
+      
+      if (matches.length > 0) {
+        // Get the first match (which should be the latest result)
+        const firstMatch = matches[0];
+        const mainNumbers = firstMatch.slice(1, 7).map(n => parseInt(n));
+        console.log(`🎯 First table match: [${mainNumbers.join(', ')}]`);
+        
+        // Validate these are valid TOTO numbers
+        if (mainNumbers.every(n => n >= 1 && n <= 49) && new Set(mainNumbers).size === 6) {
+          
+          // Look for the additional number in the following pattern | XX |
+          const afterMatch = html.substring(firstMatch.index + firstMatch[0].length, firstMatch.index + firstMatch[0].length + 500);
+          console.log(`🔍 Looking for additional number in: ${afterMatch.substring(0, 100)}...`);
+          
+          const additionalPattern = /\|\s*(\d{1,2})\s*\|/;
+          const additionalMatch = afterMatch.match(additionalPattern);
+          
+          if (additionalMatch) {
+            const additional = parseInt(additionalMatch[1]);
+            console.log(`🎯 Found additional number: ${additional}`);
+            
+            if (additional >= 1 && additional <= 49) {
+              const fullResult = [...mainNumbers, additional];
+              console.log(`✅ COMPLETE RESULT: [${fullResult.join(', ')}]`);
+              
+              // Check if this is a new result
+              const knownRecentResults = getKnownRecentResults(CSV_FILE);
+              const validation = isValidNewResult(fullResult, knownRecentResults);
+              
+              if (validation.valid) {
+                console.log('🎉 SUCCESS: Found valid new TOTO result!');
+                return fullResult;
+              } else {
+                console.log(`⚠️ Not a new result: ${validation.reason}`);
+              }
+            }
+          } else {
+            console.log('⚠️ Additional number pattern not found');
+          }
+        } else {
+          console.log('❌ Invalid main numbers: duplicates or out of range');
+        }
+      } else {
+        console.log('❌ No table patterns found - website structure may have changed');
+      }
+      
     } catch (debugError) {
-      console.log('⚠️ Debug check failed, continuing with parsing...');
+      console.log('⚠️ Debug check failed, continuing with parsing...', debugError.message);
     }
     
     // Dynamically load known recent results from CSV for validation
@@ -911,7 +984,7 @@ function readExistingCSV(path) {
   }
 }
 
-function getKnownRecentResults(csvPath, fallbackResults = [[9, 24, 31, 34, 43, 44, 1]]) {
+function getKnownRecentResults(csvPath, fallbackResults = []) {
   try {
     const existingResults = readExistingCSV(csvPath);
     if (existingResults.length > 0) {
@@ -923,7 +996,7 @@ function getKnownRecentResults(csvPath, fallbackResults = [[9, 24, 31, 34, 43, 4
       });
       return recentResults;
     } else {
-      console.log('⚠️ CSV empty, using fallback known results');
+      console.log('⚠️ CSV empty, no existing results to compare against');
       return fallbackResults;
     }
   } catch (error) {
@@ -1200,15 +1273,17 @@ function arraysEqual(a, b) {
     console.log('🔄 Attempting graceful recovery...');
     
     try {
-      // Emergency failsafe
+      // Emergency failsafe - preserve existing data integrity
       const existing = readExistingCSV(CSV_FILE);
-      const knownCorrectResult = [22, 25, 29, 31, 34, 43, 11]; // Use current latest result
       
-      if (existing.length === 0 || !arraysEqual(knownCorrectResult, existing[0])) {
-        console.log('🚨 EMERGENCY FAILSAFE: Ensuring latest result is in CSV');
-        existing.unshift(knownCorrectResult);
-        writeCSV(CSV_FILE, existing);
-        console.log('✅ Emergency failsafe completed');
+      if (existing.length === 0) {
+        console.log('🚨 EMERGENCY: CSV is empty, but no new result available');
+        console.log('📝 Maintaining existing state to prevent data loss');
+      } else {
+        console.log('�️ FAILSAFE: Preserving existing CSV data');
+        console.log(`📊 Current CSV has ${existing.length} entries`);
+        console.log(`📊 Latest entry: [${existing[0].join(', ')}]`);
+        // Don't modify anything - preserve current state
       }
       
       console.log('� Process completed with failsafe measures');
