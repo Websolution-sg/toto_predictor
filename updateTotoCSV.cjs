@@ -657,23 +657,36 @@ function parseDirectSingaporePools(html) {
         
         // Multiple patterns to handle different table formats
         const patterns = [
-          // Pattern A: Standard Singapore Pools format with spaces
+          // Pattern A: Singapore Pools current format - exact match for website structure
+          /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|[\s\S]*?\|\s*(\d{1,2})\s*\|/,
+          
+          // Pattern B: Standard format with spaces (global search)
           /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|[\s\S]*?\|\s*(\d{1,2})\s*\|/g,
           
-          // Pattern B: Compact format without spaces
+          // Pattern C: Compact format without spaces
           /\|(\d{1,2})\|(\d{1,2})\|(\d{1,2})\|(\d{1,2})\|(\d{1,2})\|(\d{1,2})\|[\s\S]*?\|(\d{1,2})\|/g,
           
-          // Pattern C: HTML table cells
+          // Pattern D: HTML table cells
           /<td[^>]*>(\d{1,2})<\/td>\s*<td[^>]*>(\d{1,2})<\/td>\s*<td[^>]*>(\d{1,2})<\/td>\s*<td[^>]*>(\d{1,2})<\/td>\s*<td[^>]*>(\d{1,2})<\/td>\s*<td[^>]*>(\d{1,2})<\/td>[\s\S]*?<td[^>]*>(\d{1,2})<\/td>/g,
           
-          // Pattern D: More flexible 6+1 pattern
+          // Pattern E: More flexible 6+1 pattern
           /(?:^|\n|\r).*?(\d{1,2})\s*[|,\s]+\s*(\d{1,2})\s*[|,\s]+\s*(\d{1,2})\s*[|,\s]+\s*(\d{1,2})\s*[|,\s]+\s*(\d{1,2})\s*[|,\s]+\s*(\d{1,2}).*?(\d{1,2})/gm
         ];
         
         for (let p = 0; p < patterns.length; p++) {
           console.log(`   Testing pattern ${String.fromCharCode(65 + p)}...`);
           
-          const matches = [...html.matchAll(patterns[p])];
+          // Show sample of what we're matching against for first pattern
+          if (p === 0) {
+            const sampleIndex = html.indexOf('| 22 |');
+            if (sampleIndex !== -1) {
+              const sample = html.substring(sampleIndex, sampleIndex + 200);
+              console.log(`   📋 Sample content around '| 22 |': ${sample.substring(0, 100)}...`);
+            }
+          }
+          
+          const matches = patterns[p].global ? [...html.matchAll(patterns[p])] : 
+                         (html.match(patterns[p]) ? [html.match(patterns[p])] : []);
           console.log(`   Found ${matches.length} potential matches`);
           
           for (const match of matches) {
