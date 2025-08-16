@@ -773,39 +773,6 @@ function parseDirectSingaporePools(html) {
         }
       } else {
         console.log('❌ No table patterns found - website structure may have changed');
-      
-      // Method 3: Direct content inspection for debugging
-      console.log('🔍 Method 3: Direct content inspection...');
-      
-      // Show a sample of the HTML to understand the structure
-      const sampleStart = html.indexOf('22'); // Look for where our target numbers start
-      if (sampleStart !== -1) {
-        const sampleContent = html.substring(sampleStart - 100, sampleStart + 300);
-        console.log('📋 Sample HTML around number 22:');
-        console.log('---START---');
-        console.log(sampleContent);
-        console.log('---END---');
-        
-        // Try to manually parse this specific section
-        const manualPattern = /(\d{1,2})[^0-9]*(\d{1,2})[^0-9]*(\d{1,2})[^0-9]*(\d{1,2})[^0-9]*(\d{1,2})[^0-9]*(\d{1,2})[^0-9]*(\d{1,2})/;
-        const manualMatch = sampleContent.match(manualPattern);
-        
-        if (manualMatch) {
-          const numbers = manualMatch.slice(1, 8).map(n => parseInt(n));
-          console.log(`🎯 Manual extraction: [${numbers.join(', ')}]`);
-          
-          if (numbers.length === 7 && 
-              numbers.every(n => n >= 1 && n <= 49) && 
-              new Set(numbers).size === 7) {
-            console.log(`✅ Method 3 SUCCESS: [${numbers.join(', ')}]`);
-            return numbers;
-          }
-        }
-      } else {
-        console.log('❌ Could not find number 22 in HTML content');
-        console.log('📋 First 500 characters of HTML:');
-        console.log(html.substring(0, 500));
-      }
       }
       
     } catch (debugError) {
