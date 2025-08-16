@@ -95,116 +95,148 @@ async function fetchLatestTotoResult() {
 
 function parseDirectSingaporePools(html) {
   try {
-    console.log('🔍 Parsing Singapore Pools HTML with dynamic detection...');
+    console.log('🔍 Parsing Singapore Pools HTML with precision targeting...');
     console.log(`📄 HTML length: ${html.length} characters`);
     
     // Load HTML with Cheerio for better parsing
     const cheerio = require('cheerio');
     const $ = cheerio.load(html);
     
-    // DYNAMIC APPROACH 1: Look for any table cells with TOTO numbers
-    console.log('🎯 Method 1: Dynamic table cell parsing...');
-    const tableCells = [];
+    // PRECISION METHOD 1: Target specific table structure patterns
+    console.log('🎯 Method 1: Precision table pattern targeting...');
     
-    // Find all table cells and extract valid TOTO numbers
-    $('td, th').each((i, elem) => {
-      const text = $(elem).text().trim();
-      const num = parseInt(text);
-      if (!isNaN(num) && num >= 1 && num <= 49) {
-        tableCells.push({
-          number: num,
-          position: i,
-          context: $(elem).parent().text().trim()
-        });
-      }
-    });
+    // Look for the exact pattern we see in the webpage: | 22 | 25 | 29 | 31 | 34 | 43 | followed by | 11 |
+    const precisionPatterns = [
+      // Pattern 1: 6 numbers in table format followed by additional number
+      /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|[\s\S]*?\|\s*(\d{1,2})\s*\|/,
+      
+      // Pattern 2: HTML table cells with exact structure
+      /<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>[\s\S]*?<td[^>]*>\s*(\d{1,2})\s*<\/td>/i
+    ];
     
-    console.log(`📊 Found ${tableCells.length} valid TOTO numbers in table cells`);
-    
-    // Look for sequences of 6+1 pattern (main numbers + additional)
-    if (tableCells.length >= 7) {
-      // Try to find the first valid 7-number sequence
-      for (let i = 0; i <= tableCells.length - 7; i++) {
-        const sequence = tableCells.slice(i, i + 7).map(cell => cell.number);
+    for (let i = 0; i < precisionPatterns.length; i++) {
+      console.log(`   Testing precision pattern ${i + 1}...`);
+      const match = html.match(precisionPatterns[i]);
+      
+      if (match && match.length >= 8) {
+        const numbers = match.slice(1, 8).map(n => parseInt(n));
+        console.log(`   Pattern ${i + 1} found: [${numbers.join(', ')}]`);
         
-        // Check if this forms a valid TOTO result (7 unique numbers)
+        // Strict validation for TOTO result
+        if (numbers.length === 7 && 
+            numbers.every(n => n >= 1 && n <= 49) && 
+            new Set(numbers).size === 7) {
+          
+          // Additional validation: check if this looks like a realistic TOTO result
+          const mainNumbers = numbers.slice(0, 6).sort((a, b) => a - b);
+          const additional = numbers[6];
+          
+          // TOTO numbers should be reasonably distributed (not all consecutive or too clustered)
+          const isRealistic = mainNumbers[5] - mainNumbers[0] >= 10; // Spread of at least 10
+          
+          if (isRealistic) {
+            console.log(`✅ Precision pattern ${i + 1} SUCCESS: [${numbers.join(', ')}]`);
+            console.log(`   Main numbers: [${mainNumbers.join(', ')}], Additional: ${additional}`);
+            return numbers;
+          } else {
+            console.log(`   ❌ Pattern ${i + 1} unrealistic distribution`);
+          }
+        } else {
+          console.log(`   ❌ Pattern ${i + 1} validation failed`);
+        }
+      }
+    }
+    
+    // PRECISION METHOD 2: Target by content context  
+    console.log('🎯 Method 2: Context-based precision targeting...');
+    
+    // Look for sections that contain prize information (indicates result tables)
+    const prizeKeywords = ['Group 1', 'prize', '$', 'Group 2', 'Group 3'];
+    let bestResultSection = '';
+    let bestSectionScore = 0;
+    
+    // Split HTML into sections and score them
+    const sections = html.split(/(?=\|[^|]*\d{1,2}[^|]*\|)/).slice(0, 10); // First 10 sections only
+    
+    for (let s = 0; s < sections.length; s++) {
+      const section = sections[s];
+      let score = 0;
+      
+      // Score sections based on prize-related content
+      for (const keyword of prizeKeywords) {
+        if (section.includes(keyword)) score += 1;
+      }
+      
+      // Prefer sections with table structure
+      if (section.includes('|') && section.includes('Group')) score += 2;
+      
+      if (score > bestSectionScore) {
+        bestSectionScore = score;
+        bestResultSection = section;
+      }
+    }
+    
+    if (bestResultSection && bestSectionScore >= 3) {
+      console.log(`   Found best result section (score: ${bestSectionScore})`);
+      
+      // Extract first valid 7-number sequence from this section
+      const sectionNumbers = [];
+      const numberMatches = [...bestResultSection.matchAll(/(\d{1,2})/g)];
+      
+      for (const match of numberMatches) {
+        const num = parseInt(match[1]);
+        if (num >= 1 && num <= 49) {
+          sectionNumbers.push(num);
+        }
+      }
+      
+      // Look for valid 7-number sequence
+      for (let i = 0; i <= sectionNumbers.length - 7; i++) {
+        const sequence = sectionNumbers.slice(i, i + 7);
         if (new Set(sequence).size === 7) {
-          console.log(`✅ Table method found: [${sequence.join(', ')}]`);
+          console.log(`✅ Context-based method found: [${sequence.join(', ')}]`);
           return sequence;
         }
       }
     }
     
-    // DYNAMIC APPROACH 2: Text-based pattern matching with multiple formats
-    console.log('🎯 Method 2: Dynamic text pattern parsing...');
     
-    // Multiple patterns to catch different table formats
-    const patterns = [
-      // Pattern 1: Standard table with | separators
-      /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|[\s\S]{0,300}?\|\s*(\d{1,2})\s*\|/,
-      
-      // Pattern 2: HTML table format
-      /<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>[\s\S]{0,300}?<td[^>]*>\s*(\d{1,2})\s*<\/td>/i,
-      
-      // Pattern 3: Space-separated numbers in a row
-      /(?:^|\n|\r)[\s]*(\d{1,2})[\s]+(\d{1,2})[\s]+(\d{1,2})[\s]+(\d{1,2})[\s]+(\d{1,2})[\s]+(\d{1,2})[\s\S]{0,100}?(\d{1,2})/m,
-      
-      // Pattern 4: Numbers with various separators
-      /(\d{1,2})[\s,|]+(\d{1,2})[\s,|]+(\d{1,2})[\s,|]+(\d{1,2})[\s,|]+(\d{1,2})[\s,|]+(\d{1,2})[\s\S]{0,200}?[\s,|]+(\d{1,2})/
-    ];
+    // PRECISION METHOD 3: Ultra-conservative fallback
+    console.log('🎯 Method 3: Ultra-conservative number extraction...');
     
-    for (let i = 0; i < patterns.length; i++) {
-      console.log(`   Testing pattern ${i + 1}...`);
-      const match = html.match(patterns[i]);
-      
-      if (match && match.length >= 8) {
-        const numbers = match.slice(1, 8).map(n => parseInt(n));
-        
-        // Validate TOTO result
-        if (numbers.length === 7 && 
-            numbers.every(n => n >= 1 && n <= 49) && 
-            new Set(numbers).size === 7) {
-          console.log(`✅ Pattern ${i + 1} success: [${numbers.join(', ')}]`);
-          return numbers;
-        } else {
-          console.log(`   ❌ Pattern ${i + 1} invalid: length=${numbers.length}, unique=${new Set(numbers).size}`);
-        }
-      }
-    }
+    // Only look at the very beginning of the HTML where the latest result should be
+    const topSection = html.substring(0, Math.min(html.length, 15000)); // First 15KB only
     
-    
-    // DYNAMIC APPROACH 3: Position-based number extraction with smart filtering
-    console.log('🎯 Method 3: Position-based extraction...');
-    const allNumbers = [];
-    const numberPattern = /(\d{1,2})/g;
+    // Find all valid TOTO numbers in this section
+    const conservativeNumbers = [];
+    const conservativePattern = /(\d{1,2})/g;
     let match;
     
-    while ((match = numberPattern.exec(html)) !== null) {
+    while ((match = conservativePattern.exec(topSection)) !== null) {
       const num = parseInt(match[1]);
       if (num >= 1 && num <= 49) {
-        allNumbers.push({
+        conservativeNumbers.push({
           number: num,
-          position: match.index,
-          context: html.substring(Math.max(0, match.index - 20), match.index + 20)
+          position: match.index
         });
       }
     }
     
-    console.log(`📊 Found ${allNumbers.length} valid TOTO numbers (1-49) in HTML`);
+    console.log(`📊 Found ${conservativeNumbers.length} valid numbers in top section`);
     
-    // Look for clusters of 7 numbers that appear close together (likely in same table row)
-    if (allNumbers.length >= 7) {
-      for (let i = 0; i <= allNumbers.length - 7; i++) {
-        const cluster = allNumbers.slice(i, i + 7);
+    // Look for the first occurrence of 7 unique numbers in close proximity
+    if (conservativeNumbers.length >= 7) {
+      for (let i = 0; i <= conservativeNumbers.length - 7; i++) {
+        const cluster = conservativeNumbers.slice(i, i + 7);
         const numbers = cluster.map(item => item.number);
         
-        // Check if it's a valid TOTO result (7 unique numbers)
+        // Check uniqueness and proximity
         if (new Set(numbers).size === 7) {
-          // Check if numbers are positioned close together (within 1000 characters)
           const positionSpread = cluster[6].position - cluster[0].position;
           
-          if (positionSpread < 1000) {
-            console.log(`✅ Position-based method found: [${numbers.join(', ')}]`);
+          // Very strict proximity requirement (within 500 characters)
+          if (positionSpread < 500) {
+            console.log(`✅ Conservative method found: [${numbers.join(', ')}]`);
             console.log(`   Position spread: ${positionSpread} characters`);
             return numbers;
           }
@@ -212,57 +244,29 @@ function parseDirectSingaporePools(html) {
       }
     }
     
-    // DYNAMIC APPROACH 4: Smart content analysis
-    console.log('🎯 Method 4: Smart content analysis...');
+    console.log('❌ All precision parsing methods failed');
     
-    // Look for recent date indicators to find the latest result section
-    const datePatterns = [
-      /(\d{1,2}[-\/]\d{1,2}[-\/]\d{4})/g,
-      /(\d{4}[-\/]\d{1,2}[-\/]\d{1,2})/g,
-      /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\s]+\d{1,2}[\s,]+\d{4}/gi
+    // EMERGENCY FALLBACK: Look for known good patterns only
+    console.log('🆘 Emergency fallback: Looking for known good result patterns...');
+    
+    // Check if we can find the previous known result to validate our parsing
+    const knownResults = [
+      [9, 24, 31, 34, 43, 44, 1],  // Previous result in CSV
+      [2, 15, 28, 39, 42, 44, 5],
+      [30, 32, 40, 43, 45, 49, 5]
     ];
     
-    let latestDatePosition = -1;
-    const currentYear = new Date().getFullYear();
-    
-    for (const pattern of datePatterns) {
-      let dateMatch;
-      while ((dateMatch = pattern.exec(html)) !== null) {
-        const dateStr = dateMatch[0];
-        if (dateStr.includes(currentYear.toString())) {
-          console.log(`📅 Found recent date: ${dateStr} at position ${dateMatch.index}`);
-          latestDatePosition = dateMatch.index;
-          break;
-        }
-      }
-      if (latestDatePosition !== -1) break;
-    }
-    
-    // If we found a recent date, look for numbers near it
-    if (latestDatePosition !== -1) {
-      const nearDateSection = html.substring(latestDatePosition, latestDatePosition + 2000);
-      const nearDateNumbers = [];
+    for (const knownResult of knownResults) {
+      const knownPattern = knownResult.map(n => n.toString()).join('[^\\d]*');
+      const regex = new RegExp(knownPattern);
       
-      let nearMatch;
-      const nearPattern = /(\d{1,2})/g;
-      while ((nearMatch = nearPattern.exec(nearDateSection)) !== null) {
-        const num = parseInt(nearMatch[1]);
-        if (num >= 1 && num <= 49) {
-          nearDateNumbers.push(num);
-        }
-      }
-      
-      // Look for first valid 7-number sequence near the date
-      for (let i = 0; i <= nearDateNumbers.length - 7; i++) {
-        const sequence = nearDateNumbers.slice(i, i + 7);
-        if (new Set(sequence).size === 7) {
-          console.log(`✅ Date-proximity method found: [${sequence.join(', ')}]`);
-          return sequence;
-        }
+      if (regex.test(html)) {
+        console.log(`✅ Found known result pattern: [${knownResult.join(', ')}]`);
+        console.log('⚠️ Returning null to avoid updating with old result');
+        return null; // Don't return old results
       }
     }
     
-    console.log('❌ All dynamic parsing methods failed - no valid TOTO result found');
     return null;
     
   } catch (error) {
