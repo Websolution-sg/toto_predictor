@@ -589,8 +589,17 @@ function parseDirectSingaporePools(html) {
     console.log('🔍 Parsing Singapore Pools HTML (ROBUST DATE-AGNOSTIC PARSER)...');
     console.log(`📄 HTML length: ${html.length} characters`);
     
+    // DEBUG: Check if key numbers are in HTML
+    console.log('🔍 DEBUG: Checking if target numbers exist in HTML...');
+    const has22 = html.includes('22');
+    const has25 = html.includes('25');
+    const has29 = html.includes('29');
+    const has11 = html.includes('11');
+    console.log(`🔍 HTML contains: 22=${has22}, 25=${has25}, 29=${has29}, 11=${has11}`);
+    
     // Dynamically load known recent results from CSV for validation
     const knownRecentResults = getKnownRecentResults(CSV_FILE);
+    console.log('🔍 DEBUG: Known recent results loaded:', knownRecentResults.length);
     
     // ROBUST APPROACH: Extract the FIRST (latest) valid TOTO result from the page
     // Singapore Pools displays results in chronological order (newest first)
