@@ -4,50 +4,187 @@ const cheerio = require('cheerio');
 
 const CSV_FILE = 'totoResult.csv';
 
-// Enhanced TOTO result fetching with multiple endpoints and dynamic parsing
+// Enhanced TOTO result fetching with robust multi-endpoint and multi-strategy approach
 async function fetchLatestTotoResult() {
-  console.log('🔍 Fetching latest TOTO results with dynamic multi-endpoint approach...');
+  console.log('🔍 Fetching latest TOTO results with ENHANCED robust multi-strategy approach...');
   
-  // Multiple endpoints for better reliability
+  // Multiple endpoints with different strategies for maximum reliability
   const endpoints = [
     {
       name: 'Singapore Pools Main TOTO Page',
       url: 'https://www.singaporepools.com.sg/en/product/Pages/toto_results.aspx',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9,zh-CN;q=0.8,zh;q=0.7',
+        'Accept-Encoding': 'gzip, deflate, br',
         'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache'
-      }
+        'Pragma': 'no-cache',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none'
+      },
+      strategy: 'date-based-primary'
     },
     {
       name: 'Singapore Pools Alternative URL',
       url: 'https://www.singaporepools.com.sg/en/product/sr/Pages/toto_results.aspx',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-      }
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
+      },
+      strategy: 'table-structure-based'
     },
     {
       name: 'Singapore Pools Mobile View',
       url: 'https://www.singaporepools.com.sg/en/product/Pages/toto_results.aspx',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8'
-      }
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.2 Mobile/15E148 Safari/604.1',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5'
+      },
+      strategy: 'content-pattern-based'
+    },
+    {
+      name: 'Singapore Pools Direct Results API',
+      url: 'https://www.singaporepools.com.sg/api/toto/results',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+        'Accept': 'application/json,text/plain,*/*',
+        'Content-Type': 'application/json',
+        'Referer': 'https://www.singaporepools.com.sg/'
+      },
+      strategy: 'json-api-based'
     }
   ];
   
+  // Enhanced retry logic with progressive backoff
+  const maxRetries = 3;
+  const results = [];
+  
   for (const endpoint of endpoints) {
-    try {
-      console.log(`🌐 Trying ${endpoint.name}...`);
-      
-      const response = await fetch(endpoint.url, {
-        headers: endpoint.headers,
-        timeout: 30000,
-        follow: 5,
-        compress: true
+    let retryCount = 0;
+    let success = false;
+    
+    while (retryCount < maxRetries && !success) {
+      try {
+        const delay = retryCount * 2000; // Progressive delay: 0s, 2s, 4s
+        if (retryCount > 0) {
+          console.log(`🔄 Retry ${retryCount}/${maxRetries - 1} for ${endpoint.name} after ${delay}ms...`);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+        
+        console.log(`🌐 Attempting ${endpoint.name} (Strategy: ${endpoint.strategy})...`);
+        
+        const response = await fetch(endpoint.url, {
+          headers: endpoint.headers,
+          timeout: 45000, // Increased timeout
+          follow: 10, // More redirects allowed
+          compress: true,
+          agent: false // Disable agent pooling for better reliability
+        });
+        
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const contentType = response.headers.get('content-type') || '';
+        let content;
+        
+        if (contentType.includes('application/json')) {
+          content = await response.json();
+          console.log(`📦 ${endpoint.name} - JSON received:`, JSON.stringify(content).substring(0, 200) + '...');
+        } else {
+          content = await response.text();
+          console.log(`📄 ${endpoint.name} - HTML received: ${content.length} characters`);
+        }
+        
+        // Enhanced content validation
+        const hasValidContent = endpoint.strategy === 'json-api-based' 
+          ? validateJsonContent(content)
+          : validateHtmlContent(content);
+        
+        if (!hasValidContent) {
+          throw new Error('Content validation failed - no TOTO data detected');
+        }
+        
+        console.log(`✅ ${endpoint.name} - Content validated, parsing with ${endpoint.strategy}...`);
+        
+        // Parse using strategy-specific method
+        const result = await parseWithStrategy(content, endpoint.strategy);
+        
+        if (result && result.length === 7 && validateTotoNumbers(result)) {
+          console.log(`🎉 ${endpoint.name} SUCCESS: [${result.join(', ')}]`);
+          results.push({
+            source: endpoint.name,
+            strategy: endpoint.strategy,
+            numbers: result,
+            confidence: calculateEndpointConfidence(result, content, endpoint.strategy)
+          });
+          success = true;
+        } else {
+          throw new Error(`Parsing failed or invalid result: ${result ? result.join(',') : 'null'}`);
+        }
+        
+      } catch (error) {
+        retryCount++;
+        console.log(`❌ ${endpoint.name} attempt ${retryCount} failed: ${error.message}`);
+        
+        if (error.code === 'ENOTFOUND') {
+          console.log('   🌐 DNS resolution failed - network connectivity issue');
+        } else if (error.code === 'ETIMEDOUT' || error.message.includes('timeout')) {
+          console.log('   ⏰ Request timed out - server may be slow');
+        } else if (error.message.includes('HTTP 4') || error.message.includes('HTTP 5')) {
+          console.log('   🚫 Server error - may be temporary');
+        }
+        
+        if (retryCount >= maxRetries) {
+          console.log(`   💀 ${endpoint.name} - All ${maxRetries} attempts failed`);
+        }
+      }
+    }
+  }
+  
+  // Analyze and return the best result
+  if (results.length === 0) {
+    console.log('❌ ALL ENDPOINTS FAILED - No valid TOTO result obtained');
+    console.log('🔍 This could indicate:');
+    console.log('   • Network connectivity issues');
+    console.log('   • Singapore Pools website structure changes');
+    console.log('   • Temporary server maintenance');
+    console.log('   • Content blocking or rate limiting');
+    return null;
+  }
+  
+  // Sort results by confidence score
+  results.sort((a, b) => b.confidence - a.confidence);
+  
+  console.log(`🎯 BEST RESULT ANALYSIS (${results.length} successful fetches):`);
+  results.forEach((result, index) => {
+    console.log(`   ${index + 1}. ${result.source} (${result.strategy}): [${result.numbers.join(', ')}] - Confidence: ${result.confidence.toFixed(1)}`);
+  });
+  
+  const bestResult = results[0];
+  console.log(`🏆 SELECTED RESULT: [${bestResult.numbers.join(', ')}] from ${bestResult.source}`);
+  
+  // Cross-validation: if multiple results, check for consensus
+  if (results.length > 1) {
+    const consensusResults = results.filter(r => 
+      arraysEqual(r.numbers, bestResult.numbers)
+    );
+    
+    console.log(`🔄 Cross-validation: ${consensusResults.length}/${results.length} sources agree`);
+    
+    if (consensusResults.length < results.length * 0.5) {
+      console.log(`⚠️ WARNING: Low consensus detected. Results may be inconsistent.`);
+    }
+  }
+  
+  return bestResult.numbers;
+}
       });
       
       if (!response.ok) {
