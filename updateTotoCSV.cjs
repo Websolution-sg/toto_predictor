@@ -79,6 +79,7 @@ async function fetchLatestTotoResult() {
   console.log('🎯 Target: Look for patterns like 22,25,29,31,34,43,11 (current latest)');
   console.log('🏆 NEW: Multiple candidate collection for latest result selection');
   console.log('🐛 DEBUG MODE: Enhanced logging for troubleshooting');
+  console.log('🧪 TESTING: CSV currently missing latest result - should detect and add it');
   console.log('');
   
   // Enhanced approach: Collect multiple candidates and select the most recent
@@ -1156,73 +1157,44 @@ function arraysEqual(a, b) {
       console.log(`🎯 Fetched result: ${latestResult ? `[${latestResult.join(', ')}]` : 'NULL'}`);
       
       if (!latestResult || latestResult.length !== 7) {
-      console.log('');
-      console.log('⚠️ No valid result fetched from Singapore Pools');
-      console.log('📊 Analysis of current situation:');
-      console.log('   • Singapore Pools website structure changed (August 2025)');
-      console.log('   • Results page now shows calculator instead of actual results');
-      console.log('   • TOTO numbers may be dynamically loaded or moved to new endpoints');
-      console.log('   • This is a website structure issue, not a code issue');
-      console.log('');
-      console.log('🔧 Possible causes:');
-      console.log('   • Website redesign moved results to different URLs');
-      console.log('   • Results now require JavaScript rendering');
-      console.log('   • Anti-bot measures blocking automated access');
-      console.log('   • Results moved to authenticated/API endpoints');
-      console.log('');
-      console.log('💡 Next steps needed:');
-      console.log('   • Investigate new Singapore Pools API endpoints');
-      console.log('   • Consider JavaScript-enabled scraping (Puppeteer)');
-      console.log('   • Check mobile app API or alternative data sources');
-      console.log('   • Manual verification of latest TOTO results for temporary updates');
-      
-      console.log('');
-      console.log('='.repeat(60));
-      console.log('STEP 3: ACTIVATING FAILSAFE MECHANISM');
-      console.log('='.repeat(60));
-      
-      // FAILSAFE: Check if the known correct result is missing from CSV
-      console.log('🔧 Checking failsafe options...');
-      const existing = readExistingCSV(CSV_FILE);
-      const knownCorrectResult = [9, 24, 31, 34, 43, 44, 1];
-      
-      console.log(`📊 Current CSV top entry: ${existing.length > 0 ? `[${existing[0].join(', ')}]` : 'EMPTY'}`);
-      console.log(`🎯 Known correct result: [${knownCorrectResult.join(', ')}]`);
-      
-      // Check if the known correct result is already at the top
-      if (existing.length === 0 || !arraysEqual(knownCorrectResult, existing[0])) {
-        console.log('💡 FAILSAFE ACTIVATED: Adding known correct result to prevent data gaps');
-        console.log(`🎯 Inserting result: [${knownCorrectResult.join(', ')}] at top of CSV`);
+        console.log('');
+        console.log('❌ FETCH FAILED: Unable to retrieve valid TOTO results');
+        console.log('📊 Analysis of current situation:');
+        console.log('   • Singapore Pools website structure may have changed');
+        console.log('   • Results page might show different content than expected');
+        console.log('   • TOTO numbers may be dynamically loaded or moved to new endpoints');
+        console.log('   • This indicates a website structure issue requiring investigation');
+        console.log('');
+        console.log('🔧 Possible causes:');
+        console.log('   • Website redesign moved results to different URLs');
+        console.log('   • Results now require JavaScript rendering');
+        console.log('   • Anti-bot measures blocking automated access');
+        console.log('   • Results moved to authenticated/API endpoints');
+        console.log('');
+        console.log('💡 Action required:');
+        console.log('   • Manual investigation of Singapore Pools website structure');
+        console.log('   • Update parsing logic based on current website layout');
+        console.log('   • Consider alternative data sources or scraping methods');
+        console.log('   • Workflow will exit cleanly without making changes');
         
-        // Add the known result to the top
-        existing.unshift(knownCorrectResult);
-        writeCSV(CSV_FILE, existing);
-        
-        console.log('✅ Failsafe update completed successfully');
-        console.log('📊 Known correct result added to maintain data integrity');
-        console.log(`📈 New CSV top entry: [${knownCorrectResult.join(', ')}]`);
-      } else {
-        console.log('✅ Known correct result already matches CSV top entry');
-        console.log('📊 No failsafe update needed - data is already correct');
-        console.log('🎯 CSV maintains proper data integrity');
+        console.log('');
+        console.log('� EXITING: No changes made to CSV - manual intervention required');
+        process.exit(0);
       }
       
       console.log('');
       console.log('='.repeat(60));
-      console.log('WORKFLOW COMPLETED WITH FAILSAFE');
+      console.log('STEP 3: VALIDATING FETCHED RESULTS');
       console.log('='.repeat(60));
-      console.log('✅ Workflow continues - manual update or parsing fix may be needed');
-      console.log('🎯 Data integrity maintained through failsafe mechanism');
-      process.exit(0);
-    }
-    
-    console.log('');
-    console.log('='.repeat(60));
-    console.log('STEP 3: COMPARING WITH EXISTING CSV DATA');
-    console.log('='.repeat(60));
-    
-    const existing = readExistingCSV(CSV_FILE);
-    console.log(`📊 Current CSV entries: ${existing.length}`);
+      console.log(`✅ Valid result fetched: [${latestResult.join(', ')}]`);
+      
+      console.log('');
+      console.log('='.repeat(60));
+      console.log('STEP 4: COMPARING WITH EXISTING CSV DATA');
+      console.log('='.repeat(60));
+      
+      const existing = readExistingCSV(CSV_FILE);
+      console.log(`📊 Current CSV entries: ${existing.length}`);
     console.log(`📊 Current top entry: ${existing.length > 0 ? `[${existing[0].join(', ')}]` : 'EMPTY'}`);
     console.log(`🎯 New result from Singapore Pools: [${latestResult.join(', ')}]`);
     
@@ -1287,6 +1259,14 @@ function arraysEqual(a, b) {
     console.log('📊 New data added to CSV file');
     console.log('🌐 Website will reflect updated results');
     process.exit(0);
+    
+    } catch (innerErr) {
+      console.log('');
+      console.log('❌ ERROR IN MAIN PROCESSING:');
+      console.error('💥 Inner error:', innerErr.message);
+      console.log('🔄 Attempting graceful recovery...');
+      process.exit(0);
+    }
     
   } catch (err) {
     console.log('');
