@@ -247,11 +247,11 @@ function parseLatestResultByMostRecentDate(html) {
     
     // Enhanced pattern matching for various number formats
     const patterns = [
-      // Tab-separated: "22	25	29	31	34	43 11"
+      // Tab-separated format pattern
       /(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]*(\d{1,2})?/,
-      // Comma-separated: "22,25,29,31,34,43,11"
+      // Comma-separated format pattern
       /(\d{1,2}),\s*(\d{1,2}),\s*(\d{1,2}),\s*(\d{1,2}),\s*(\d{1,2}),\s*(\d{1,2}),?\s*(\d{1,2})?/,
-      // Space-separated: "22 25 29 31 34 43 11"
+      // Space-separated format pattern
       /(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s*(\d{1,2})?/
     ];
     
