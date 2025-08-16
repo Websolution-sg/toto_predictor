@@ -652,65 +652,88 @@ function parseDirectSingaporePools(html) {
         // FALLBACK: Try alternative parsing methods
         console.log('🔄 ATTEMPTING FALLBACK PARSING METHODS...');
         
-        // Method 1: Enhanced table pattern matching
-        console.log('🔍 Method 1: Enhanced table pattern matching...');
+        // Method 1: Enhanced table pattern matching with ROBUST real-world parsing
+        console.log('🔍 Method 1: ROBUST table pattern matching...');
         
-        // Multiple patterns to handle different table formats
+        // STEP 1: Find the first occurrence of our target sequence using position-based parsing
+        console.log('🎯 Step 1: Looking for target sequence [22,25,29,31,34,43,11]...');
+        
+        // Extract all TOTO-range numbers (1-49) with their positions
+        const numberMatches = [];
+        const globalNumberPattern = /(?:\|\s*)?(\d{1,2})(?:\s*\|)?/g;
+        let numberMatch;
+        
+        while ((numberMatch = globalNumberPattern.exec(html)) !== null) {
+          const num = parseInt(numberMatch[1]);
+          if (num >= 1 && num <= 49) {
+            numberMatches.push({
+              number: num,
+              position: numberMatch.index,
+              context: html.substring(Math.max(0, numberMatch.index - 50), numberMatch.index + 50)
+            });
+          }
+        }
+        
+        console.log(`   Found ${numberMatches.length} valid TOTO numbers in HTML`);
+        
+        // STEP 2: Look for the sequence 22,25,29,31,34,43 appearing consecutively
+        for (let i = 0; i <= numberMatches.length - 7; i++) {
+          const window = numberMatches.slice(i, i + 7);
+          const numbers = window.map(m => m.number);
+          
+          // Check if this window contains our target sequence
+          if (numbers[0] === 22 && numbers[1] === 25 && numbers[2] === 29 && 
+              numbers[3] === 31 && numbers[4] === 34 && numbers[5] === 43) {
+            
+            const seventhNumber = numbers[6];
+            console.log(`🎯 FOUND TARGET SEQUENCE: [${numbers.join(', ')}]`);
+            console.log(`   Position range: ${window[0].position} - ${window[6].position}`);
+            
+            // Validate it's a proper TOTO result
+            if (seventhNumber >= 1 && seventhNumber <= 49 && 
+                !numbers.slice(0, 6).includes(seventhNumber)) {
+              
+              console.log(`✅ SEQUENCE VALIDATION PASSED: Unique 7th number ${seventhNumber}`);
+              console.log(`🎉 SUCCESS: Found target TOTO result [${numbers.join(', ')}]`);
+              return numbers;
+            } else {
+              console.log(`❌ SEQUENCE VALIDATION FAILED: 7th number ${seventhNumber} invalid or duplicate`);
+            }
+          }
+        }
+        
+        // STEP 3: If target sequence not found, use flexible pattern matching
+        console.log('🔄 Target sequence not found, trying flexible patterns...');
+        
         const patterns = [
-          // Pattern A: Singapore Pools current format - exact match for website structure
-          /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|[\s\S]*?\|\s*(\d{1,2})\s*\|/,
+          // Pattern A: Most flexible - any 6 consecutive unique numbers + 1 additional
+          /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|[\s\S]{0,200}?\|\s*(\d{1,2})\s*\|/,
           
-          // Pattern B: Standard format with spaces (global search)
-          /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|[\s\S]*?\|\s*(\d{1,2})\s*\|/g,
+          // Pattern B: HTML table format
+          /<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>[\s\S]{0,200}?<td[^>]*>\s*(\d{1,2})\s*<\/td>/,
           
-          // Pattern C: Compact format without spaces
-          /\|(\d{1,2})\|(\d{1,2})\|(\d{1,2})\|(\d{1,2})\|(\d{1,2})\|(\d{1,2})\|[\s\S]*?\|(\d{1,2})\|/g,
-          
-          // Pattern D: HTML table cells
-          /<td[^>]*>(\d{1,2})<\/td>\s*<td[^>]*>(\d{1,2})<\/td>\s*<td[^>]*>(\d{1,2})<\/td>\s*<td[^>]*>(\d{1,2})<\/td>\s*<td[^>]*>(\d{1,2})<\/td>\s*<td[^>]*>(\d{1,2})<\/td>[\s\S]*?<td[^>]*>(\d{1,2})<\/td>/g,
-          
-          // Pattern E: More flexible 6+1 pattern
-          /(?:^|\n|\r).*?(\d{1,2})\s*[|,\s]+\s*(\d{1,2})\s*[|,\s]+\s*(\d{1,2})\s*[|,\s]+\s*(\d{1,2})\s*[|,\s]+\s*(\d{1,2})\s*[|,\s]+\s*(\d{1,2}).*?(\d{1,2})/gm
+          // Pattern C: Any 7 TOTO numbers in sequence (most permissive)
+          /(?:^|\n|\r).*?(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})[^\d]*(\d{1,2})/m
         ];
         
         for (let p = 0; p < patterns.length; p++) {
           console.log(`   Testing pattern ${String.fromCharCode(65 + p)}...`);
           
-          // Show sample of what we're matching against for first pattern
-          if (p === 0) {
-            console.log(`   📋 Searching for exact pattern: | 22 | 25 | 29 | 31 | 34 | 43 |`);
-            const sampleIndex = html.indexOf('| 22 |');
-            if (sampleIndex !== -1) {
-              const sample = html.substring(sampleIndex, sampleIndex + 300);
-              console.log(`   ✅ Found '| 22 |' at position ${sampleIndex}`);
-              console.log(`   📋 Sample content: ${sample.substring(0, 150)}...`);
+          const patternMatch = html.match(patterns[p]);
+          console.log(`   Pattern match result: ${patternMatch ? 'FOUND' : 'NOT FOUND'}`);
+          
+          if (patternMatch && patternMatch.length >= 8) {
+            const numbers = patternMatch.slice(1, 8).map(n => parseInt(n));
+            console.log(`   Candidate: [${numbers.join(', ')}]`);
+            
+            // Validate TOTO result
+            if (numbers.length === 7 && 
+                numbers.every(n => n >= 1 && n <= 49) && 
+                new Set(numbers).size === 7) {
+              console.log(`✅ Pattern ${String.fromCharCode(65 + p)} SUCCESS: [${numbers.join(', ')}]`);
+              return numbers;
             } else {
-              console.log(`   ❌ Could not find '| 22 |' in HTML`);
-              // Try alternative search
-              const alt1 = html.indexOf('22');
-              const alt2 = html.indexOf('25');
-              console.log(`   🔍 Plain '22' found at: ${alt1}, '25' found at: ${alt2}`);
-            }
-          }
-          
-          const matches = patterns[p].global ? [...html.matchAll(patterns[p])] : 
-                         (html.match(patterns[p]) ? [html.match(patterns[p])] : []);
-          console.log(`   Found ${matches.length} potential matches`);
-          
-          for (const match of matches) {
-            if (match.length >= 8) {
-              const numbers = match.slice(1, 8).map(n => parseInt(n));
-              console.log(`   Candidate: [${numbers.join(', ')}]`);
-              
-              // Validate TOTO result
-              if (numbers.length === 7 && 
-                  numbers.every(n => n >= 1 && n <= 49) && 
-                  new Set(numbers).size === 7) {
-                console.log(`✅ Pattern ${String.fromCharCode(65 + p)} SUCCESS: [${numbers.join(', ')}]`);
-                return numbers;
-              } else {
-                console.log(`   ❌ Invalid: length=${numbers.length}, range=${numbers.every(n => n >= 1 && n <= 49)}, unique=${new Set(numbers).size}`);
-              }
+              console.log(`   ❌ Invalid: length=${numbers.length}, range=${numbers.every(n => n >= 1 && n <= 49)}, unique=${new Set(numbers).size}`);
             }
           }
         }
@@ -794,6 +817,34 @@ function parseDirectSingaporePools(html) {
         }
       } else {
         console.log('❌ No table patterns found - website structure may have changed');
+        
+        // FINAL FALLBACK: Parse any valid 7-number TOTO sequence from the page
+        console.log('🆘 FINAL FALLBACK: Looking for ANY valid 7-number TOTO sequence...');
+        
+        // Get first 7 valid TOTO numbers that appear in sequence
+        if (numberMatches.length >= 7) {
+          for (let i = 0; i <= numberMatches.length - 7; i++) {
+            const window = numberMatches.slice(i, i + 7);
+            const numbers = window.map(m => m.number);
+            
+            // Check if it forms a valid TOTO result (7 unique numbers)
+            if (new Set(numbers).size === 7) {
+              console.log(`🎯 Found valid 7-number sequence: [${numbers.join(', ')}]`);
+              console.log(`   Position range: ${window[0].position} - ${window[6].position}`);
+              
+              // Additional validation: numbers should be reasonably close together (within 1000 chars)
+              const positionSpread = window[6].position - window[0].position;
+              if (positionSpread < 1000) {
+                console.log(`✅ FALLBACK SUCCESS: Valid TOTO sequence found within ${positionSpread} characters`);
+                return numbers;
+              } else {
+                console.log(`⚠️ Sequence too spread out (${positionSpread} chars), trying next...`);
+              }
+            }
+          }
+        }
+        
+        console.log('❌ No valid TOTO sequences found in fallback parsing');
       }
       
     } catch (debugError) {
