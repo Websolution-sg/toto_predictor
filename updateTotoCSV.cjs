@@ -74,21 +74,9 @@ function extractDateFromHTML(html) {
 }
 
 async function fetchLatestTotoResult() {
-  console.log('🔍 Attempting to fetch latest TOTO results...');
-  console.log('📅 ENHANCED PRIORITY SYSTEM: Legacy page first (verified Aug 16, 2025)');
-  console.log('🎯 Target: Look for latest TOTO result patterns in table format');
-  console.log('🏆 NEW: Multiple candidate collection for latest result selection');
-  console.log('🐛 DEBUG MODE: Enhanced logging for troubleshooting');
-  console.log('🧪 TESTING: Completely dynamic parsing - no hardcoded values');
-  console.log('');
-  console.log('🚨 CRITICAL DEBUG: Starting fetch process...');
+  console.log('🔍 Fetching latest TOTO results from Singapore Pools...');
   
-  // Enhanced approach: Collect multiple candidates and select the most recent
-  let resultCandidates = [];
-  
-  // MULTIPLE DATA SOURCES: Try various Singapore Pools endpoints
-  // Website structure changed significantly in August 2025
-  // Results may be available through different endpoints or APIs
+  // Multiple data sources for redundancy
   const attempts = [
     {
       name: 'Singapore Pools Main TOTO Results Page',
@@ -150,15 +138,6 @@ async function fetchLatestTotoResult() {
 
       const html = await response.text();
       console.log(`📄 HTML received: ${html.length} characters`);
-      
-      // Enhanced content analysis
-      if (html.includes('Calculate Prize') && !html.includes('winning') && !html.includes('result')) {
-        console.log('⚠️ Website shows calculator page - results may be in different location');
-      }
-      
-      if (html.includes('javascript') && html.length < 5000) {
-        console.log('⚠️ Page appears to be JavaScript-heavy - results may be dynamically loaded');
-      }
       
       const result = attempt.parser(html);
       console.log(`🎯 Parser result: ${result ? `[${result.join(', ')}]` : 'null'}`);
@@ -242,12 +221,7 @@ async function fetchLatestTotoResult() {
   console.log('   • Failsafe mechanism will maintain data integrity');
   console.log('');
   
-  console.log('❌ All fetch methods failed - returning null for failsafe handling');
-  console.log('🚨 CRITICAL: This is why CSV is not being updated!');
-  console.log('💡 fetchLatestTotoResult is returning NULL to main execution');
-  console.log('🔍 Main execution will exit without updating CSV');
-  console.log('');
-  console.log('🎯 DIAGNOSIS: Parsing logic failed to extract latest TOTO result');
+  console.log('❌ All fetch methods failed');
   console.log('💭 Website structure may have changed or parsing logic needs adjustment');
   return null;
 }
@@ -618,27 +592,22 @@ function parseDirectSingaporePools(html) {
     
     // DEBUG: Check if any TOTO numbers are in HTML
     try {
-      console.log('🔍 DEBUG: Checking HTML for TOTO number patterns...');
+      console.log('🔍 Analyzing HTML for TOTO number patterns...');
       
-      // Look for common TOTO numbers that might appear (dynamic range check)
+      // Check for TOTO numbers in HTML
       const allNumbers = [];
       for (let i = 1; i <= 49; i++) {
         if (html.includes(i.toString().padStart(2, '0')) || html.includes(i.toString())) {
           allNumbers.push(i);
         }
       }
-      console.log(`🔍 HTML contains ${allNumbers.length} TOTO numbers (1-49): ${allNumbers.length > 10 ? allNumbers.slice(0, 10).join(', ') + '...' : allNumbers.join(', ')}`);
+      console.log(`🔍 Found ${allNumbers.length} TOTO numbers in HTML`);
       
-      // Look for table patterns dynamically
-      console.log('🎯 DYNAMIC: Looking for table pattern | XX | XX | XX | XX | XX | XX |');
-      console.log('🔍 Searching for any valid 6+1 TOTO number sequences');
-      
-      // Enhanced regex to match the table format from Singapore Pools
+      // Look for table patterns
       const tablePattern = /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|/g;
       const matches = [...html.matchAll(tablePattern)];
       
-      console.log(`📊 Found ${matches.length} table patterns matching | XX | XX | XX | XX | XX | XX |`);
-      console.log('🚨 CRITICAL DEBUG: If this shows 0 matches, that\'s why fetch fails!');
+      console.log(`📊 Found ${matches.length} table patterns`);
       
       // Show sample HTML if no matches found
       if (matches.length === 0) {
@@ -656,16 +625,13 @@ function parseDirectSingaporePools(html) {
           console.log(html.substring(0, 500));
         }
         
-        // FALLBACK: Try alternative parsing methods
-        console.log('🔄 ATTEMPTING FALLBACK PARSING METHODS...');
+        // Try fallback parsing methods
+        console.log('🔄 Trying fallback parsing methods...');
         
-        // Method 1: Enhanced table pattern matching with ROBUST real-world parsing
-        console.log('🔍 Method 1: ROBUST table pattern matching...');
+        // Method 1: Position-based parsing
+        console.log('🔍 Method 1: Position-based parsing...');
         
-        // STEP 1: Find the FIRST valid TOTO sequence (latest result by position)
-        console.log('🎯 Step 1: Looking for FIRST valid TOTO sequence (latest by position)...');
-        
-        // Extract all TOTO-range numbers (1-49) with their positions
+        // Find the first valid TOTO sequence by position
         const numberMatches = [];
         const globalNumberPattern = /(?:\|\s*)?(\d{1,2})(?:\s*\|)?/g;
         let numberMatch;
@@ -690,23 +656,21 @@ function parseDirectSingaporePools(html) {
           
           // Check if this window contains 7 unique numbers (valid TOTO result)
           if (new Set(numbers).size === 7) {
-            console.log(`🎯 FOUND FIRST VALID SEQUENCE: [${numbers.join(', ')}]`);
-            console.log(`   Position range: ${window[0].position} - ${window[6].position}`);
+            console.log(`🎯 Found valid sequence: [${numbers.join(', ')}]`);
             
             // Validate position proximity (numbers should be close together in a table)
             const positionSpread = window[6].position - window[0].position;
             if (positionSpread < 1000) {
-              console.log(`✅ POSITION VALIDATION PASSED: Numbers within ${positionSpread} characters`);
-              console.log(`🎉 SUCCESS: Found latest TOTO result [${numbers.join(', ')}]`);
+              console.log(`✅ Position validation passed (${positionSpread} characters)`);
               return numbers;
             } else {
-              console.log(`⚠️ POSITION VALIDATION FAILED: Numbers too spread out (${positionSpread} chars), trying next sequence...`);
+              console.log(`⚠️ Sequence too spread out (${positionSpread} chars), trying next...`);
             }
           }
         }
         
-        // STEP 3: If target sequence not found, use flexible pattern matching
-        console.log('🔄 Target sequence not found, trying flexible patterns...');
+        // Try flexible pattern matching
+        console.log('🔄 Trying flexible pattern matching...');
         
         const patterns = [
           // Pattern A: Most flexible - any 6 consecutive unique numbers + 1 additional
@@ -1338,7 +1302,7 @@ function arraysEqual(a, b) {
       
       if (!latestResult || latestResult.length !== 7) {
         console.log('');
-        console.log('❌ FETCH FAILED: Unable to retrieve valid TOTO results');
+        console.log('❌ Unable to retrieve valid TOTO results');
         console.log('📊 Analysis of current situation:');
         console.log('   • Singapore Pools website structure may have changed');
         console.log('   • Results page might show different content than expected');
