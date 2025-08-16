@@ -81,6 +81,7 @@ async function fetchLatestTotoResult() {
   console.log('🐛 DEBUG MODE: Enhanced logging for troubleshooting');
   console.log('🧪 TESTING: CSV currently missing latest result - should detect and add it');
   console.log('');
+  console.log('🚨 CRITICAL DEBUG: Starting fetch process...');
   
   // Enhanced approach: Collect multiple candidates and select the most recent
   let resultCandidates = [];
@@ -242,6 +243,12 @@ async function fetchLatestTotoResult() {
   console.log('');
   
   console.log('❌ All fetch methods failed - returning null for failsafe handling');
+  console.log('🚨 CRITICAL: This is why CSV is not being updated!');
+  console.log('💡 fetchLatestTotoResult is returning NULL to main execution');
+  console.log('🔍 Main execution will exit without updating CSV');
+  console.log('');
+  console.log('🎯 DIAGNOSIS: Parsing logic failed to extract [22,25,29,31,34,43,11]');
+  console.log('💭 Website structure may have changed or parsing logic needs adjustment');
   return null;
 }
 
@@ -620,12 +627,28 @@ function parseDirectSingaporePools(html) {
       
       // TARGETED FIX: Look for the exact pattern we know is on the page
       console.log('🎯 TARGETED: Looking for table pattern | XX | XX | XX | XX | XX | XX |');
+      console.log('🔍 Expected to find: | 22 | 25 | 29 | 31 | 34 | 43 |');
       
       // Enhanced regex to match the table format from Singapore Pools
       const tablePattern = /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|/g;
       const matches = [...html.matchAll(tablePattern)];
       
       console.log(`📊 Found ${matches.length} table patterns matching | XX | XX | XX | XX | XX | XX |`);
+      console.log('🚨 CRITICAL DEBUG: If this shows 0 matches, that\'s why fetch fails!');
+      
+      // Show sample HTML if no matches found
+      if (matches.length === 0) {
+        console.log('❌ NO MATCHES FOUND - Showing HTML sample for debugging:');
+        const sampleStart = html.indexOf('22');
+        if (sampleStart !== -1) {
+          console.log('📋 HTML around "22":');
+          console.log(html.substring(Math.max(0, sampleStart - 100), sampleStart + 200));
+        } else {
+          console.log('❌ "22" not found in HTML at all!');
+          console.log('📋 First 500 chars of HTML:');
+          console.log(html.substring(0, 500));
+        }
+      }
       
       if (matches.length > 0) {
         // Get the first match (which should be the latest result)
@@ -1138,6 +1161,25 @@ function arraysEqual(a, b) {
       console.log(`🔍 Result type: ${typeof latestResult}`);
       console.log(`🔍 Result is array: ${Array.isArray(latestResult)}`);
       console.log(`🔍 Result length: ${latestResult ? latestResult.length : 'N/A'}`);
+      
+      // CRITICAL DEBUG: Show exactly what was returned
+      if (latestResult === null) {
+        console.log('❌ CRITICAL: fetchLatestTotoResult returned NULL');
+        console.log('💡 This means the parsing failed to extract any valid result');
+        console.log('🔍 This is why CSV is not being updated');
+      } else if (latestResult === undefined) {
+        console.log('❌ CRITICAL: fetchLatestTotoResult returned UNDEFINED'); 
+        console.log('💡 This means there was an error in the fetch function');
+      } else if (!Array.isArray(latestResult)) {
+        console.log('❌ CRITICAL: fetchLatestTotoResult returned non-array');
+        console.log(`💡 Got: ${typeof latestResult} with value: ${latestResult}`);
+      } else if (latestResult.length !== 7) {
+        console.log('❌ CRITICAL: fetchLatestTotoResult returned wrong array length');
+        console.log(`💡 Expected 7 numbers, got ${latestResult.length}: [${latestResult.join(', ')}]`);
+      } else {
+        console.log('✅ FETCH SUCCESS: Got valid 7-number array');
+        console.log(`🎯 Will proceed with comparison and update logic`);
+      }
       
       if (!latestResult || latestResult.length !== 7) {
         console.log('');
