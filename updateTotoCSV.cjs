@@ -95,184 +95,181 @@ async function fetchLatestTotoResult() {
 
 function parseDirectSingaporePools(html) {
   try {
-    console.log('🔍 Parsing Singapore Pools HTML with precision targeting...');
+    console.log('🔍 Parsing Singapore Pools HTML with DATE-BASED latest result detection...');
     console.log(`📄 HTML length: ${html.length} characters`);
     
-    // Load HTML with Cheerio for better parsing
-    const cheerio = require('cheerio');
-    const $ = cheerio.load(html);
+    // DATE-BASED APPROACH: Find the most recent draw date and its associated result
+    console.log('📅 Searching for draw dates to identify latest result...');
     
-    // PRECISION METHOD 1: Target specific table structure patterns
-    console.log('🎯 Method 1: Precision table pattern targeting...');
+    const currentDate = new Date();
+    const resultCandidates = [];
     
-    // Look for the exact pattern we see in the webpage: | 22 | 25 | 29 | 31 | 34 | 43 | followed by | 11 |
-    const precisionPatterns = [
-      // Pattern 1: 6 numbers in table format followed by additional number
-      /\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|[\s\S]*?\|\s*(\d{1,2})\s*\|/,
-      
-      // Pattern 2: HTML table cells with exact structure
-      /<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>\s*<td[^>]*>\s*(\d{1,2})\s*<\/td>[\s\S]*?<td[^>]*>\s*(\d{1,2})\s*<\/td>/i
+    // Parse all possible date formats used by Singapore Pools
+    const datePatterns = [
+      // Format: DD/MM/YYYY or DD-MM-YYYY
+      {
+        regex: /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/g,
+        parser: (match) => new Date(parseInt(match[3]), parseInt(match[2]) - 1, parseInt(match[1]))
+      },
+      // Format: YYYY/MM/DD or YYYY-MM-DD
+      {
+        regex: /(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/g,
+        parser: (match) => new Date(parseInt(match[1]), parseInt(match[2]) - 1, parseInt(match[3]))
+      },
+      // Format: DD MMM YYYY (e.g., "16 Aug 2025")
+      {
+        regex: /(\d{1,2})\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})/gi,
+        parser: (match) => {
+          const months = { 'jan': 0, 'feb': 1, 'mar': 2, 'apr': 3, 'may': 4, 'jun': 5,
+                          'jul': 6, 'aug': 7, 'sep': 8, 'oct': 9, 'nov': 10, 'dec': 11 };
+          return new Date(parseInt(match[3]), months[match[2].toLowerCase()], parseInt(match[1]));
+        }
+      }
     ];
     
-    for (let i = 0; i < precisionPatterns.length; i++) {
-      console.log(`   Testing precision pattern ${i + 1}...`);
-      const match = html.match(precisionPatterns[i]);
-      
-      if (match && match.length >= 8) {
-        const numbers = match.slice(1, 8).map(n => parseInt(n));
-        console.log(`   Pattern ${i + 1} found: [${numbers.join(', ')}]`);
-        
-        // Strict validation for TOTO result
-        if (numbers.length === 7 && 
-            numbers.every(n => n >= 1 && n <= 49) && 
-            new Set(numbers).size === 7) {
+    // Find all dates in the HTML
+    const foundDates = [];
+    for (const pattern of datePatterns) {
+      let match;
+      while ((match = pattern.regex.exec(html)) !== null) {
+        try {
+          const date = pattern.parser(match);
+          const dateStr = match[0];
           
-          // Additional validation: check if this looks like a realistic TOTO result
-          const mainNumbers = numbers.slice(0, 6).sort((a, b) => a - b);
-          const additional = numbers[6];
-          
-          // TOTO numbers should be reasonably distributed (not all consecutive or too clustered)
-          const isRealistic = mainNumbers[5] - mainNumbers[0] >= 10; // Spread of at least 10
-          
-          if (isRealistic) {
-            console.log(`✅ Precision pattern ${i + 1} SUCCESS: [${numbers.join(', ')}]`);
-            console.log(`   Main numbers: [${mainNumbers.join(', ')}], Additional: ${additional}`);
-            return numbers;
-          } else {
-            console.log(`   ❌ Pattern ${i + 1} unrealistic distribution`);
+          // Only consider dates from the current year and not future dates
+          if (date.getFullYear() === currentDate.getFullYear() && date <= currentDate) {
+            foundDates.push({
+              date: date,
+              dateString: dateStr,
+              position: match.index,
+              context: html.substring(Math.max(0, match.index - 200), match.index + 1000)
+            });
           }
-        } else {
-          console.log(`   ❌ Pattern ${i + 1} validation failed`);
+        } catch (err) {
+          console.log(`   ⚠️ Could not parse date: ${match[0]}`);
         }
       }
     }
     
-    // PRECISION METHOD 2: Target by content context  
-    console.log('🎯 Method 2: Context-based precision targeting...');
+    console.log(`📅 Found ${foundDates.length} valid dates in current year`);
     
-    // Look for sections that contain prize information (indicates result tables)
-    const prizeKeywords = ['Group 1', 'prize', '$', 'Group 2', 'Group 3'];
-    let bestResultSection = '';
-    let bestSectionScore = 0;
+    // Sort dates to find the most recent
+    foundDates.sort((a, b) => b.date - a.date);
     
-    // Split HTML into sections and score them
-    const sections = html.split(/(?=\|[^|]*\d{1,2}[^|]*\|)/).slice(0, 10); // First 10 sections only
-    
-    for (let s = 0; s < sections.length; s++) {
-      const section = sections[s];
-      let score = 0;
-      
-      // Score sections based on prize-related content
-      for (const keyword of prizeKeywords) {
-        if (section.includes(keyword)) score += 1;
-      }
-      
-      // Prefer sections with table structure
-      if (section.includes('|') && section.includes('Group')) score += 2;
-      
-      if (score > bestSectionScore) {
-        bestSectionScore = score;
-        bestResultSection = section;
-      }
+    if (foundDates.length === 0) {
+      console.log('❌ No valid dates found - cannot determine latest result');
+      return null;
     }
     
-    if (bestResultSection && bestSectionScore >= 3) {
-      console.log(`   Found best result section (score: ${bestSectionScore})`);
+    // Process dates starting from the most recent
+    for (let i = 0; i < Math.min(foundDates.length, 5); i++) { // Check top 5 most recent dates
+      const dateInfo = foundDates[i];
+      console.log(`📅 Checking date: ${dateInfo.dateString} (${dateInfo.date.toDateString()})`);
       
-      // Extract first valid 7-number sequence from this section
-      const sectionNumbers = [];
-      const numberMatches = [...bestResultSection.matchAll(/(\d{1,2})/g)];
+      // Look for TOTO results near this date
+      const contextSection = dateInfo.context;
+      const numbersNearDate = [];
       
-      for (const match of numberMatches) {
-        const num = parseInt(match[1]);
+      // Extract all valid TOTO numbers from the context around this date
+      const numberPattern = /(\d{1,2})/g;
+      let numberMatch;
+      
+      while ((numberMatch = numberPattern.exec(contextSection)) !== null) {
+        const num = parseInt(numberMatch[1]);
         if (num >= 1 && num <= 49) {
-          sectionNumbers.push(num);
+          numbersNearDate.push({
+            number: num,
+            position: numberMatch.index,
+            relativeToDate: numberMatch.index
+          });
         }
       }
       
-      // Look for valid 7-number sequence
-      for (let i = 0; i <= sectionNumbers.length - 7; i++) {
-        const sequence = sectionNumbers.slice(i, i + 7);
-        if (new Set(sequence).size === 7) {
-          console.log(`✅ Context-based method found: [${sequence.join(', ')}]`);
-          return sequence;
-        }
-      }
-    }
-    
-    
-    // PRECISION METHOD 3: Ultra-conservative fallback
-    console.log('🎯 Method 3: Ultra-conservative number extraction...');
-    
-    // Only look at the very beginning of the HTML where the latest result should be
-    const topSection = html.substring(0, Math.min(html.length, 15000)); // First 15KB only
-    
-    // Find all valid TOTO numbers in this section
-    const conservativeNumbers = [];
-    const conservativePattern = /(\d{1,2})/g;
-    let match;
-    
-    while ((match = conservativePattern.exec(topSection)) !== null) {
-      const num = parseInt(match[1]);
-      if (num >= 1 && num <= 49) {
-        conservativeNumbers.push({
-          number: num,
-          position: match.index
-        });
-      }
-    }
-    
-    console.log(`📊 Found ${conservativeNumbers.length} valid numbers in top section`);
-    
-    // Look for the first occurrence of 7 unique numbers in close proximity
-    if (conservativeNumbers.length >= 7) {
-      for (let i = 0; i <= conservativeNumbers.length - 7; i++) {
-        const cluster = conservativeNumbers.slice(i, i + 7);
-        const numbers = cluster.map(item => item.number);
+      console.log(`   Found ${numbersNearDate.length} valid TOTO numbers near this date`);
+      
+      // Look for valid 7-number TOTO sequences near this date
+      for (let j = 0; j <= numbersNearDate.length - 7; j++) {
+        const sequence = numbersNearDate.slice(j, j + 7);
+        const numbers = sequence.map(item => item.number);
         
-        // Check uniqueness and proximity
-        if (new Set(numbers).size === 7) {
-          const positionSpread = cluster[6].position - cluster[0].position;
+        // Validate this as a potential TOTO result
+        if (new Set(numbers).size === 7) { // 7 unique numbers
+          // Check if numbers are clustered together (within reasonable distance)
+          const positionSpread = sequence[6].position - sequence[0].position;
           
-          // Very strict proximity requirement (within 500 characters)
-          if (positionSpread < 500) {
-            console.log(`✅ Conservative method found: [${numbers.join(', ')}]`);
-            console.log(`   Position spread: ${positionSpread} characters`);
-            return numbers;
+          if (positionSpread < 800) { // Numbers should be close together in a table
+            // Additional validation: check for prize/result context keywords
+            const hasResultContext = /(?:Group|Prize|\$|Winning|Result)/i.test(contextSection);
+            
+            if (hasResultContext) {
+              resultCandidates.push({
+                numbers: numbers,
+                date: dateInfo.date,
+                dateString: dateInfo.dateString,
+                positionSpread: positionSpread,
+                confidence: this.calculateConfidence(numbers, contextSection, dateInfo.date)
+              });
+              
+              console.log(`   ✅ Found candidate result: [${numbers.join(', ')}] for date ${dateInfo.dateString}`);
+            }
           }
         }
       }
     }
     
-    console.log('❌ All precision parsing methods failed');
-    
-    // EMERGENCY FALLBACK: Look for known good patterns only
-    console.log('🆘 Emergency fallback: Looking for known good result patterns...');
-    
-    // Check if we can find the previous known result to validate our parsing
-    const knownResults = [
-      [9, 24, 31, 34, 43, 44, 1],  // Previous result in CSV
-      [2, 15, 28, 39, 42, 44, 5],
-      [30, 32, 40, 43, 45, 49, 5]
-    ];
-    
-    for (const knownResult of knownResults) {
-      const knownPattern = knownResult.map(n => n.toString()).join('[^\\d]*');
-      const regex = new RegExp(knownPattern);
-      
-      if (regex.test(html)) {
-        console.log(`✅ Found known result pattern: [${knownResult.join(', ')}]`);
-        console.log('⚠️ Returning null to avoid updating with old result');
-        return null; // Don't return old results
-      }
+    if (resultCandidates.length === 0) {
+      console.log('❌ No valid TOTO results found near any dates');
+      return null;
     }
     
-    return null;
+    // Sort candidates by date (most recent first) and confidence
+    resultCandidates.sort((a, b) => {
+      if (a.date.getTime() !== b.date.getTime()) {
+        return b.date - a.date; // Most recent first
+      }
+      return b.confidence - a.confidence; // Higher confidence first
+    });
+    
+    const latestResult = resultCandidates[0];
+    console.log(`🎯 LATEST RESULT IDENTIFIED:`);
+    console.log(`   Numbers: [${latestResult.numbers.join(', ')}]`);
+    console.log(`   Date: ${latestResult.dateString} (${latestResult.date.toDateString()})`);
+    console.log(`   Confidence: ${latestResult.confidence.toFixed(2)}`);
+    
+    return latestResult.numbers;
     
   } catch (error) {
-    console.log('❌ Error parsing:', error.message);
+    console.log('❌ Error in date-based parsing:', error.message);
     return null;
   }
+}
+
+// Helper function to calculate confidence score for a result candidate
+function calculateConfidence(numbers, context, date) {
+  let confidence = 0;
+  
+  // Base confidence from date recency (0-40 points)
+  const daysSinceDate = (new Date() - date) / (1000 * 60 * 60 * 24);
+  confidence += Math.max(0, 40 - daysSinceDate * 2); // Newer dates get higher scores
+  
+  // Context keywords confidence (0-30 points)
+  const contextKeywords = ['Group 1', 'Prize', 'Winning', 'Draw', '$'];
+  for (const keyword of contextKeywords) {
+    if (context.includes(keyword)) confidence += 6;
+  }
+  
+  // Number distribution confidence (0-20 points)
+  const sortedNumbers = numbers.slice(0, 6).sort((a, b) => a - b); // Main numbers only
+  const spread = sortedNumbers[5] - sortedNumbers[0];
+  if (spread >= 15 && spread <= 40) confidence += 20; // Realistic spread
+  
+  // Avoid obvious non-results (0-10 penalty)
+  const hasConsecutive = sortedNumbers.some((num, i) => i > 0 && num === sortedNumbers[i-1] + 1);
+  if (hasConsecutive) confidence -= 5; // Slight penalty for consecutive numbers
+  
+  return confidence;
+    
+  return confidence;
 }
 
 function readExistingCSV(filename) {
