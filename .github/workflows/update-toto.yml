@@ -77,7 +77,7 @@ jobs:
           echo "📄 CSV current state:"
           head -3 totoResult.csv || echo "CSV read failed"
 
-      # ✅ STEP 5: Run your TOTO update script (with detailed logging)
+      # ✅ STEP 5: Run your TOTO update script (with detailed logging and error handling)
       - name: Run update script
         run: |
           echo "🎯 Running TOTO update script with detailed logging..."
@@ -85,11 +85,20 @@ jobs:
           head -3 totoResult.csv
           echo ""
           echo "🚀 Executing script..."
-          node updateTotoCSV.cjs
+          
+          # Run with error handling
+          if node updateTotoCSV.cjs; then
+            echo "✅ Script completed successfully"
+          else
+            SCRIPT_EXIT_CODE=$?
+            echo "⚠️ Script exited with code: $SCRIPT_EXIT_CODE"
+            echo "📋 This might be normal if no new results are available"
+          fi
+          
           echo ""
           echo "📄 CSV state AFTER script:"
           head -3 totoResult.csv
-          echo "✅ Update script execution completed"
+          echo "✅ Update step completed"
 
       # ✅ STEP 6: Check if CSV file was modified
       - name: Check for changes

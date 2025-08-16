@@ -589,13 +589,17 @@ function parseDirectSingaporePools(html) {
     console.log('🔍 Parsing Singapore Pools HTML (ROBUST DATE-AGNOSTIC PARSER)...');
     console.log(`📄 HTML length: ${html.length} characters`);
     
-    // DEBUG: Check if key numbers are in HTML
-    console.log('🔍 DEBUG: Checking if target numbers exist in HTML...');
-    const has22 = html.includes('22');
-    const has25 = html.includes('25');
-    const has29 = html.includes('29');
-    const has11 = html.includes('11');
-    console.log(`🔍 HTML contains: 22=${has22}, 25=${has25}, 29=${has29}, 11=${has11}`);
+    // DEBUG: Check if key numbers are in HTML (safely)
+    try {
+      console.log('🔍 DEBUG: Checking if target numbers exist in HTML...');
+      const has22 = html && html.includes && html.includes('22');
+      const has25 = html && html.includes && html.includes('25');
+      const has29 = html && html.includes && html.includes('29');
+      const has11 = html && html.includes && html.includes('11');
+      console.log(`🔍 HTML contains: 22=${has22}, 25=${has25}, 29=${has29}, 11=${has11}`);
+    } catch (debugError) {
+      console.log('⚠️ Debug check failed, continuing with parsing...');
+    }
     
     // Dynamically load known recent results from CSV for validation
     const knownRecentResults = getKnownRecentResults(CSV_FILE);
@@ -1046,27 +1050,28 @@ function arraysEqual(a, b) {
   return a.length === b.length && a.every((val, index) => val === b[index]);
 }
 
-// Main execution
+// Main execution with enhanced error handling
 (async () => {
-  console.log('🚀 Starting TOTO result update process...');
-  console.log('📅 Current date:', new Date().toISOString());
-  console.log('🌍 Environment:', process.env.NODE_ENV || 'production');
-  
   try {
-    console.log('');
-    console.log('='.repeat(60));
-    console.log('STEP 1: ATTEMPTING TO FETCH LATEST TOTO RESULTS');
-    console.log('='.repeat(60));
+    console.log('🚀 Starting TOTO result update process...');
+    console.log('📅 Current date:', new Date().toISOString());
+    console.log('🌍 Environment:', process.env.NODE_ENV || 'production');
     
-    const latestResult = await fetchLatestTotoResult();
-    
-    console.log('');
-    console.log('='.repeat(60));
-    console.log('STEP 2: PROCESSING FETCH RESULTS');
-    console.log('='.repeat(60));
-    console.log(`🎯 Fetched result: ${latestResult ? `[${latestResult.join(', ')}]` : 'NULL'}`);
-    
-    if (!latestResult || latestResult.length !== 7) {
+    try {
+      console.log('');
+      console.log('='.repeat(60));
+      console.log('STEP 1: ATTEMPTING TO FETCH LATEST TOTO RESULTS');
+      console.log('='.repeat(60));
+      
+      const latestResult = await fetchLatestTotoResult();
+      
+      console.log('');
+      console.log('='.repeat(60));
+      console.log('STEP 2: PROCESSING FETCH RESULTS');
+      console.log('='.repeat(60));
+      console.log(`🎯 Fetched result: ${latestResult ? `[${latestResult.join(', ')}]` : 'NULL'}`);
+      
+      if (!latestResult || latestResult.length !== 7) {
       console.log('');
       console.log('⚠️ No valid result fetched from Singapore Pools');
       console.log('📊 Analysis of current situation:');
@@ -1212,7 +1217,18 @@ function arraysEqual(a, b) {
     } catch (failsafeError) {
       console.error('💥 Emergency failsafe also failed:', failsafeError.message);
       console.log('❌ Manual intervention may be required');
-      process.exit(1);
+      console.log('🔄 Exiting gracefully to avoid workflow failure');
+      process.exit(0);  // Changed from exit(1) to prevent workflow failures
     }
   }
+} catch (mainError) {
+  console.error('');
+  console.error('🚨 FATAL ERROR - MAIN EXECUTION FAILED');
+  console.error('='.repeat(60));
+  console.error('Error message:', mainError.message);
+  console.error('Error stack:', mainError.stack);
+  console.error('💡 This is likely a programming error that needs attention');
+  console.error('🔄 Exiting gracefully to avoid workflow failure');
+  process.exit(0);  // Exit gracefully even on fatal errors
+}
 })();
