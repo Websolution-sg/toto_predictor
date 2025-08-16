@@ -1,5 +1,5 @@
 const fs = require('fs');
-const fetch = require('node-fetch');
+const axios = require('axios');
 const cheerio = require('cheerio');
 
 const CSV_FILE = 'totoResult.csv';
@@ -57,18 +57,18 @@ async function fetchLatestByDateAnalysis() {
   for (const url of urls) {
     try {
       console.log(`🔍 Analyzing ${url} for latest result by date...`);
-      const response = await fetch(url, {
+      const response = await axios.get(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
       });
       
-      if (!response.ok) {
+      if (response.status !== 200) {
         console.log(`❌ HTTP error: ${response.status}`);
         continue;
       }
       
-      const html = await response.text();
+      const html = response.data;
       const result = parseLatestResultByMostRecentDate(html);
       
       if (result) {
@@ -119,8 +119,10 @@ function parseLatestResultByMostRecentDate(html) {
       console.log(`   📅 Table contains current date indicators`);
     }
     
-    // Extract all numbers from table cells
+    // Enhanced number extraction - look for various formats
     const numbers = [];
+    
+    // Method 1: Individual cell parsing
     $table.find('td, th').each((i, cell) => {
       const cellText = $(cell).text().trim();
       
@@ -132,18 +134,74 @@ function parseLatestResultByMostRecentDate(html) {
           numbers.push({
             value: num,
             position: i,
-            text: cellText
+            text: cellText,
+            method: 'cell'
           });
         }
       }
     });
     
+    // Method 2: Row-based parsing (for tab-separated or space-separated numbers)
+    $table.find('tr').each((rowIndex, row) => {
+      const $row = $(row);
+      const rowText = $row.text().trim();
+      
+      // Look for patterns like "22 25 29 31 34 43 11" or "22	25	29	31	34	43 11"
+      const spacePattern = /(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]*(\d{1,2})?/;
+      const spaceMatch = rowText.match(spacePattern);
+      
+      if (spaceMatch) {
+        const rowNumbers = spaceMatch.slice(1, 8)
+          .filter(n => n !== undefined)
+          .map(n => parseInt(n))
+          .filter(n => n >= 1 && n <= 49);
+        
+        if (rowNumbers.length >= 6) {
+          console.log(`   🎯 Found row pattern: [${rowNumbers.join(',')}]`);
+          rowNumbers.forEach((num, idx) => {
+            numbers.push({
+              value: num,
+              position: idx,
+              text: num.toString(),
+              method: 'row-pattern'
+            });
+          });
+        }
+      }
+    });
+    
+    // Method 3: Look for specific number sequences in table HTML
+    const htmlNumberPattern = /<[^>]*>(\d{1,2})<\/[^>]*>/g;
+    let htmlMatch;
+    while ((htmlMatch = htmlNumberPattern.exec(tableHTML)) !== null) {
+      const num = parseInt(htmlMatch[1]);
+      if (num >= 1 && num <= 49) {
+        numbers.push({
+          value: num,
+          position: numbers.length,
+          text: htmlMatch[1],
+          method: 'html-tag'
+        });
+      }
+    }
+    
     console.log(`   🔢 Found ${numbers.length} valid numbers in table`);
     
     // Look for sequences of 6-7 consecutive numbers
     if (numbers.length >= 6) {
-      for (let start = 0; start <= numbers.length - 6; start++) {
-        const sequence = numbers.slice(start, start + 7).map(n => n.value);
+      // Remove duplicates while preserving order
+      const uniqueNumbers = [];
+      const seen = new Set();
+      
+      numbers.forEach(numObj => {
+        if (!seen.has(numObj.value)) {
+          uniqueNumbers.push(numObj);
+          seen.add(numObj.value);
+        }
+      });
+      
+      for (let start = 0; start <= uniqueNumbers.length - 6; start++) {
+        const sequence = uniqueNumbers.slice(start, start + 7).map(n => n.value);
         const mainNumbers = sequence.slice(0, 6);
         
         // Validate main numbers are unique
@@ -154,6 +212,10 @@ function parseLatestResultByMostRecentDate(html) {
           if (sequence.length === 7) confidence += 2; // Has additional number
           if (start === 0) confidence += 1; // First sequence in table
           
+          // Bonus for row-pattern method (better for tab-separated format)
+          const methods = uniqueNumbers.slice(start, start + 7).map(n => n.method);
+          if (methods.includes('row-pattern')) confidence += 3;
+          
           // Check if numbers look like a real TOTO draw
           const sorted = [...mainNumbers].sort((a, b) => a - b);
           const range = sorted[5] - sorted[0];
@@ -163,98 +225,74 @@ function parseLatestResultByMostRecentDate(html) {
             numbers: sequence,
             confidence: confidence,
             source: `table-${tableIndex}`,
-            hasDate: hasCurrentDate
+            hasDate: hasCurrentDate,
+            methods: methods
           });
           
-          console.log(`   ✅ Candidate: [${sequence.join(',')}] confidence: ${confidence}`);
+          console.log(`   ✅ Candidate: [${sequence.join(',')}] confidence: ${confidence} methods: ${methods.join(',')}`);
         }
       }
     }
   });
   
-  // Strategy 2: Look for div/span elements with number sequences
+  // Strategy 2: Enhanced div/span parsing for modern layouts
   console.log('🔄 Checking div/span elements for number sequences...');
   
-  $('div, span, p').each((i, element) => {
+  $('div, span, p, td').each((i, element) => {
     const $el = $(element);
     const text = $el.text().trim();
     
     // Skip long text blocks
-    if (text.length > 200) return;
+    if (text.length > 300) return;
     
-    // Look for 6-7 numbers separated by spaces, commas, or tabs
-    const numberPattern = /\b(\d{1,2})\b/g;
-    const matches = text.match(numberPattern);
+    // Enhanced pattern matching for various number formats
+    const patterns = [
+      // Tab-separated: "22	25	29	31	34	43 11"
+      /(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]*(\d{1,2})?/,
+      // Comma-separated: "22,25,29,31,34,43,11"
+      /(\d{1,2}),\s*(\d{1,2}),\s*(\d{1,2}),\s*(\d{1,2}),\s*(\d{1,2}),\s*(\d{1,2}),?\s*(\d{1,2})?/,
+      // Space-separated: "22 25 29 31 34 43 11"
+      /(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s+(\d{1,2})\s*(\d{1,2})?/
+    ];
     
-    if (matches && matches.length >= 6 && matches.length <= 8) {
-      const validNumbers = matches
-        .map(n => parseInt(n))
-        .filter(n => n >= 1 && n <= 49);
-      
-      if (validNumbers.length >= 6) {
-        const mainNumbers = validNumbers.slice(0, 6);
-        
-        // Check uniqueness
-        if (new Set(mainNumbers).size === 6) {
-          let confidence = 3; // Base confidence for div/span
-          
-          // Check context clues
-          const lowerText = text.toLowerCase();
-          if (lowerText.includes('winning') || lowerText.includes('result')) confidence += 2;
-          if (lowerText.includes('draw')) confidence += 1;
-          if (text.includes('2025') || text.includes('Aug')) confidence += 2;
-          
-          const sequence = validNumbers.slice(0, 7);
-          allCandidates.push({
-            numbers: sequence,
-            confidence: confidence,
-            source: 'div-span',
-            text: text.substring(0, 50) + '...'
-          });
-          
-          console.log(`   📋 Div/span candidate: [${sequence.join(',')}] confidence: ${confidence}`);
-        }
-      }
-    }
-  });
-  
-  // Strategy 3: Look for number patterns in the full page text
-  console.log('🔄 Analyzing full page text for number patterns...');
-  
-  const fullText = $('body').text();
-  const lines = fullText.split('\n');
-  
-  lines.forEach((line, lineIndex) => {
-    const trimmedLine = line.trim();
-    if (trimmedLine.length > 10 && trimmedLine.length < 100) {
-      const numberPattern = /\b(\d{1,2})\b/g;
-      const matches = trimmedLine.match(numberPattern);
-      
-      if (matches && matches.length >= 6 && matches.length <= 8) {
-        const validNumbers = matches
+    patterns.forEach((pattern, patternIndex) => {
+      const match = text.match(pattern);
+      if (match) {
+        const validNumbers = match.slice(1, 8)
+          .filter(n => n !== undefined && n !== '')
           .map(n => parseInt(n))
           .filter(n => n >= 1 && n <= 49);
         
         if (validNumbers.length >= 6) {
           const mainNumbers = validNumbers.slice(0, 6);
           
+          // Check uniqueness
           if (new Set(mainNumbers).size === 6) {
-            let confidence = 2; // Lower base confidence for text parsing
+            let confidence = 4; // Base confidence for div/span
             
-            if (trimmedLine.includes('2025')) confidence += 2;
-            if (trimmedLine.includes('Aug')) confidence += 1;
+            // Check context clues
+            const lowerText = text.toLowerCase();
+            if (lowerText.includes('winning') || lowerText.includes('result')) confidence += 2;
+            if (lowerText.includes('draw')) confidence += 1;
+            if (text.includes('2025') || text.includes('Aug')) confidence += 2;
+            
+            // Bonus for tab-separated pattern (pattern 0)
+            if (patternIndex === 0) confidence += 2;
             
             const sequence = validNumbers.slice(0, 7);
             allCandidates.push({
               numbers: sequence,
               confidence: confidence,
-              source: 'text-line',
-              line: trimmedLine.substring(0, 60) + '...'
+              source: 'div-span',
+              pattern: `pattern-${patternIndex}`,
+              text: text.substring(0, 50) + '...'
             });
+            
+            console.log(`   📋 Div/span candidate: [${sequence.join(',')}] confidence: ${confidence} pattern: ${patternIndex}`);
           }
         }
       }
-    }
+    });
   });
   
   // Find the best candidate
@@ -333,7 +371,7 @@ function isValidTotoSequence(numbers) {
   return lowCount >= 1 && highCount >= 1;
 }
 
-async function fetchLatestByDateAnalysis(html) {
+async function advancedDateAnalysis(html) {
   const $ = cheerio.load(html);
   console.log('🔍 Advanced date-based analysis for latest results...');
   
@@ -463,7 +501,7 @@ async function tryMultipleEndpointsForLatest() {
     try {
       console.log(`🌐 Trying endpoint: ${url}`);
       
-      const response = await fetch(url, {
+      const response = await axios.get(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -475,22 +513,26 @@ async function tryMultipleEndpointsForLatest() {
         timeout: 30000
       });
       
-      if (response.ok) {
-        const html = await response.text();
+      if (response.status === 200) {
+        const html = response.data;
         console.log(`✅ Got response: ${html.length} chars`);
         
         // Try date-based analysis first
         let result = await fetchLatestByDateAnalysis(html);
-        if (result && result.length >= 6) {
-          console.log(`🎯 Found result from ${url}: ${result.join(', ')}`);
+        if (result && result.length >= 6 && validateTotoNumbers(result)) {
+          console.log(`🎯 Valid result from ${url}: [${result.join(', ')}]`);
           return result;
+        } else if (result) {
+          console.log(`❌ Invalid result from ${url}: [${result.join(', ')}] - failed validation`);
         }
         
         // Try original parsing method
         result = parseLatestResultByMostRecentDate(html);
-        if (result && result.length >= 6) {
-          console.log(`🎯 Found result from ${url}: ${result.join(', ')}`);
+        if (result && result.length >= 6 && validateTotoNumbers(result)) {
+          console.log(`🎯 Valid result from ${url}: [${result.join(', ')}]`);
           return result;
+        } else if (result) {
+          console.log(`❌ Invalid result from ${url}: [${result.join(', ')}] - failed validation`);
         }
       }
       
@@ -512,18 +554,18 @@ async function fetchLatestByPatternMatching() {
   for (const url of urls) {
     try {
       console.log(`🎯 Pattern matching analysis for ${url}...`);
-      const response = await fetch(url, {
+      const response = await axios.get(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         }
       });
       
-      if (!response.ok) {
+      if (response.status !== 200) {
         console.log(`❌ HTTP error: ${response.status}`);
         continue;
       }
       
-      const html = await response.text();
+      const html = response.data;
       const $ = cheerio.load(html);
       
       // Look for common TOTO result patterns
@@ -538,20 +580,67 @@ async function fetchLatestByPatternMatching() {
             if ((text.includes('winning') || text.includes('result') || text.includes('draw')) &&
                 (text.includes('number') || text.includes('toto'))) {
               
-              // Extract numbers from this element and its children
-              const numbers = [];
-              $el.find('*').addBack().each((j, child) => {
-                const childText = $(child).text().trim();
-                const num = parseInt(childText);
-                if (!isNaN(num) && num >= 1 && num <= 49 && childText === num.toString()) {
-                  numbers.push(num);
+              // Extract numbers from this element and its children using enhanced patterns
+              const fullText = $el.text();
+              
+              // Enhanced pattern matching for tab-separated format
+              const patterns = [
+                // Tab-separated: "22	25	29	31	34	43 11"
+                /(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]*(\d{1,2})?/,
+                // Standard extraction
+                /\b(\d{1,2})\b/g
+              ];
+              
+              let bestSequence = null;
+              let bestConfidence = 0;
+              
+              patterns.forEach((pattern, patternIndex) => {
+                if (patternIndex === 0) {
+                  // Tab-separated pattern
+                  const match = fullText.match(pattern);
+                  if (match) {
+                    const numbers = match.slice(1, 8)
+                      .filter(n => n !== undefined && n !== '')
+                      .map(n => parseInt(n))
+                      .filter(n => n >= 1 && n <= 49);
+                    
+                    if (numbers.length >= 6 && new Set(numbers.slice(0, 6)).size === 6) {
+                      const confidence = 9; // High confidence for tab pattern
+                      if (confidence > bestConfidence) {
+                        bestSequence = numbers.slice(0, 7);
+                        bestConfidence = confidence;
+                      }
+                    }
+                  }
+                } else {
+                  // Standard number extraction
+                  const matches = fullText.match(pattern);
+                  if (matches) {
+                    const numbers = matches
+                      .map(n => parseInt(n))
+                      .filter(n => n >= 1 && n <= 49);
+                    
+                    if (numbers.length >= 6) {
+                      for (let start = 0; start <= numbers.length - 6; start++) {
+                        const sequence = numbers.slice(start, start + 7);
+                        if (new Set(sequence.slice(0, 6)).size === 6) {
+                          const confidence = 7;
+                          if (confidence > bestConfidence) {
+                            bestSequence = sequence;
+                            bestConfidence = confidence;
+                          }
+                          break;
+                        }
+                      }
+                    }
+                  }
                 }
               });
               
-              if (numbers.length >= 6) {
+              if (bestSequence) {
                 candidates.push({
-                  numbers: numbers.slice(0, 7),
-                  confidence: 7,
+                  numbers: bestSequence,
+                  confidence: bestConfidence,
                   pattern: 'winning-numbers-context'
                 });
               }
@@ -560,7 +649,7 @@ async function fetchLatestByPatternMatching() {
           return candidates;
         },
         
-        // Pattern 2: Look for table rows with current date
+        // Pattern 2: Look for table rows with current date and enhanced number parsing
         () => {
           const candidates = [];
           $('tr').each((i, row) => {
@@ -569,21 +658,48 @@ async function fetchLatestByPatternMatching() {
             
             // Check if row contains current date indicators
             if (rowText.includes('2025') || rowText.includes('Aug') || rowText.includes('16')) {
-              const numbers = [];
-              $row.find('td, th').each((j, cell) => {
-                const cellText = $(cell).text().trim();
-                const num = parseInt(cellText);
-                if (!isNaN(num) && num >= 1 && num <= 49 && cellText === num.toString()) {
-                  numbers.push(num);
-                }
-              });
               
-              if (numbers.length >= 6) {
-                candidates.push({
-                  numbers: numbers.slice(0, 7),
-                  confidence: 8, // Higher confidence for date-matched rows
-                  pattern: 'current-date-row'
+              // Enhanced number extraction from row
+              const patterns = [
+                // Tab-separated pattern
+                /(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]*(\d{1,2})?/,
+                // Cell-based extraction
+                null // Will be handled separately
+              ];
+              
+              // Try tab-separated pattern first
+              const tabMatch = rowText.match(patterns[0]);
+              if (tabMatch) {
+                const numbers = tabMatch.slice(1, 8)
+                  .filter(n => n !== undefined && n !== '')
+                  .map(n => parseInt(n))
+                  .filter(n => n >= 1 && n <= 49);
+                
+                if (numbers.length >= 6 && new Set(numbers.slice(0, 6)).size === 6) {
+                  candidates.push({
+                    numbers: numbers.slice(0, 7),
+                    confidence: 10, // Highest confidence for date-matched tab pattern
+                    pattern: 'current-date-row-tab'
+                  });
+                }
+              } else {
+                // Fall back to cell-based extraction
+                const numbers = [];
+                $row.find('td, th').each((j, cell) => {
+                  const cellText = $(cell).text().trim();
+                  const num = parseInt(cellText);
+                  if (!isNaN(num) && num >= 1 && num <= 49 && cellText === num.toString()) {
+                    numbers.push(num);
+                  }
                 });
+                
+                if (numbers.length >= 6 && new Set(numbers.slice(0, 6)).size === 6) {
+                  candidates.push({
+                    numbers: numbers.slice(0, 7),
+                    confidence: 8, // High confidence for date-matched row
+                    pattern: 'current-date-row'
+                  });
+                }
               }
             }
           });
@@ -665,15 +781,15 @@ async function tryMultipleEndpointsForLatest() {
   for (const url of endpoints) {
     try {
       console.log(`🔍 Trying endpoint: ${url}`);
-      const response = await fetch(url, {
+      const response = await axios.get(url, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         }
       });
       
-      if (!response.ok) continue;
+      if (response.status !== 200) continue;
       
-      const content = await response.text();
+      const content = response.data;
       const result = extractTotoNumbersFromContent(content);
       
       if (result && result.length >= 6) {
@@ -693,17 +809,17 @@ async function tryMultipleEndpointsForLatest() {
 async function comprehensiveLatestAnalysis() {
   try {
     console.log('🔍 Comprehensive analysis of Singapore Pools...');
-    const response = await fetch('https://www.singaporepools.com.sg/en/product/sr/Pages/toto_results.aspx', {
+    const response = await axios.get('https://www.singaporepools.com.sg/en/product/sr/Pages/toto_results.aspx', {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
       }
     });
     
-    if (!response.ok) {
+    if (response.status !== 200) {
       throw new Error(`HTTP ${response.status}`);
     }
     
-    const html = await response.text();
+    const html = response.data;
     const $ = cheerio.load(html);
     
     // Look for any content that might contain TOTO numbers
@@ -768,15 +884,36 @@ function extractTotoNumbersFromContext(text) {
   return numbers.length >= 6 ? numbers.slice(0, 7) : null;
 }
 
-// Validate TOTO numbers
+// Validate TOTO numbers - COMPLETELY DYNAMIC, NO HARD-CODED VALUES
 function validateTotoNumbers(numbers) {
   if (!Array.isArray(numbers) || numbers.length < 6 || numbers.length > 7) {
+    console.log(`❌ Invalid array length: ${numbers?.length} (expected 6-7)`);
     return false;
   }
   
-  return numbers.every(num => 
+  // Check all numbers are integers in valid range (1-49)
+  const validRange = numbers.every(num => 
     Number.isInteger(num) && num >= 1 && num <= 49
   );
+  
+  if (!validRange) {
+    console.log(`❌ Numbers out of range (1-49): [${numbers.join(', ')}]`);
+    return false;
+  }
+  
+  // CRITICAL: Check for duplicates in main numbers (first 6)
+  const mainNumbers = numbers.slice(0, 6);
+  const uniqueMainNumbers = [...new Set(mainNumbers)];
+  
+  if (uniqueMainNumbers.length !== 6) {
+    console.log(`❌ Duplicate numbers found in main sequence: [${mainNumbers.join(', ')}]`);
+    console.log(`   Unique count: ${uniqueMainNumbers.length}, Expected: 6`);
+    return false;
+  }
+  
+  // Additional number (7th) can be any valid number, even if it duplicates main numbers
+  console.log(`✅ Valid TOTO sequence: [${numbers.join(', ')}]`);
+  return true;
 }
 
 // Check if result is newer than current CSV
