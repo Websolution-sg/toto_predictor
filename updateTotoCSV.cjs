@@ -109,11 +109,16 @@ function parseLatestResultByMostRecentDate(html) {
       return;
     }
     
-    // Look for current date indicators (Aug 2025, 2025, recent dates)
-    const hasCurrentDate = tableText.includes('2025') || 
-                          tableText.includes('Aug') || 
-                          tableText.includes('August') ||
-                          tableText.includes('16');
+    // Look for current date indicators (dynamic based on current date)
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear().toString();
+    const currentMonth = currentDate.toLocaleDateString('en-US', { month: 'short' });
+    const currentMonthFull = currentDate.toLocaleDateString('en-US', { month: 'long' });
+    
+    const hasCurrentDate = tableText.includes(currentYear) || 
+                          tableText.includes(currentMonth) || 
+                          tableText.includes(currentMonthFull) ||
+                          tableText.includes(currentDate.getDate().toString());
     
     if (hasCurrentDate) {
       console.log(`   📅 Table contains current date indicators`);
@@ -146,7 +151,7 @@ function parseLatestResultByMostRecentDate(html) {
       const $row = $(row);
       const rowText = $row.text().trim();
       
-      // Look for patterns like "22 25 29 31 34 43 11" or "22	25	29	31	34	43 11"
+      // Look for number patterns in various formats (space/tab separated)
       const spacePattern = /(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]*(\d{1,2})?/;
       const spaceMatch = rowText.match(spacePattern);
       
@@ -274,7 +279,12 @@ function parseLatestResultByMostRecentDate(html) {
             const lowerText = text.toLowerCase();
             if (lowerText.includes('winning') || lowerText.includes('result')) confidence += 2;
             if (lowerText.includes('draw')) confidence += 1;
-            if (text.includes('2025') || text.includes('Aug')) confidence += 2;
+            
+            // Dynamic date checking
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear().toString();
+            const currentMonth = currentDate.toLocaleDateString('en-US', { month: 'short' });
+            if (text.includes(currentYear) || text.includes(currentMonth)) confidence += 2;
             
             // Bonus for tab-separated pattern (pattern 0)
             if (patternIndex === 0) confidence += 2;
@@ -312,12 +322,203 @@ function parseLatestResultByMostRecentDate(html) {
     bestResult = allCandidates[0].numbers;
     highestConfidence = allCandidates[0].confidence;
     
+    // If we only have 6 numbers, try to find the additional number
+    if (bestResult.length === 6) {
+      console.log(`\n🔍 Searching for additional number (7th number)...`);
+      const additionalNumber = findAdditionalNumber($, bestResult);
+      if (additionalNumber) {
+        console.log(`   ✅ Found additional number: ${additionalNumber}`);
+        bestResult.push(additionalNumber);
+        highestConfidence += 2; // Boost confidence for complete result
+      } else {
+        console.log(`   ❌ Additional number not found`);
+      }
+    }
+    
     console.log(`\n✅ SELECTED RESULT: [${bestResult.join(',')}] with confidence ${highestConfidence}`);
     return bestResult;
   }
   
   console.log('❌ No valid TOTO results found in any parsing strategy');
   return null;
+}
+
+// Helper function to find the additional number (7th number) when we have 6 main numbers
+function findAdditionalNumber($, mainNumbers) {
+  console.log(`   🔍 Looking for additional number separate from main numbers: [${mainNumbers.join(',')}]`);
+  
+  // Strategy 1: Look for "Additional Number" text context
+  let additionalNumber = null;
+  
+  $('*').each((i, element) => {
+    if (additionalNumber) return; // Already found
+    
+    const $el = $(element);
+    const text = $el.text().trim();
+    const lowerText = text.toLowerCase();
+    
+    // Check if this element contains "additional" context and is relatively short (focused element)
+    if (lowerText.includes('additional') && lowerText.includes('number') && text.length < 100) {
+      console.log(`   📋 Found focused "additional number" context: "${text}"`);
+      
+      // Extract numbers from this specific focused context
+      const numbers = text.match(/\d{1,2}/g);
+      if (numbers) {
+        const validNumbers = numbers.map(n => parseInt(n)).filter(n => n >= 1 && n <= 49);
+        console.log(`   🔢 Numbers in focused additional context: [${validNumbers.join(', ')}]`);
+        
+        // Find the additional number (should not be in main numbers)
+        for (const num of validNumbers) {
+          if (!mainNumbers.includes(num)) {
+            console.log(`   ✅ Found additional number: ${num} (not in main numbers)`);
+            additionalNumber = num;
+            return;
+          }
+        }
+      }
+    }
+    
+    // Also check for very specific patterns like just "11" in context near "Additional"
+    if (lowerText.includes('additional') && text.length < 50) {
+      const singleNumber = text.match(/^\s*(\d{1,2})\s*$/);
+      if (singleNumber) {
+        const num = parseInt(singleNumber[1]);
+        if (num >= 1 && num <= 49 && !mainNumbers.includes(num)) {
+          console.log(`   ✅ Found isolated additional number: ${num}`);
+          additionalNumber = num;
+          return;
+        }
+      }
+    }
+  });
+  
+  // Strategy 2: Look for structured layout where "Additional Number" header is followed by the number
+  if (!additionalNumber) {
+    console.log(`   🔍 Strategy 2: Looking for structured "Additional Number" layout...`);
+    
+    $('*').each((i, element) => {
+      if (additionalNumber) return;
+      
+      const $el = $(element);
+      const text = $el.text().trim();
+      const lowerText = text.toLowerCase();
+      
+      // Look for "Additional Number" header element
+      if (lowerText.includes('additional') && lowerText.includes('number') && text.length < 30) {
+        console.log(`   📋 Found additional number header: "${text}"`);
+        
+        // Look for the next sibling or nearby element that contains just a number
+        const $nextElements = $el.nextAll().slice(0, 3); // Check next 3 elements
+        $nextElements.each((j, nextEl) => {
+          const $next = $(nextEl);
+          const nextText = $next.text().trim();
+          const singleNumber = nextText.match(/^\s*(\d{1,2})\s*$/);
+          
+          if (singleNumber) {
+            const num = parseInt(singleNumber[1]);
+            if (num >= 1 && num <= 49 && !mainNumbers.includes(num)) {
+              console.log(`   ✅ Found additional number after header: ${num}`);
+              additionalNumber = num;
+              return false; // Break jQuery each
+            }
+          }
+        });
+        
+        // Also check parent's next elements or children
+        if (!additionalNumber) {
+          const $parent = $el.parent();
+          $parent.children().each((j, child) => {
+            const $child = $(child);
+            const childText = $child.text().trim();
+            const singleNumber = childText.match(/^\s*(\d{1,2})\s*$/);
+            
+            if (singleNumber) {
+              const num = parseInt(singleNumber[1]);
+              if (num >= 1 && num <= 49 && !mainNumbers.includes(num)) {
+                console.log(`   ✅ Found additional number in parent children: ${num}`);
+                additionalNumber = num;
+                return false; // Break jQuery each
+              }
+            }
+          });
+        }
+      }
+    });
+  }
+  
+  // Strategy 3: Look for patterns like "22 25 29 31 34 43 + 11" or similar
+  if (!additionalNumber) {
+    console.log(`   🔍 Strategy 3: Looking for patterns with main numbers + additional...`);
+    
+    $('*').each((i, element) => {
+      if (additionalNumber) return;
+      
+      const $el = $(element);
+      const text = $el.text().trim();
+      
+      // Check if this text contains all our main numbers
+      const mainNumbersText = mainNumbers.every(num => text.includes(num.toString()));
+      
+      if (mainNumbersText) {
+        console.log(`   📋 Found context with all main numbers: "${text.substring(0, 100)}..."`);
+        
+        // Extract all numbers and find the one that's not in main numbers
+        const allNumbers = text.match(/\d{1,2}/g);
+        if (allNumbers) {
+          const validNumbers = allNumbers.map(n => parseInt(n)).filter(n => n >= 1 && n <= 49);
+          
+          // Find numbers that appear after our main sequence
+          for (let i = 0; i < validNumbers.length - 5; i++) {
+            // Check if we have our main sequence starting at position i
+            const sequence = validNumbers.slice(i, i + 6);
+            const hasAllMain = mainNumbers.every(num => sequence.includes(num));
+            
+            if (hasAllMain && validNumbers.length > i + 6) {
+              const candidate = validNumbers[i + 6];
+              if (!mainNumbers.includes(candidate)) {
+                console.log(`   ✅ Found additional number after main sequence: ${candidate}`);
+                additionalNumber = candidate;
+                return;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+  
+  // Strategy 4: Look for specific HTML structure patterns
+  if (!additionalNumber) {
+    console.log(`   🔍 Strategy 4: Looking for HTML structure patterns...`);
+    
+    // Look for elements that might contain "11" in isolation
+    $('*').each((i, element) => {
+      if (additionalNumber) return;
+      
+      const $el = $(element);
+      const text = $el.text().trim();
+      
+      // Look for single number that could be additional
+      const singleNumberMatch = text.match(/^\s*(\d{1,2})\s*$/);
+      if (singleNumberMatch) {
+        const num = parseInt(singleNumberMatch[1]);
+        if (num >= 1 && num <= 49 && !mainNumbers.includes(num)) {
+          // Check if this element is near "additional" context
+          const parent = $el.parent();
+          const siblings = $el.siblings();
+          const nearbyText = (parent.text() + ' ' + siblings.text()).toLowerCase();
+          
+          if (nearbyText.includes('additional') || nearbyText.includes('bonus') || nearbyText.includes('extra')) {
+            console.log(`   ✅ Found isolated additional number: ${num} (near additional context)`);
+            additionalNumber = num;
+            return;
+          }
+        }
+      }
+    });
+  }
+  
+  return additionalNumber;
 }
 
 // Helper function to calculate confidence score for a potential result
@@ -344,8 +545,12 @@ function calculateConfidence(element, numbers, text) {
   if (contextText.includes('historical') || contextText.includes('archive')) confidence -= 3;
   if (contextText.includes('group') || contextText.includes('prize')) confidence -= 1;
   
-  // Check proximity to current date indicators
-  if (text.includes('2025') || text.includes('Aug') || text.includes('August')) confidence += 1;
+  // Check proximity to current date indicators (dynamic)
+  const currentDate = new Date();
+  const currentYear = currentDate.getFullYear().toString();
+  const currentMonth = currentDate.toLocaleDateString('en-US', { month: 'short' });
+  const currentMonthFull = currentDate.toLocaleDateString('en-US', { month: 'long' });
+  if (text.includes(currentYear) || text.includes(currentMonth) || text.includes(currentMonthFull)) confidence += 1;
   
   return Math.max(0, confidence);
 }
@@ -389,10 +594,10 @@ async function advancedDateAnalysis(html) {
     
     // Look for date patterns
     const datePatterns = [
-      /(\d{1,2}[\s\/\-]\w{3}[\s\/\-]\d{4})/gi,    // 15 Aug 2025
-      /(\d{1,2}[\s\/\-]\d{1,2}[\s\/\-]\d{4})/g,   // 15/08/2025
-      /(Aug|August)[\s,]*\d{1,2}[\s,]*\d{4}/gi,   // Aug 15, 2025
-      /\d{4}[\s\-\/]\d{1,2}[\s\-\/]\d{1,2}/g      // 2025-08-15
+      /(\d{1,2}[\s\/\-]\w{3}[\s\/\-]\d{4})/gi,    // Day Month Year format
+      /(\d{1,2}[\s\/\-]\d{1,2}[\s\/\-]\d{4})/g,   // DD/MM/YYYY format
+      /(Aug|August)[\s,]*\d{1,2}[\s,]*\d{4}/gi,   // Month Day Year format
+      /\d{4}[\s\-\/]\d{1,2}[\s\-\/]\d{1,2}/g      // YYYY-MM-DD format
     ];
     
     let foundDate = null;
@@ -585,9 +790,9 @@ async function fetchLatestByPatternMatching() {
               
               // Enhanced pattern matching for tab-separated format
               const patterns = [
-                // Tab-separated: "22	25	29	31	34	43 11"
+                // Tab-separated number format pattern
                 /(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]+(\d{1,2})[\t\s]*(\d{1,2})?/,
-                // Standard extraction
+                // Standard number extraction
                 /\b(\d{1,2})\b/g
               ];
               
@@ -656,8 +861,13 @@ async function fetchLatestByPatternMatching() {
             const $row = $(row);
             const rowText = $row.text();
             
-            // Check if row contains current date indicators
-            if (rowText.includes('2025') || rowText.includes('Aug') || rowText.includes('16')) {
+            // Check if row contains current date indicators (dynamic)
+            const currentDate = new Date();
+            const currentYear = currentDate.getFullYear().toString();
+            const currentMonth = currentDate.toLocaleDateString('en-US', { month: 'short' });
+            const currentDay = currentDate.getDate().toString();
+            
+            if (rowText.includes(currentYear) || rowText.includes(currentMonth) || rowText.includes(currentDay)) {
               
               // Enhanced number extraction from row
               const patterns = [
