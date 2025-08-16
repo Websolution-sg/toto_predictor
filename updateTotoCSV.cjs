@@ -268,8 +268,6 @@ function calculateConfidence(numbers, context, date) {
   if (hasConsecutive) confidence -= 5; // Slight penalty for consecutive numbers
   
   return confidence;
-    
-  return confidence;
 }
 
 function readExistingCSV(filename) {
