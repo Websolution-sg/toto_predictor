@@ -363,8 +363,7 @@ function runEnhancedPrediction() {
   const finalSuggestions = suggestions.slice(0, systemType);
     
   const scores = finalSuggestions.map(o => Math.round(o.score));
-  const systemLabel = 'Predicted Numbers';
-  displayPredictedNumbers(finalSuggestions.map(o => o.n), null, scores, freq, compat, systemLabel, finalSuggestions);
+  displayPredictedNumbers(finalSuggestions.map(o => o.n), null, scores, freq, compat, '', finalSuggestions);
 }
 
 // ENHANCEMENT 2: Weighted Recent Analysis
@@ -479,7 +478,7 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
   const systemInfo = systemType === '7' ? '<span style="color: #28a745; font-weight: bold;">📈 System 7 - Higher Win Probability!</span>' : '<span style="color: #2c5aa0;">📊 System 6 - Standard Play</span>';
   
   rs.innerHTML = `
-    <h3>Predicted Numbers (${methodName}):</h3>
+    <h3>Predicted Numbers:</h3>
     <p style="font-size: 1.2em; font-weight: bold; color: #2c5aa0;">${sortedNumbers.join(', ')}</p>
     <p style="margin-top: 10px; font-size: 0.95em;">${systemInfo}</p>
     ${additional ? `<p><strong>Additional Number:</strong> ${additional}</p>` : ''}
