@@ -42,6 +42,14 @@
     </select>
   </div>
 
+  <div>
+    <label>System Type:</label><br/>
+    <select id="systemType">
+      <option value="6">System 6 (6 numbers)</option>
+      <option value="7">System 7 (7 numbers - Higher win probability)</option>
+    </select>
+  </div>
+
   <label><input type="checkbox" id="includeAdd"/> Include additional number</label><br/>
   <label><input type="checkbox" id="showAnalytics" checked/> Show detailed analytics</label><br/>
   <button onclick="predict()">Predict</button>
@@ -348,11 +356,15 @@ function runEnhancedPrediction() {
     score: count + compat[n] + weighted[n] * 0.5 + hotness[n] * 0.3
   }))
     .filter(o => o.n >= 1 && o.n <= 49)
-    .sort((a, b) => b.score - a.score || a.n - b.n)
-    .slice(0, 6);
+    .sort((a, b) => b.score - a.score || a.n - b.n);
     
-  const scores = suggestions.map(o => Math.round(o.score));
-  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat, 'Enhanced Multi-Factor Analysis', suggestions);
+  // Get system type (6 or 7 numbers)
+  const systemType = parseInt(document.getElementById('systemType').value);
+  const finalSuggestions = suggestions.slice(0, systemType);
+    
+  const scores = finalSuggestions.map(o => Math.round(o.score));
+  const systemLabel = systemType === 7 ? 'Enhanced Analysis (System 7 - Higher Win Probability)' : 'Enhanced Multi-Factor Analysis';
+  displayPredictedNumbers(finalSuggestions.map(o => o.n), null, scores, freq, compat, systemLabel, finalSuggestions);
 }
 
 // ENHANCEMENT 2: Weighted Recent Analysis
@@ -454,6 +466,7 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
   const rs = document.getElementById('results');
   const analytics = document.getElementById('analytics');
   const showAnalytics = document.getElementById('showAnalytics').checked;
+  const systemType = document.getElementById('systemType').value;
   
   const sorted = numbers.map((n, i) => ({ n, score: scores[i], freq: freq[n], compat: compat[n] }))
     .sort((a, b) => a.n - b.n);
@@ -462,10 +475,13 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
   const sortedFreq = sorted.map(o => o.freq);
   const sortedCompat = sorted.map(o => o.compat);
   
-  // Main results display
+  // Main results display with system type info
+  const systemInfo = systemType === '7' ? '<span style="color: #28a745; font-weight: bold;">📈 System 7 - Higher Win Probability!</span>' : '<span style="color: #2c5aa0;">📊 System 6 - Standard Play</span>';
+  
   rs.innerHTML = `
     <h3>Predicted Numbers (${methodName}):</h3>
     <p style="font-size: 1.2em; font-weight: bold; color: #2c5aa0;">${sortedNumbers.join(', ')}</p>
+    <p style="margin-top: 10px; font-size: 0.95em;">${systemInfo}</p>
     ${additional ? `<p><strong>Additional Number:</strong> ${additional}</p>` : ''}
   `;
   
@@ -529,6 +545,19 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
         <strong>📈 Score Range:</strong> ${Math.min(...sortedScores)} - ${Math.max(...sortedScores)}
       </div>
     `;
+    
+    // Add System 7 benefit explanation
+    if (systemType === '7') {
+      analyticsHtml += `
+        <div style="background: #e8f8e8; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #28a745;">
+          <strong>🎯 System 7 Advantage:</strong><br>
+          By selecting 7 numbers instead of 6, you significantly increase your winning chances:<br>
+          • More combinations covered (7 vs 6)<br>
+          • Higher probability of matching winning numbers<br>
+          • Optimal balance between cost and potential returns
+        </div>
+      `;
+    }
     
     analyticsHtml += `</div>`;
     analytics.innerHTML = analyticsHtml;
