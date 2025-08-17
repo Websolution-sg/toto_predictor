@@ -42,16 +42,6 @@
     </select>
   </div>
 
-  <div>
-    <label>Prediction method:</label><br/>
-    <select id="predictionMethod">
-      <option value="enhanced">Enhanced Analysis (Recommended)</option>
-      <option value="frequency">Frequency + Compatibility</option>
-      <option value="weighted">Weighted Recent Draws</option>
-      <option value="hotcold">Hot/Cold Number Analysis</option>
-    </select>
-  </div>
-
   <label><input type="checkbox" id="includeAdd"/> Include additional number</label><br/>
   <label><input type="checkbox" id="showAnalytics" checked/> Show detailed analytics</label><br/>
   <button onclick="predict()">Predict</button>
@@ -123,29 +113,12 @@ function predict() {
     return;
   }
   
-  const method = document.getElementById('predictionMethod').value;
-  
   // Check if we should use historical match first
   const hasHistoricalMatch = checkHistoricalAndMaybePredict();
   if (hasHistoricalMatch) return;
   
-  // Run prediction based on selected method
-  switch (method) {
-    case 'enhanced':
-      runEnhancedPrediction();
-      break;
-    case 'frequency':
-      runFrequencyCompatibilityPrediction();
-      break;
-    case 'weighted':
-      runWeightedPrediction();
-      break;
-    case 'hotcold':
-      runHotColdPrediction();
-      break;
-    default:
-      runEnhancedPrediction();
-  }
+  // Always use Enhanced Analysis method (best performance)
+  runEnhancedPrediction();
 }
 
 function getSelectedBases() {
