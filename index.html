@@ -363,7 +363,7 @@ function runEnhancedPrediction() {
   const finalSuggestions = suggestions.slice(0, systemType);
     
   const scores = finalSuggestions.map(o => Math.round(o.score));
-  const systemLabel = systemType === 7 ? 'Enhanced Analysis (System 7 - Higher Win Probability)' : 'Enhanced Multi-Factor Analysis';
+  const systemLabel = 'Predicted Numbers';
   displayPredictedNumbers(finalSuggestions.map(o => o.n), null, scores, freq, compat, systemLabel, finalSuggestions);
 }
 
@@ -518,7 +518,6 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
     
     // Add method explanation
     const explanations = {
-      'Enhanced Multi-Factor Analysis': 'Combines frequency, compatibility, weighted recent draws, and hot number analysis for optimal predictions.',
       'Frequency + Compatibility Analysis': 'Original algorithm analyzing how often numbers appear and their compatibility with selected numbers.',
       'Weighted Recent Draw Analysis': 'Gives more importance to recent draws using exponential decay weighting.',
       'Hot/Cold Number Analysis': 'Identifies trending numbers by comparing recent vs historical frequency.',
