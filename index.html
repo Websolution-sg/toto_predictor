@@ -38,11 +38,24 @@
     </select>
   </div>
 
+  <div>
+    <label>Prediction method:</label><br/>
+    <select id="predictionMethod">
+      <option value="enhanced">Enhanced Analysis (Recommended)</option>
+      <option value="frequency">Frequency + Compatibility</option>
+      <option value="weighted">Weighted Recent Draws</option>
+      <option value="hotcold">Hot/Cold Number Analysis</option>
+      <option value="sequential">Sequential Pattern (Like 610666.xyz)</option>
+    </select>
+  </div>
+
   <label><input type="checkbox" id="includeAdd"/> Include additional number</label><br/>
+  <label><input type="checkbox" id="showAnalytics" checked/> Show detailed analytics</label><br/>
   <button onclick="predict()">Predict</button>
 
   <h2>Results</h2>
   <div id="results"></div>
+  <div id="analytics" style="margin-top: 20px;"></div>
   <canvas id="freqChart"></canvas>
 
 <script>
@@ -106,9 +119,34 @@ function predict() {
     alert("Duplicate base numbers selected. Please choose unique numbers.");
     return;
   }
-  const hasHistoricalMatch = checkHistoricalAndMaybePredict();
-  if (!hasHistoricalMatch) {
-    runFrequencyCompatibilityPrediction();
+  
+  const method = document.getElementById('predictionMethod').value;
+  
+  // Check if we should use historical match first (for all methods except sequential)
+  if (method !== 'sequential') {
+    const hasHistoricalMatch = checkHistoricalAndMaybePredict();
+    if (hasHistoricalMatch) return;
+  }
+  
+  // Run prediction based on selected method
+  switch (method) {
+    case 'enhanced':
+      runEnhancedPrediction();
+      break;
+    case 'frequency':
+      runFrequencyCompatibilityPrediction();
+      break;
+    case 'weighted':
+      runWeightedPrediction();
+      break;
+    case 'hotcold':
+      runHotColdPrediction();
+      break;
+    case 'sequential':
+      runSequentialPrediction();
+      break;
+    default:
+      runFrequencyCompatibilityPrediction();
   }
 }
 
@@ -154,7 +192,7 @@ function calculateScoresAndDisplay(numbers, additional = null) {
     });
   });
   const scores = numbers.map(n => freq[n] + compat[n]);
-  displayPredictedNumbers(numbers, additional, scores, freq, compat);
+  displayPredictedNumbers(numbers, additional, scores, freq, compat, 'Historical Pattern Match');
 }
 
 function runFrequencyCompatibilityPrediction() {
@@ -178,26 +216,419 @@ function runFrequencyCompatibilityPrediction() {
     .sort((a, b) => (b.compat + b.count) - (a.compat + a.count) || b.count - a.count || a.n - b.n)
     .slice(0, 6);
   const scores = suggestions.map(o => o.count + o.compat);
-  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat);
+  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat, 'Frequency + Compatibility Analysis');
 }
 
-function displayPredictedNumbers(numbers, additional = null, scores, freq, compat) {
+// Enhanced Prediction - Combines multiple factors with weighted analysis
+function runEnhancedPrediction() {
+  const bases = getSelectedBases();
+  const range = parseInt(document.getElementById('drawRange').value);
+  const includeAdd = document.getElementById('includeAdd').checked;
+  const draws = historical.slice(0, range);
+  
+  const freq = Array(50).fill(0);
+  const compat = Array(50).fill(0);
+  const weighted = Array(50).fill(0);
+  
+  draws.forEach((draw, index) => {
+    const weight = Math.exp(-index * 0.03); // Recent draws weighted higher
+    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+    
+    pool.forEach(n => {
+      freq[n]++;
+      weighted[n] += weight;
+    });
+    
+    bases.forEach(b => {
+      if (pool.includes(b)) {
+        pool.filter(n => n !== b).forEach(n => compat[n] += weight);
+      }
+    });
+  });
+  
+  const suggestions = freq.map((count, n) => ({ 
+    n, 
+    freq: count,
+    compat: compat[n],
+    weighted: weighted[n],
+    score: count + compat[n] + weighted[n] * 0.5
+  }))
+    .filter(o => o.n >= 1 && o.n <= 49)
+    .sort((a, b) => b.score - a.score || a.n - b.n)
+    .slice(0, 6);
+    
+  const scores = suggestions.map(o => o.score);
+  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat, 'Enhanced Analysis (Freq + Compat + Weighted)');
+}
+
+// Weighted Recent Prediction - Recent draws count more
+function runWeightedPrediction() {
+  const bases = getSelectedBases();
+  const range = parseInt(document.getElementById('drawRange').value);
+  const includeAdd = document.getElementById('includeAdd').checked;
+  const draws = historical.slice(0, range);
+  
+  const weighted = Array(50).fill(0);
+  const compat = Array(50).fill(0);
+  
+  draws.forEach((draw, index) => {
+    const weight = 1 / (index + 1); // Linear decay
+    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+    
+    pool.forEach(n => weighted[n] += weight);
+    
+    bases.forEach(b => {
+      if (pool.includes(b)) {
+        pool.filter(n => n !== b).forEach(n => compat[n] += weight);
+      }
+    });
+  });
+  
+  const suggestions = weighted.map((weight, n) => ({ 
+    n, 
+    weight, 
+    compat: compat[n],
+    score: weight + compat[n]
+  }))
+    .filter(o => o.n >= 1 && o.n <= 49)
+    .sort((a, b) => b.score - a.score || a.n - b.n)
+    .slice(0, 6);
+    
+  const scores = suggestions.map(o => o.score);
+  const freq = suggestions.map(o => o.weight);
+  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat, 'Weighted Recent Analysis');
+}
+
+// Hot/Cold Analysis - Trending numbers
+function runHotColdPrediction() {
+  const range = parseInt(document.getElementById('drawRange').value);
+  const includeAdd = document.getElementById('includeAdd').checked;
+  const recentDraws = historical.slice(0, Math.floor(range / 2));
+  const olderDraws = historical.slice(Math.floor(range / 2), range);
+  
+  const recentFreq = Array(50).fill(0);
+  const olderFreq = Array(50).fill(0);
+  
+  recentDraws.forEach(draw => {
+    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+    pool.forEach(n => recentFreq[n]++);
+  });
+  
+  olderDraws.forEach(draw => {
+    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+    pool.forEach(n => olderFreq[n]++);
+  });
+  
+  const suggestions = recentFreq.map((recent, n) => ({
+    n,
+    recent,
+    older: olderFreq[n],
+    trend: recent - olderFreq[n],
+    score: recent + Math.max(0, recent - olderFreq[n]) * 0.5
+  }))
+    .filter(o => o.n >= 1 && o.n <= 49)
+    .sort((a, b) => b.score - a.score || a.n - b.n)
+    .slice(0, 6);
+    
+  const scores = suggestions.map(o => o.score);
+  const freq = suggestions.map(o => o.recent);
+  const compat = suggestions.map(o => o.trend);
+  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat, 'Hot/Cold Trend Analysis');
+}
+
+// ENHANCEMENT 1: Enhanced Combined Analysis
+function runEnhancedPrediction() {
+  const bases = getSelectedBases();
+  const range = parseInt(document.getElementById('drawRange').value);
+  const includeAdd = document.getElementById('includeAdd').checked;
+  const draws = historical.slice(0, range);
+  
+  const freq = Array(50).fill(0);
+  const compat = Array(50).fill(0);
+  const hotness = Array(50).fill(0);
+  const weighted = Array(50).fill(0);
+  
+  draws.forEach((draw, index) => {
+    const weight = Math.exp(-index * 0.05); // Recent draws weighted higher
+    const recentBonus = index < range * 0.3 ? 2 : 1; // Extra bonus for very recent
+    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+    
+    pool.forEach(n => {
+      freq[n]++;
+      weighted[n] += weight;
+      hotness[n] += recentBonus;
+    });
+    
+    bases.forEach(b => {
+      if (pool.includes(b)) {
+        pool.filter(n => n !== b).forEach(n => {
+          compat[n]++;
+        });
+      }
+    });
+  });
+  
+  const suggestions = freq.map((count, n) => ({ 
+    n, 
+    freq: count, 
+    compat: compat[n],
+    weighted: weighted[n],
+    hotness: hotness[n],
+    score: count + compat[n] + weighted[n] * 0.5 + hotness[n] * 0.3
+  }))
+    .filter(o => o.n >= 1 && o.n <= 49)
+    .sort((a, b) => b.score - a.score || a.n - b.n)
+    .slice(0, 6);
+    
+  const scores = suggestions.map(o => Math.round(o.score));
+  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat, 'Enhanced Multi-Factor Analysis', suggestions);
+}
+
+// ENHANCEMENT 2: Weighted Recent Analysis
+function runWeightedPrediction() {
+  const bases = getSelectedBases();
+  const range = parseInt(document.getElementById('drawRange').value);
+  const includeAdd = document.getElementById('includeAdd').checked;
+  const draws = historical.slice(0, range);
+  
+  const weighted = Array(50).fill(0);
+  const compat = Array(50).fill(0);
+  
+  draws.forEach((draw, index) => {
+    const weight = Math.exp(-index * 0.1); // Exponential decay for older draws
+    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+    
+    pool.forEach(n => weighted[n] += weight);
+    
+    bases.forEach(b => {
+      if (pool.includes(b)) {
+        pool.filter(n => n !== b).forEach(n => compat[n] += weight);
+      }
+    });
+  });
+  
+  const suggestions = weighted.map((weight, n) => ({ 
+    n, 
+    weight: weight, 
+    compat: compat[n],
+    score: weight + compat[n] * 1.5
+  }))
+    .filter(o => o.n >= 1 && o.n <= 49)
+    .sort((a, b) => b.score - a.score || a.n - b.n)
+    .slice(0, 6);
+    
+  const scores = suggestions.map(o => Math.round(o.score * 10) / 10);
+  const freq = weighted; // Use weighted as freq for display
+  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat, 'Weighted Recent Draw Analysis');
+}
+
+// ENHANCEMENT 3: Hot/Cold Number Analysis
+function runHotColdPrediction() {
+  const bases = getSelectedBases();
+  const range = parseInt(document.getElementById('drawRange').value);
+  const includeAdd = document.getElementById('includeAdd').checked;
+  const draws = historical.slice(0, range);
+  
+  const recentRange = Math.floor(range * 0.3);
+  const recent = draws.slice(0, recentRange);
+  const older = draws.slice(recentRange);
+  
+  const recentFreq = Array(50).fill(0);
+  const olderFreq = Array(50).fill(0);
+  const compat = Array(50).fill(0);
+  
+  recent.forEach(draw => {
+    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+    pool.forEach(n => recentFreq[n]++);
+  });
+  
+  older.forEach(draw => {
+    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+    pool.forEach(n => olderFreq[n]++);
+  });
+  
+  draws.forEach(draw => {
+    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+    bases.forEach(b => {
+      if (pool.includes(b)) {
+        pool.filter(n => n !== b).forEach(n => compat[n]++);
+      }
+    });
+  });
+  
+  const suggestions = recentFreq.map((recent, n) => {
+    const older = olderFreq[n];
+    const trend = recent - (older * (recentRange / (range - recentRange))); // Normalize for different periods
+    const temperature = trend > 0 ? 'hot' : trend < 0 ? 'cold' : 'neutral';
+    const hotBonus = trend > 0 ? trend * 2 : 0;
+    
+    return { 
+      n, 
+      recent: recent,
+      trend: trend,
+      temperature: temperature,
+      compat: compat[n],
+      score: recent + compat[n] + hotBonus
+    };
+  })
+    .filter(o => o.n >= 1 && o.n <= 49)
+    .sort((a, b) => b.score - a.score || a.n - b.n)
+    .slice(0, 6);
+    
+  const scores = suggestions.map(o => Math.round(o.score));
+  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, recentFreq, compat, 'Hot/Cold Number Analysis', suggestions);
+}
+
+// ENHANCEMENT 4: Sequential Pattern Analysis (Like 610666.xyz)
+function runSequentialPrediction() {
+  const bases = getSelectedBases();
+  const range = parseInt(document.getElementById('drawRange').value);
+  const includeAdd = document.getElementById('includeAdd').checked;
+  const draws = historical.slice(0, range);
+  
+  const sequential = Array(50).fill(0);
+  const patternCount = Array(50).fill(0);
+  
+  // Look for patterns where selected numbers appeared, then see what came next
+  for (let i = 1; i < draws.length; i++) {
+    const currentDraw = draws[i];
+    const nextDraw = draws[i - 1]; // More recent draw (next in sequence)
+    
+    const currentPool = includeAdd && currentDraw.length >= 7 ? 
+      currentDraw.slice(0, 6).concat(currentDraw[6]) : currentDraw.slice(0, 6);
+    const nextPool = includeAdd && nextDraw.length >= 7 ? 
+      nextDraw.slice(0, 6).concat(nextDraw[6]) : nextDraw.slice(0, 6);
+    
+    // Check if any of our selected numbers appeared in current draw
+    const hasSelectedNumbers = bases.some(num => currentPool.includes(num));
+    
+    if (hasSelectedNumbers) {
+      // Count what numbers appeared in the next draw
+      nextPool.forEach(num => {
+        sequential[num]++;
+        patternCount[num]++;
+      });
+    }
+  }
+  
+  const suggestions = sequential.map((count, n) => ({ 
+    n, 
+    sequential: count,
+    patterns: patternCount[n],
+    score: count
+  }))
+    .filter(o => o.n >= 1 && o.n <= 49 && o.score > 0)
+    .sort((a, b) => b.score - a.score || a.n - b.n)
+    .slice(0, 6);
+    
+  if (suggestions.length < 6) {
+    // If not enough sequential patterns, fall back to enhanced prediction
+    runEnhancedPrediction();
+    return;
+  }
+    
+  const scores = suggestions.map(o => o.score);
+  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, sequential, patternCount, 'Sequential Pattern Analysis (610666.xyz style)', suggestions);
+}
+
+function displayPredictedNumbers(numbers, additional = null, scores, freq, compat, methodName = 'Analysis', extraData = null) {
   const rs = document.getElementById('results');
+  const analytics = document.getElementById('analytics');
+  const showAnalytics = document.getElementById('showAnalytics').checked;
+  
   const sorted = numbers.map((n, i) => ({ n, score: scores[i], freq: freq[n], compat: compat[n] }))
     .sort((a, b) => a.n - b.n);
   const sortedNumbers = sorted.map(o => o.n);
   const sortedScores = sorted.map(o => o.score);
   const sortedFreq = sorted.map(o => o.freq);
   const sortedCompat = sorted.map(o => o.compat);
-  rs.innerHTML = '<h3>Predicted Numbers:</h3>' + `<p>${sortedNumbers.join(', ')}</p>`;
+  
+  // Main results display
+  rs.innerHTML = `
+    <h3>Predicted Numbers (${methodName}):</h3>
+    <p style="font-size: 1.2em; font-weight: bold; color: #2c5aa0;">${sortedNumbers.join(', ')}</p>
+    ${additional ? `<p><strong>Additional Number:</strong> ${additional}</p>` : ''}
+  `;
+  
+  // Analytics display
+  if (showAnalytics) {
+    let analyticsHtml = `
+      <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-top: 10px;">
+        <h4>📊 Detailed Analytics (${methodName})</h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 15px;">
+    `;
+    
+    sortedNumbers.forEach((num, i) => {
+      let extraInfo = '';
+      if (extraData && extraData[numbers.indexOf(num)]) {
+        const data = extraData[numbers.indexOf(num)];
+        if (data.temperature) {
+          extraInfo = `<br>🌡️ ${data.temperature.toUpperCase()} (${data.trend > 0 ? '+' : ''}${data.trend.toFixed(1)})`;
+        } else if (data.weighted) {
+          extraInfo = `<br>⚖️ Weighted: ${data.weighted.toFixed(1)}`;
+        } else if (data.sequential) {
+          extraInfo = `<br>🔄 Sequential: ${data.sequential}`;
+        }
+      }
+      
+      analyticsHtml += `
+        <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #2c5aa0;">
+          <strong>Number ${num}</strong><br>
+          📈 Score: ${sortedScores[i]}<br>
+          🔢 Frequency: ${Math.round(sortedFreq[i] * 10) / 10}<br>
+          🤝 Compatibility: ${Math.round(sortedCompat[i] * 10) / 10}${extraInfo}
+        </div>
+      `;
+    });
+    
+    analyticsHtml += `</div>`;
+    
+    // Add method explanation
+    const explanations = {
+      'Enhanced Multi-Factor Analysis': 'Combines frequency, compatibility, weighted recent draws, and hot number analysis for optimal predictions.',
+      'Frequency + Compatibility Analysis': 'Original algorithm analyzing how often numbers appear and their compatibility with selected numbers.',
+      'Weighted Recent Draw Analysis': 'Gives more importance to recent draws using exponential decay weighting.',
+      'Hot/Cold Number Analysis': 'Identifies trending numbers by comparing recent vs historical frequency.',
+      'Sequential Pattern Analysis (610666.xyz style)': 'Analyzes what numbers typically follow patterns similar to your selection.',
+    };
+    
+    if (explanations[methodName]) {
+      analyticsHtml += `
+        <div style="background: #e8f4f8; padding: 10px; border-radius: 5px; margin-top: 10px;">
+          <strong>📋 Method Explanation:</strong><br>
+          ${explanations[methodName]}
+        </div>
+      `;
+    }
+    
+    // Add prediction confidence
+    const avgScore = sortedScores.reduce((a, b) => a + b, 0) / sortedScores.length;
+    const maxPossibleScore = Math.max(...scores);
+    const confidence = Math.round((avgScore / maxPossibleScore) * 100);
+    
+    analyticsHtml += `
+      <div style="background: #f0f8e8; padding: 10px; border-radius: 5px; margin-top: 10px;">
+        <strong>🎯 Prediction Confidence:</strong> ${confidence}%<br>
+        <strong>📊 Average Score:</strong> ${avgScore.toFixed(1)}<br>
+        <strong>📈 Score Range:</strong> ${Math.min(...sortedScores)} - ${Math.max(...sortedScores)}
+      </div>
+    `;
+    
+    analyticsHtml += `</div>`;
+    analytics.innerHTML = analyticsHtml;
+  } else {
+    analytics.innerHTML = '';
+  }
+  
+  // Chart display
   const ctx = document.getElementById('freqChart').getContext('2d');
   if (chartInstance) chartInstance.destroy();
   chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: sortedNumbers.map((n, i) => `${n} (F: ${sortedFreq[i]}, C: ${sortedCompat[i]})`),
+      labels: sortedNumbers.map((n, i) => `${n} (F: ${Math.round(sortedFreq[i])}, C: ${Math.round(sortedCompat[i])})`),
       datasets: [{
-        label: 'Total Score',
+        label: `Score (${methodName})`,
         data: sortedScores,
         backgroundColor: 'rgba(54, 162, 235, 0.6)',
         borderColor: 'rgba(54, 162, 235, 1)',
@@ -207,11 +638,28 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
     options: {
       responsive: true,
       plugins: {
+        title: {
+          display: true,
+          text: `Prediction Analysis: ${methodName}`
+        },
         tooltip: {
           callbacks: {
             label: function(context) {
               const index = context.dataIndex;
-              return `Freq: ${sortedFreq[index]}, Compat: ${sortedCompat[index]}, Total: ${sortedScores[index]}`;
+              const baseInfo = `Freq: ${Math.round(sortedFreq[index])}, Compat: ${Math.round(sortedCompat[index])}, Total: ${sortedScores[index]}`;
+              
+              if (extraData && extraData[numbers.indexOf(sortedNumbers[index])]) {
+                const data = extraData[numbers.indexOf(sortedNumbers[index])];
+                if (data.temperature) {
+                  return `${baseInfo}, Trend: ${data.temperature} (${data.trend > 0 ? '+' : ''}${data.trend.toFixed(1)})`;
+                } else if (data.weighted) {
+                  return `${baseInfo}, Weighted: ${data.weighted.toFixed(1)}`;
+                } else if (data.sequential) {
+                  return `${baseInfo}, Sequential: ${data.sequential}`;
+                }
+              }
+              
+              return baseInfo;
             }
           }
         }
