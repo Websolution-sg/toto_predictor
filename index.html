@@ -470,11 +470,7 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
   const sortedFreq = sorted.map(o => o.freq);
   const sortedCompat = sorted.map(o => o.compat);
   
-  // Main results display with system type info
-  const systemInfo = systemType === '7' ? 
-
-'<span style="color: #28a745; font-weight: bold;">📈 System 7 - Higher Win Probability!</span>' : '<span style="color: #2c5aa0;">📊 System 6 - Standard Play</span>';
-rs.innerHTML = `
+  // Main results display with system type 
   
     <h3>Predicted Numbers:</h3>
     <p style="font-size: 1.2em; font-weight: bold; color: #2c5aa0;">${sortedNumbers.join(', ')}</p>
