@@ -41,8 +41,8 @@
   <div>
     <label>System Type:</label><br/>
     <select id="systemType">
-      <option value="6">Ordinary </option>
-      <option value="7">System 7 </option>
+      <option value="6">System 6 (6 numbers)</option>
+      <option value="7">System 7 (7 numbers)</option>
     </select>
   </div>
 
@@ -472,11 +472,10 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
   
   // Main results display with system type info
   const systemInfo = systemType === '7' ? 
+    '<span style="color: #28a745; font-weight: bold;">📈 System 7 - Higher Win Probability!</span>' : 
+    '<span style="color: #2c5aa0;">📊 System 6 - Standard Play</span>';
 
-  '<span style="color: #28a745; font-weight:       bold;">📈 System 7 - Higher Win Probability!</span>' : '<span style="color: #2c5aa0;">📊 System 6 - Standard Play</span>';
-
-  rs.innerHTML = ` 
-  
+  rs.innerHTML = `
     <h3>Predicted Numbers:</h3>
     <p style="font-size: 1.2em; font-weight: bold; color: #2c5aa0;">${sortedNumbers.join(', ')}</p>
     <p style="margin-top: 10px; font-size: 0.95em;">${systemInfo}</p>
