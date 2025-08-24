@@ -594,7 +594,7 @@ function runAdvancedIntelligenceModel() {
   });
   
   // Method 1: Pattern Recognition Analysis
-  const patternPredictions = analyzePatterns(allNumbers);
+  const patternPredictions = generatePatternPredictions(allNumbers, draws);
   
   // Method 2: Hybrid Multi-Method Analysis  
   const hybridPredictions = performHybridAnalysis(draws, allNumbers);
@@ -606,6 +606,49 @@ function runAdvancedIntelligenceModel() {
   const algorithmPredictions = combineAdvancedMethods(patternPredictions, hybridPredictions, trendPredictions);
   const enhancedPredictions = enhanceWithHistoricalWinners(algorithmPredictions, 'Advanced Intelligence Model');
   displayPredictions(enhancedPredictions, 'Advanced Intelligence Model (Pattern + Hybrid + Trend + Historical Winners)');
+}
+
+// Hybrid analysis that combines frequency, position, and pattern methods
+function performHybridAnalysis(draws, allNumbers) {
+  // Get frequency analysis
+  const positionFreq = [Array(10).fill(0), Array(10).fill(0), Array(10).fill(0), Array(10).fill(0)];
+  allNumbers.forEach(num => {
+    const digits = num.padStart(4, '0').split('').map(d => parseInt(d));
+    digits.forEach((digit, pos) => {
+      positionFreq[pos][digit]++;
+    });
+  });
+  const frequencyPreds = generateFrequencyPredictions(positionFreq);
+  
+  // Get position analysis  
+  const digitTransitions = [{}, {}, {}, {}];
+  for (let i = 0; i < allNumbers.length - 1; i++) {
+    const current = allNumbers[i].padStart(4, '0');
+    const next = allNumbers[i + 1].padStart(4, '0');
+    for (let pos = 0; pos < 4; pos++) {
+      const currentDigit = parseInt(current[pos]);
+      const nextDigit = parseInt(next[pos]);
+      if (!digitTransitions[pos][currentDigit]) digitTransitions[pos][currentDigit] = {};
+      if (!digitTransitions[pos][currentDigit][nextDigit]) digitTransitions[pos][currentDigit][nextDigit] = 0;
+      digitTransitions[pos][currentDigit][nextDigit]++;
+    }
+  }
+  const positionPreds = generatePositionPredictions(digitTransitions, allNumbers);
+  
+  // Get pattern analysis
+  const patternPreds = generatePatternPredictions(allNumbers, draws);
+  
+  // Combine with weighted approach
+  const combined = [];
+  const allPreds = [...frequencyPreds.slice(0, 2), ...positionPreds.slice(0, 2), ...patternPreds.slice(0, 2)];
+  
+  allPreds.forEach(pred => {
+    if (combined.length < 6 && !combined.includes(pred)) {
+      combined.push(pred);
+    }
+  });
+  
+  return combined;
 }
 
 // Combine predictions from all three advanced methods
