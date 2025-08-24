@@ -58,7 +58,7 @@
   <div class="nav-container">
     <div class="nav-title">🎰 Singapore Pools Prediction Hub</div>
     <div class="nav-links">
-      <a href="./prediction_hub.html" class="nav-link" onclick="navigateToHub(event)">🏠 Home</a>
+      <a href="https://websolution-sg.github.io/toto_predictor/" class="nav-link" onclick="navigateToHub(event)">🏠 Home</a>
       <a href="./index.html" class="nav-link active" onclick="navigateToToto(event)">🎯 TOTO Predictor</a>
       <a href="./4d_predictor.html" class="nav-link" onclick="navigateTo4D(event)">🔢 4D Predictor</a>
     </div>
@@ -67,7 +67,7 @@
   <script>
     function navigateToHub(event) {
       event.preventDefault();
-      window.location.href = './prediction_hub.html';
+      window.location.href = 'https://websolution-sg.github.io/toto_predictor/';
     }
     
     function navigateToToto(event) {
@@ -225,11 +225,10 @@ fetch(csvUrl, {
     const dateStr = today.toLocaleDateString('en-SG', { day: '2-digit', month: '2-digit', year: 'numeric' });
     updateLatestResult(recent.slice(0, 6), recent[6], dateStr);
     
-    // Show user-friendly message
+    // Ensure text color is black
     const resultElement = document.getElementById('recentResult');
     if (resultElement) {
-      resultElement.innerHTML = '⚠️ Using sample data (CSV load failed) - ' + resultElement.textContent;
-      resultElement.style.color = '#ff6600';
+      resultElement.style.color = '#000000';
     }
   });
 
