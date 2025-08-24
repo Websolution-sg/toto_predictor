@@ -319,7 +319,6 @@
     </div>
   </div>
 
-  <label><input type="checkbox" id="showAnalytics" checked/> Show detailed analytics</label><br/>
   <button onclick="predict4D()">Predict</button>
 
   <h2>Results</h2>
@@ -514,9 +513,8 @@ function runDigitFrequencyAnalysis() {
   const enhancedPredictions = enhanceWithHistoricalWinners(algorithmPredictions, 'Frequency Analysis');
   displayPredictions(enhancedPredictions, 'Digit Frequency Analysis (Enhanced with Historical Winners)');
   
-  if (document.getElementById('showAnalytics').checked) {
-    updateDigitChart(positionFreq);
-  }
+  // Always show analytics
+  updateDigitChart(positionFreq);
 }
 
 // Generate predictions based on frequency analysis
