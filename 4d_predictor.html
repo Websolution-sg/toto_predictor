@@ -306,7 +306,6 @@
       <option value="comprehensive">🔢 Smart Analysis (Frequency + Position)</option>
       <option value="pattern">🔍 Advanced Pattern Recognition</option>
       <option value="hybrid">🧠 Hybrid Intelligence Model</option>
-      <option value="trend">📈 Trend Analysis</option>
     </select>
   </div>
 
@@ -355,16 +354,9 @@ function showMethodExplanation() {
     'hybrid': `
       <div style="background: #e8f5e8; padding: 12px; border-radius: 6px; border-left: 4px solid #4CAF50;">
         <h5 style="margin: 0 0 8px 0; color: #388E3C;">🧠 Hybrid Intelligence Model ⭐ RECOMMENDED</h5>
-        <p style="margin: 0;"><strong>How it works:</strong> Combines all methods with intelligent weighting, then enhanced with Top 100 historical winners.</p>
+        <p style="margin: 0;"><strong>How it works:</strong> Combines Smart Analysis and Pattern Recognition with intelligent weighting, enhanced with Top 100 historical winners.</p>
         <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Maximum accuracy through multi-method consensus plus historical validation.</p>
-        <p style="margin: 5px 0 0 0;"><strong>Enhancement:</strong> Ultimate reliability - algorithmic intelligence + decades of proven winners</p>
-      </div>`,
-    'trend': `
-      <div style="background: #fce4ec; padding: 12px; border-radius: 6px; border-left: 4px solid #E91E63;">
-        <h5 style="margin: 0 0 8px 0; color: #C2185B;">📈 Trend Analysis</h5>
-        <p style="margin: 0;"><strong>How it works:</strong> Focuses on recent momentum, then enhanced with Top 100 historical winners.</p>
-        <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Catching hot streaks while ensuring historical reliability.</p>
-        <p style="margin: 5px 0 0 0;"><strong>Enhancement:</strong> Balances current trends with long-term proven performance</p>
+        <p style="margin: 5px 0 0 0;"><strong>Enhancement:</strong> Ultimate reliability - comprehensive analysis + pattern recognition + decades of proven winners</p>
       </div>`
   };
   
@@ -459,9 +451,6 @@ function predict4D() {
       break;
     case 'hybrid':
       runHybridAnalysis();
-      break;
-    case 'trend':
-      runTrendAnalysis();
       break;
     default:
       runComprehensiveAnalysis();
