@@ -827,6 +827,47 @@ function getPatternPredictions() {
   return generatePatternPredictions(allNumbers, draws).slice(0, 3);
 }
 
+function generateStatisticalPredictions(draws) {
+  // Advanced statistical analysis for AI Hybrid Model
+  const predictions = [];
+  const digitStats = Array(10).fill(0);
+  const positionStats = [Array(10).fill(0), Array(10).fill(0), Array(10).fill(0), Array(10).fill(0)];
+  
+  // Collect statistical data from recent draws
+  draws.forEach(draw => {
+    const numbers = [draw.first, draw.second, draw.third, ...draw.starter];
+    numbers.forEach(num => {
+      const digits = num.toString().padStart(4, '0').split('').map(Number);
+      digits.forEach((digit, pos) => {
+        digitStats[digit]++;
+        positionStats[pos][digit]++;
+      });
+    });
+  });
+  
+  // Generate predictions based on statistical variance and weighted probability
+  for (let i = 0; i < 5; i++) {
+    let prediction = '';
+    for (let pos = 0; pos < 4; pos++) {
+      // Use statistical distribution with variance weighting
+      const weights = positionStats[pos].map((freq, digit) => {
+        const variance = Math.abs(freq - (digitStats[digit] / 4));
+        return freq + (variance * 0.3); // Add variance bonus
+      });
+      
+      const maxWeight = Math.max(...weights);
+      const candidates = weights.map((w, d) => ({ digit: d, weight: w }))
+                               .filter(c => c.weight >= maxWeight * 0.7)
+                               .sort((a, b) => b.weight - a.weight);
+      
+      prediction += candidates[i % candidates.length]?.digit || Math.floor(Math.random() * 10);
+    }
+    predictions.push(prediction);
+  }
+  
+  return predictions;
+}
+
 function combineHybridPredictions(methodResults) {
   const weightedPredictions = {};
   
