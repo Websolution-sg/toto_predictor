@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head><title>4D Test</title></head>
+<body>
+<h1>4D Prediction Test</h1>
+<button onclick="testPredict()">Test Predict</button>
+<div id="results"></div>
+<script>
+function testPredict() {
+  console.log('Test function called');
+  const resultsDiv = document.getElementById('results');
+  if (resultsDiv) {
+    resultsDiv.innerHTML = '<h3>Test Results:</h3><div style="padding:10px; border:1px solid #ccc; margin:5px;">1234</div><div style="padding:10px; border:1px solid #ccc; margin:5px;">5678</div>';
+    console.log('Results should be visible now');
+  } else {
+    console.error('Results div not found');
+  }
+}
+</script>
+</body>
+</html>
