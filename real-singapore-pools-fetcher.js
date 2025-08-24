@@ -5,7 +5,7 @@ const https = require('https');
 const fs = require('fs');
 
 async function fetchRealSingaporePoolsData() {
-  console.log('🎯 Attempting to fetch REAL Singapore Pools 4D data...');
+  console.log('Attempting to fetch REAL Singapore Pools 4D data...');
   
   // Strategy 1: Try mobile API endpoints
   const mobileEndpoints = [
@@ -30,11 +30,11 @@ async function fetchRealSingaporePoolsData() {
     try {
       const data = await tryEndpoint(endpoint);
       if (data && data.length > 0) {
-        console.log(`✅ Success with ${endpoint.host}${endpoint.path}`);
+        console.log(`Success with ${endpoint.host}${endpoint.path}`);
         return data;
       }
     } catch (error) {
-      console.log(`❌ Failed: ${endpoint.host}${endpoint.path} - ${error.message}`);
+      console.log(`Failed: ${endpoint.host}${endpoint.path} - ${error.message}`);
     }
   }
   
@@ -49,16 +49,16 @@ async function fetchRealSingaporePoolsData() {
     try {
       const data = await scrapeWithUserAgent(userAgent);
       if (data && data.length > 0) {
-        console.log(`✅ Success with user agent: ${userAgent.substring(0, 30)}...`);
+        console.log(`Success with user agent: ${userAgent.substring(0, 30)}...`);
         return data;
       }
     } catch (error) {
-      console.log(`❌ Scraping failed with UA: ${error.message}`);
+      console.log(`Scraping failed with UA: ${error.message}`);
     }
   }
   
   // Strategy 3: Use historical pattern data
-  console.log('📊 Using enhanced historical pattern data...');
+  console.log('Using enhanced historical pattern data...');
   return generateHistoricalPatternData();
 }
 
@@ -319,13 +319,13 @@ function saveResults(results) {
   }
   
   fs.writeFileSync('4dResult.csv', csv);
-  console.log(`✅ Updated 4dResult.csv with ${results.length} enhanced results`);
+  console.log(`Updated 4dResult.csv with ${results.length} enhanced results`);
   
   // Show summary
-  console.log('\n📊 Data Summary:');
+  console.log('\nData Summary:');
   console.log(`Draw Range: ${results[results.length-1].draw} to ${results[0].draw}`);
   console.log(`Date Range: ${results[results.length-1].date} to ${results[0].date}`);
-  console.log('\n🎯 Preview (First 3 results):');
+  console.log('\nPreview (First 3 results):');
   results.slice(0, 3).forEach(r => {
     console.log(`${r.draw} (${r.date}): 1st:${r.first} 2nd:${r.second} 3rd:${r.third}`);
   });
@@ -338,6 +338,6 @@ function saveResults(results) {
     saveResults(results);
     console.log('\n🎉 4D CSV update completed successfully!');
   } catch (error) {
-    console.error('❌ Update failed:', error.message);
+    console.error('Update failed:', error.message);
   }
 })();

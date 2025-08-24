@@ -16,7 +16,7 @@ class SingaporePoolsScraper {
 
   async fetch4DResults(maxDraws = 50) {
     try {
-      console.log('🔄 Fetching 4D results from Singapore Pools...');
+      console.log('Fetching 4D results from Singapore Pools...');
       
       const response = await axios.get(this.resultsUrl, { 
         headers: this.headers,
@@ -62,11 +62,11 @@ class SingaporePoolsScraper {
         }
       });
       
-      console.log(`✅ Successfully scraped ${results.length} 4D results`);
+      console.log(`Successfully scraped ${results.length} 4D results`);
       return results.slice(0, maxDraws);
       
     } catch (error) {
-      console.error('❌ Error fetching 4D results:', error.message);
+      console.error('Error fetching 4D results:', error.message);
       return this.getFallbackData();
     }
   }
@@ -144,7 +144,7 @@ class SingaporePoolsAPI {
 
   async fetch4DResultsAPI(maxDraws = 50) {
     try {
-      console.log('🔄 Trying API approach...');
+      console.log('Trying API approach...');
       
       const response = await axios.get(this.apiUrl, {
         headers: {
@@ -161,7 +161,7 @@ class SingaporePoolsAPI {
       throw new Error('No API data available');
       
     } catch (error) {
-      console.log('📡 API method failed, falling back to web scraping...');
+      console.log('API method failed, falling back to web scraping...');
       const scraper = new SingaporePoolsScraper();
       return await scraper.fetch4DResults(maxDraws);
     }
@@ -177,9 +177,9 @@ if (require.main === module) {
     try {
       const scraper = new SingaporePoolsScraper();
       const results = await scraper.fetchAndSave(100);
-      console.log('🎯 4D results updated successfully!');
+      console.log('4D results updated successfully!');
     } catch (error) {
-      console.error('❌ Failed to update 4D results:', error);
+      console.error('Failed to update 4D results:', error);
     }
   })();
 }

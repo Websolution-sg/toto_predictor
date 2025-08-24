@@ -5,7 +5,7 @@ const https = require('https');
 const fs = require('fs');
 
 function fetchLatest4DResults() {
-  console.log('🔄 Fetching latest 4D results from Singapore Pools...');
+  console.log('Fetching latest 4D results from Singapore Pools...');
   
   // Try multiple endpoints for better data
   const endpoints = [
@@ -48,28 +48,28 @@ function tryFetchFromEndpoint(index, endpoints) {
     
     res.on('end', () => {
       try {
-        console.log(`✅ Data received from endpoint ${index + 1}, parsing...`);
+        console.log(`Data received from endpoint ${index + 1}, parsing...`);
         
         // Enhanced parsing for different formats
         const results = parseResults(data);
         
         if (results.length > 0) {
-          console.log(`🎯 Successfully parsed ${results.length} 4D results`);
+          console.log(`Successfully parsed ${results.length} 4D results`);
           saveToCSV(results);
         } else {
-          console.log(`❌ No valid results from endpoint ${index + 1}, trying next...`);
+          console.log(`No valid results from endpoint ${index + 1}, trying next...`);
           tryFetchFromEndpoint(index + 1, endpoints);
         }
         
       } catch (error) {
-        console.error(`❌ Error parsing endpoint ${index + 1}:`, error.message);
+        console.error(`Error parsing endpoint ${index + 1}:`, error.message);
         tryFetchFromEndpoint(index + 1, endpoints);
       }
     });
   });
 
   req.on('error', (error) => {
-    console.error(`❌ Request failed for endpoint ${index + 1}:`, error.message);
+    console.error(`Request failed for endpoint ${index + 1}:`, error.message);
     tryFetchFromEndpoint(index + 1, endpoints);
   });
 
@@ -235,10 +235,10 @@ function saveToCSV(results) {
   }
   
   fs.writeFileSync('4dResult.csv', csv);
-  console.log(`✅ Updated 4dResult.csv with ${results.length} results`);
+  console.log(`Updated 4dResult.csv with ${results.length} results`);
   
   // Show preview
-  console.log('\n📊 Preview of updated data:');
+  console.log('\nPreview of updated data:');
   console.log(csv.split('\n').slice(0, 6).join('\n'));
 }
 

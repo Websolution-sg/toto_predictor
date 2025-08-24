@@ -50,18 +50,18 @@ class RefreshServer {
   }
 
   async handleRefreshRequest(req, res) {
-    console.log('🔄 Received refresh request from client');
+    console.log('Received refresh request from client');
 
     try {
       // Execute the PowerShell script to fetch latest results
       const scriptPath = path.join(SCRIPT_DIR, 'auto-4d-update.ps1');
       const command = `powershell.exe -ExecutionPolicy Bypass -File "${scriptPath}" -RunOnce`;
 
-      console.log('🚀 Executing:', command);
+      console.log('Executing:', command);
 
       exec(command, { cwd: SCRIPT_DIR }, (error, stdout, stderr) => {
         if (error) {
-          console.error('❌ Script execution error:', error);
+          console.error('Script execution error:', error);
           this.sendJSON(res, {
             success: false,
             error: error.message,
@@ -70,7 +70,7 @@ class RefreshServer {
           return;
         }
 
-        console.log('✅ Script execution completed');
+        console.log('Script execution completed');
         console.log('STDOUT:', stdout);
 
         // Check if CSV was updated
@@ -143,7 +143,7 @@ class RefreshServer {
       const scriptPath = path.join(SCRIPT_DIR, 'auto-4d-update.ps1');
       const command = `powershell.exe -ExecutionPolicy Bypass -File "${scriptPath}" -Test`;
 
-      console.log('🧪 Running test:', command);
+      console.log('Running test:', command);
 
       exec(command, { cwd: SCRIPT_DIR }, (error, stdout, stderr) => {
         const result = {
@@ -178,8 +178,8 @@ class RefreshServer {
 
   start() {
     this.server.listen(PORT, () => {
-      console.log(`🌐 4D Refresh Server running on http://localhost:${PORT}`);
-      console.log('📡 Endpoints:');
+      console.log(`4D Refresh Server running on http://localhost:${PORT}`);
+      console.log('Endpoints:');
       console.log('  POST /refresh - Trigger 4D data refresh');
       console.log('  GET  /status  - Check server and data status');
       console.log('  GET  /test    - Test the fetcher system');
@@ -198,7 +198,7 @@ if (require.main === module) {
 
   // Graceful shutdown
   process.on('SIGINT', () => {
-    console.log('\n🛑 Shutting down server...');
+    console.log('\nShutting down server...');
     server.stop();
     process.exit(0);
   });

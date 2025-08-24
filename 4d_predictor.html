@@ -224,7 +224,7 @@
   <div class="nav-container">
     <div class="nav-title">🎰 Singapore Pools Predictors</div>
     <div class="nav-links">
-      <a href="index.html" class="nav-link">🎯 TOTO Predictor</a>
+      <a href="index.html" class="nav-link">TOTO Predictor</a>
       <a href="4d_predictor.html" class="nav-link active">🔢 4D Predictor</a>
     </div>
   </div>
@@ -512,7 +512,7 @@ function showMethodExplanation() {
 const randomId = Math.random().toString(36).substring(7);
 const csvUrl = `4dResult.csv?v=${cacheBuster}&r=${randomId}&nocache=${Date.now()}`;
 
-console.log('🔄 Fetching 4D CSV from:', csvUrl);
+console.log('Fetching 4D CSV from:', csvUrl);
 fetch(csvUrl, {
   cache: 'no-cache',
   headers: {
@@ -540,7 +540,7 @@ fetch(csvUrl, {
       };
     });
     
-    console.log('✅ Loaded', historical4D.length, '4D records');
+    console.log('Loaded', historical4D.length, '4D records');
     
     // Update the latest results display
     updateLatestResultsDisplay();
@@ -548,7 +548,7 @@ fetch(csvUrl, {
     init();
   })
   .catch(error => {
-    console.error('❌ Failed to load 4D CSV, no fallback data available:', error);
+    console.error('Failed to load 4D CSV, no fallback data available:', error);
     // No hardcoded fallback data - force dynamic loading
     historical4D = [];
     console.log('⚠️ No historical data available. Please ensure 4dResult.csv exists and is accessible.');
@@ -568,7 +568,7 @@ function init() {
 function predict4D() {
   const method = document.getElementById('predictionMethod').value;
   
-  console.log('🎯 Running prediction method:', method);
+  console.log('Running prediction method:', method);
   
   switch(method) {
     case 'comprehensive':
@@ -804,7 +804,7 @@ function runPositionAnalysis() {
   const range = parseInt(document.getElementById('drawRange').value);
   const draws = historical4D.slice(0, range);
   
-  console.log('🎯 Running Position-based Analysis on', draws.length, 'draws');
+  console.log('Running Position-based Analysis on', draws.length, 'draws');
   
   // Track digit transitions and patterns by position
   const positionPatterns = [[], [], [], []]; // For positions 0-3
@@ -1443,7 +1443,7 @@ class AutoRefreshManager {
       
       if (freshResults && freshResults.length > 0) {
         const latestResult = freshResults[0];
-        console.log('📊 Latest from Singapore Pools:', latestResult);
+        console.log('Latest from Singapore Pools:', latestResult);
         
         if (this.hasNewData(latestResult)) {
           this.updateDisplay(latestResult);
@@ -1530,7 +1530,7 @@ class AutoRefreshManager {
   async triggerServerUpdate() {
     try {
       // Try to trigger server-side update via local refresh server
-      console.log('🔧 Triggering server-side CSV update...');
+      console.log('Triggering server-side CSV update...');
       
       const response = await fetch('http://localhost:3001/refresh', {
         method: 'POST',
@@ -1541,7 +1541,7 @@ class AutoRefreshManager {
       
       if (response.ok) {
         const result = await response.json();
-        console.log('✅ Server update response:', result);
+        console.log('Server update response:', result);
         
         if (result.success) {
           this.showUpdateNotification('Server update completed successfully!', 'success');
@@ -1553,8 +1553,8 @@ class AutoRefreshManager {
       }
       
     } catch (error) {
-      console.log('ℹ️ Could not reach local refresh server:', error.message);
-      console.log('💡 To enable automatic CSV updates, run: node refresh-server.js');
+      console.log('Could not reach local refresh server:', error.message);
+      console.log('To enable automatic CSV updates, run: node refresh-server.js');
       
       // Show manual instruction
       this.showUpdateNotification('Run "node refresh-server.js" to enable auto-updates', 'info');

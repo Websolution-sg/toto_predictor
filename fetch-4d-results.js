@@ -6,7 +6,7 @@ const fs = require('fs');
 
 // Simple fetch function without external dependencies
 function fetch4DData() {
-  console.log('🔄 Fetching 4D results from Singapore Pools...');
+  console.log('Fetching 4D results from Singapore Pools...');
   
   const options = {
     hostname: 'www.singaporepools.com.sg',
@@ -27,14 +27,14 @@ function fetch4DData() {
     
     res.on('end', () => {
       try {
-        console.log('✅ Data received, parsing results...');
+        console.log('Data received, parsing results...');
         
         // Simple regex to extract 4D numbers (4 digits each)
         const numberPattern = /\b\d{4}\b/g;
         const numbers = data.match(numberPattern) || [];
         
         if (numbers.length > 0) {
-          console.log(`🎯 Found ${numbers.length} 4D numbers`);
+          console.log(`Found ${numbers.length} 4D numbers`);
           
           // Generate CSV format
           const csvData = generateCSVFromNumbers(numbers);
@@ -49,14 +49,14 @@ function fetch4DData() {
         }
         
       } catch (error) {
-        console.error('❌ Error parsing data:', error.message);
+        console.error('Error parsing data:', error.message);
         generateFallbackCSV();
       }
     });
   });
 
   req.on('error', (error) => {
-    console.error('❌ Request failed:', error.message);
+    console.error('Request failed:', error.message);
     generateFallbackCSV();
   });
 

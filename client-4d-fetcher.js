@@ -16,7 +16,7 @@ class Client4DFetcher {
    */
   async fetchLatest4DResults() {
     try {
-      console.log('🚀 Starting client-side 4D results fetch...');
+      console.log('Starting client-side 4D results fetch...');
       
       // Use CORS proxy to fetch Singapore Pools page
       const response = await fetch(this.proxyUrl + encodeURIComponent(this.baseUrl), {
@@ -39,14 +39,14 @@ class Client4DFetcher {
       const results = this.parseResults(doc);
       
       if (results && results.length > 0) {
-        console.log('✅ Successfully extracted results:', results[0]);
+        console.log('Successfully extracted results:', results[0]);
         return results;
       } else {
         throw new Error('No results found in page content');
       }
       
     } catch (error) {
-      console.error('❌ Error fetching 4D results:', error);
+      console.error('Error fetching 4D results:', error);
       
       // Fallback: try alternative proxy
       return this.fetchWithAlternativeProxy();
@@ -58,7 +58,7 @@ class Client4DFetcher {
    */
   async fetchWithAlternativeProxy() {
     try {
-      console.log('🔄 Trying alternative proxy method...');
+      console.log('Trying alternative proxy method...');
       
       const altProxyUrl = 'https://corsproxy.io/?';
       const response = await fetch(altProxyUrl + encodeURIComponent(this.baseUrl));
@@ -74,7 +74,7 @@ class Client4DFetcher {
       return this.parseResults(doc);
       
     } catch (error) {
-      console.error('❌ Alternative proxy also failed:', error);
+      console.error('Alternative proxy also failed:', error);
       return null;
     }
   }
@@ -265,14 +265,14 @@ class Client4DFetcher {
         
         // Note: Browser can't directly write files for security reasons
         // This would need to be handled by a service worker or server endpoint
-        console.log('📊 New CSV content ready for update:', newLines.length, 'new entries');
+        console.log('New CSV content ready for update:', newLines.length, 'new entries');
         return {
           success: true,
           newEntries: newLines.length,
           csvContent: updatedCSV
         };
       } else {
-        console.log('ℹ️ No new results to add');
+        console.log('No new results to add');
         return { success: true, newEntries: 0 };
       }
       
@@ -286,21 +286,21 @@ class Client4DFetcher {
    * Test the fetcher
    */
   async test() {
-    console.log('🧪 Testing client-side 4D fetcher...');
+    console.log('Testing client-side 4D fetcher...');
     
     try {
       const results = await this.fetchLatest4DResults();
       
       if (results && results.length > 0) {
-        console.log('✅ Test successful! Latest result:');
+        console.log('Test successful! Latest result:');
         console.log(results[0]);
         return true;
       } else {
-        console.log('❌ Test failed - no results retrieved');
+        console.log('Test failed - no results retrieved');
         return false;
       }
     } catch (error) {
-      console.error('❌ Test failed with error:', error);
+      console.error('Test failed with error:', error);
       return false;
     }
   }
