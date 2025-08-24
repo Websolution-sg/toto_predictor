@@ -304,7 +304,6 @@
     <label>Prediction Method:</label><br/>
     <select id="predictionMethod" onchange="showMethodExplanation()">
       <option value="comprehensive">🔢 Smart Analysis (Frequency + Position)</option>
-      <option value="pattern">🔍 Advanced Pattern Recognition</option>
       <option value="hybrid">🧠 Hybrid Intelligence Model</option>
     </select>
   </div>
@@ -343,13 +342,6 @@ function showMethodExplanation() {
         <p style="margin: 0;"><strong>How it works:</strong> Combines digit frequency analysis with position-based transition patterns, then enhanced with Top 100 historical winners from Singapore Pools.</p>
         <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Comprehensive analysis covering both frequency patterns and sequential momentum for maximum reliability.</p>
         <p style="margin: 5px 0 0 0;"><strong>Enhancement:</strong> Dual validation through frequency + position analysis, then cross-referenced with historical winners</p>
-      </div>`,
-    'pattern': `
-      <div style="background: #f3e5f5; padding: 12px; border-radius: 6px; border-left: 4px solid #9C27B0;">
-        <h5 style="margin: 0 0 8px 0; color: #7B1FA2;">🔍 Advanced Pattern Recognition</h5>
-        <p style="margin: 0;"><strong>How it works:</strong> Identifies mathematical patterns, then enhanced with Top 100 historical winners.</p>
-        <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Finding structured patterns that have historical winning precedent.</p>
-        <p style="margin: 5px 0 0 0;"><strong>Enhancement:</strong> Combines pattern analysis with Singapore Pools' most successful numbers</p>
       </div>`,
     'hybrid': `
       <div style="background: #e8f5e8; padding: 12px; border-radius: 6px; border-left: 4px solid #4CAF50;">
@@ -445,9 +437,6 @@ function predict4D() {
   switch(method) {
     case 'comprehensive':
       runComprehensiveAnalysis();
-      break;
-    case 'pattern':
-      runPatternAnalysis();
       break;
     case 'hybrid':
       runHybridAnalysis();
