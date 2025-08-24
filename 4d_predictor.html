@@ -633,9 +633,6 @@ function runHybridAnalysis() {
   ]);
   
   displayPredictions(hybridPredictions, 'Hybrid Intelligence Model');
-  if (document.getElementById('showAnalytics').checked) {
-    displayHybridAnalytics(hybridPredictions);
-  }
 }
 
 // Trend Analysis - Analyzes recent trends
@@ -655,9 +652,6 @@ function runTrendAnalysis() {
   
   const trendPredictions = analyzeTrends(allNumbers, draws);
   displayPredictions(trendPredictions, 'Trend Analysis');
-  if (document.getElementById('showAnalytics').checked) {
-    displayTrendAnalytics(allNumbers.slice(0, 10));
-  }
 }
 
 // Supporting functions for Hybrid and Trend Analysis
@@ -781,32 +775,6 @@ function analyzeTrends(numbers, draws) {
   }
   
   return [...new Set(predictions)].slice(0, 6);
-}
-
-function displayHybridAnalytics(predictions) {
-  const analyticsDiv = document.getElementById('analytics');
-  let html = '<div style="margin-top: 20px; padding: 15px; border: 2px solid #4299e1; border-radius: 8px; background: #f0f8ff;">';
-  html += '<h4>🧠 Hybrid Intelligence Analytics</h4>';
-  html += '<div><strong>Combined Methods:</strong> Frequency (40%) + Position (30%) + Pattern (30%)</div>';
-  html += '<div><strong>Confidence Level:</strong> High (Multiple algorithm consensus)</div>';
-  html += '<div><strong>Prediction Strength:</strong> ' + predictions.length + ' high-confidence numbers generated</div>';
-  html += '</div>';
-  analyticsDiv.innerHTML = html;
-}
-
-function displayTrendAnalytics(recentNumbers) {
-  const analyticsDiv = document.getElementById('analytics');
-  const hotDigits = findHotDigits(recentNumbers);
-  const coldDigits = findColdDigits(recentNumbers);
-  
-  let html = '<div style="margin-top: 20px; padding: 15px; border: 2px solid #48bb78; border-radius: 8px; background: #f0fff4;">';
-  html += '<h4>📈 Trend Analytics</h4>';
-  html += '<div><strong>Hot Digits (Position 1):</strong> ' + hotDigits[0].slice(0, 3).join(', ') + '</div>';
-  html += '<div><strong>Cold Digits (Position 1):</strong> ' + coldDigits[0].slice(0, 3).join(', ') + '</div>';
-  html += '<div><strong>Trend Direction:</strong> Based on last 10 draws</div>';
-  html += '<div><strong>Pattern Strength:</strong> Recent sequence analysis</div>';
-  html += '</div>';
-  analyticsDiv.innerHTML = html;
 }
 
 // Generate predictions using position-based patterns
