@@ -303,8 +303,7 @@
   <div>
     <label>Prediction Method:</label><br/>
     <select id="predictionMethod" onchange="showMethodExplanation()">
-      <option value="frequency">🔢 Digit Frequency Analysis</option>
-      <option value="position">🎯 Position-based Analysis</option>
+      <option value="comprehensive">🔢 Smart Analysis (Frequency + Position)</option>
       <option value="pattern">🔍 Advanced Pattern Recognition</option>
       <option value="hybrid">🧠 Hybrid Intelligence Model</option>
       <option value="trend">📈 Trend Analysis</option>
@@ -339,19 +338,12 @@ function showMethodExplanation() {
   const content = document.getElementById('explanationContent');
   
   const explanations = {
-    'frequency': `
+    'comprehensive': `
       <div style="background: #e6f3ff; padding: 12px; border-radius: 6px; border-left: 4px solid #2196F3;">
-        <h5 style="margin: 0 0 8px 0; color: #1976D2;">🔢 Digit Frequency Analysis</h5>
-        <p style="margin: 0;"><strong>How it works:</strong> Analyzes digit frequency across positions, then enhanced with Top 100 historical winners from Singapore Pools.</p>
-        <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Combining recent patterns with historically proven winners for maximum reliability.</p>
-        <p style="margin: 5px 0 0 0;"><strong>Enhancement:</strong> Prioritizes algorithmic predictions that match historical winners, fills gaps with top performers</p>
-      </div>`,
-    'position': `
-      <div style="background: #fff3e0; padding: 12px; border-radius: 6px; border-left: 4px solid #FF9800;">
-        <h5 style="margin: 0 0 8px 0; color: #F57C00;">🎯 Position-based Analysis</h5>
-        <p style="margin: 0;"><strong>How it works:</strong> Studies digit transitions between draws, then enhanced with Top 100 historical winners.</p>
-        <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Capturing sequential momentum while leveraging 35+ years of proven winners.</p>
-        <p style="margin: 5px 0 0 0;"><strong>Enhancement:</strong> Validates transition patterns against historical winners for dual confirmation</p>
+        <h5 style="margin: 0 0 8px 0; color: #1976D2;">🔢 Smart Analysis (Frequency + Position)</h5>
+        <p style="margin: 0;"><strong>How it works:</strong> Combines digit frequency analysis with position-based transition patterns, then enhanced with Top 100 historical winners from Singapore Pools.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Comprehensive analysis covering both frequency patterns and sequential momentum for maximum reliability.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Enhancement:</strong> Dual validation through frequency + position analysis, then cross-referenced with historical winners</p>
       </div>`,
     'pattern': `
       <div style="background: #f3e5f5; padding: 12px; border-radius: 6px; border-left: 4px solid #9C27B0;">
@@ -376,7 +368,7 @@ function showMethodExplanation() {
       </div>`
   };
   
-  content.innerHTML = explanations[method] || explanations['frequency'];
+  content.innerHTML = explanations[method] || explanations['comprehensive'];
 }
 const randomId = Math.random().toString(36).substring(7);
 const csvUrl = `4dResult.csv?v=${cacheBuster}&r=${randomId}&nocache=${Date.now()}`;
@@ -459,11 +451,8 @@ function predict4D() {
   console.log('🎯 Running prediction method:', method);
   
   switch(method) {
-    case 'frequency':
-      runDigitFrequencyAnalysis();
-      break;
-    case 'position':
-      runPositionAnalysis();
+    case 'comprehensive':
+      runComprehensiveAnalysis();
       break;
     case 'pattern':
       runPatternAnalysis();
@@ -475,8 +464,102 @@ function predict4D() {
       runTrendAnalysis();
       break;
     default:
-      runDigitFrequencyAnalysis();
+      runComprehensiveAnalysis();
   }
+}
+
+// Comprehensive Analysis - Combines Frequency and Position Analysis
+function runComprehensiveAnalysis() {
+  const range = parseInt(document.getElementById('drawRange').value);
+  const draws = historical4D.slice(0, range);
+  
+  console.log('🔢 Running Smart Analysis (Frequency + Position) on', draws.length, 'draws');
+  
+  // Step 1: Digit Frequency Analysis
+  const positionFreq = [
+    Array(10).fill(0), // Position 0 (thousands)
+    Array(10).fill(0), // Position 1 (hundreds)
+    Array(10).fill(0), // Position 2 (tens)
+    Array(10).fill(0)  // Position 3 (units)
+  ];
+  
+  // Step 2: Position Transition Analysis
+  const digitTransitions = [{}, {}, {}, {}];
+  let allNumbers = [];
+  
+  draws.forEach(draw => {
+    const numbers = [];
+    // Include all winning numbers
+    numbers.push(draw.first, draw.second, draw.third);
+    numbers.push(...draw.starter);
+    numbers.push(...draw.consolation);
+    allNumbers.push(...numbers);
+    
+    // Count frequency for each position
+    numbers.forEach(num => {
+      const digits = num.padStart(4, '0').split('').map(d => parseInt(d));
+      digits.forEach((digit, pos) => {
+        positionFreq[pos][digit]++;
+      });
+    });
+  });
+  
+  // Analyze digit transitions for position-based patterns
+  for (let i = 0; i < allNumbers.length - 1; i++) {
+    const current = allNumbers[i].padStart(4, '0');
+    const next = allNumbers[i + 1].padStart(4, '0');
+    
+    for (let pos = 0; pos < 4; pos++) {
+      const currentDigit = parseInt(current[pos]);
+      const nextDigit = parseInt(next[pos]);
+      
+      if (!digitTransitions[pos][currentDigit]) {
+        digitTransitions[pos][currentDigit] = {};
+      }
+      if (!digitTransitions[pos][currentDigit][nextDigit]) {
+        digitTransitions[pos][currentDigit][nextDigit] = 0;
+      }
+      digitTransitions[pos][currentDigit][nextDigit]++;
+    }
+  }
+  
+  // Step 3: Generate combined predictions
+  const frequencyPredictions = generateFrequencyPredictions(positionFreq);
+  const positionPredictions = generatePositionPredictions(digitTransitions, allNumbers);
+  
+  // Step 4: Intelligently combine both methods with weighting
+  const combinedPredictions = combineFrequencyAndPosition(frequencyPredictions, positionPredictions);
+  
+  // Step 5: Enhanced with historical winners
+  const enhancedPredictions = enhanceWithHistoricalWinners(combinedPredictions, 'Smart Analysis');
+  displayPredictions(enhancedPredictions, 'Smart Analysis - Frequency + Position (Enhanced with Historical Winners)');
+  
+  // Show analytics
+  updateDigitChart(positionFreq);
+}
+
+// Function to intelligently combine frequency and position predictions
+function combineFrequencyAndPosition(frequencyPreds, positionPreds) {
+  const combined = [];
+  const weightedScores = {};
+  
+  // Weight frequency predictions (60%)
+  frequencyPreds.forEach((pred, index) => {
+    const score = 0.6 * (frequencyPreds.length - index) / frequencyPreds.length;
+    weightedScores[pred] = (weightedScores[pred] || 0) + score;
+  });
+  
+  // Weight position predictions (40%)
+  positionPreds.forEach((pred, index) => {
+    const score = 0.4 * (positionPreds.length - index) / positionPreds.length;
+    weightedScores[pred] = (weightedScores[pred] || 0) + score;
+  });
+  
+  // Sort by combined score and return top predictions
+  return Object.entries(weightedScores)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+    .map(([pred]) => pred);
 }
 
 // 4D Digit Frequency Analysis
@@ -674,16 +757,14 @@ function runHybridAnalysis() {
   
   console.log('🧠 Running Hybrid Intelligence Model on', draws.length, 'draws');
   
-  // Run all analysis methods and combine results
-  const frequencyPredictions = getFrequencyPredictions();
-  const positionPredictions = getPositionPredictions();
+  // Run analysis methods and combine results (now using comprehensive method)
+  const comprehensivePredictions = getComprehensivePredictions();
   const patternPredictions = getPatternPredictions();
   
   // Weight and combine predictions
   const algorithmPredictions = combineHybridPredictions([
-    { predictions: frequencyPredictions, weight: 0.4, method: 'Frequency' },
-    { predictions: positionPredictions, weight: 0.3, method: 'Position' },
-    { predictions: patternPredictions, weight: 0.3, method: 'Pattern' }
+    { predictions: comprehensivePredictions, weight: 0.6, method: 'Smart Analysis' },
+    { predictions: patternPredictions, weight: 0.4, method: 'Pattern' }
   ]);
   
   const enhancedPredictions = enhanceWithHistoricalWinners(algorithmPredictions, 'Hybrid Analysis');
@@ -770,6 +851,47 @@ function enhanceWithHistoricalWinners(algorithmPredictions, methodName) {
 }
 
 // Supporting functions for Hybrid and Trend Analysis
+function getComprehensivePredictions() {
+  // Simplified comprehensive analysis for hybrid use
+  const range = parseInt(document.getElementById('drawRange').value);
+  const draws = historical4D.slice(0, range);
+  
+  // Quick frequency analysis
+  const positionFreq = [Array(10).fill(0), Array(10).fill(0), Array(10).fill(0), Array(10).fill(0)];
+  const allNumbers = [];
+  
+  draws.forEach(draw => {
+    [draw.first, draw.second, draw.third].forEach(num => {
+      const digits = num.padStart(4, '0').split('').map(d => parseInt(d));
+      digits.forEach((digit, pos) => positionFreq[pos][digit]++);
+      allNumbers.push(num);
+    });
+  });
+  
+  // Quick position analysis
+  const digitTransitions = [{}, {}, {}, {}];
+  for (let i = 0; i < allNumbers.length - 1; i++) {
+    const current = allNumbers[i].padStart(4, '0');
+    const next = allNumbers[i + 1].padStart(4, '0');
+    
+    for (let pos = 0; pos < 4; pos++) {
+      const currentDigit = parseInt(current[pos]);
+      const nextDigit = parseInt(next[pos]);
+      
+      if (!digitTransitions[pos][currentDigit]) digitTransitions[pos][currentDigit] = {};
+      if (!digitTransitions[pos][currentDigit][nextDigit]) digitTransitions[pos][currentDigit][nextDigit] = 0;
+      digitTransitions[pos][currentDigit][nextDigit]++;
+    }
+  }
+  
+  // Combine both methods
+  const frequencyPreds = generateFrequencyPredictions(positionFreq);
+  const positionPreds = generatePositionPredictions(digitTransitions, allNumbers);
+  const combined = combineFrequencyAndPosition(frequencyPreds, positionPreds);
+  
+  return combined.slice(0, 3);
+}
+
 function getFrequencyPredictions() {
   // Simplified frequency analysis for hybrid use
   const range = parseInt(document.getElementById('drawRange').value);
