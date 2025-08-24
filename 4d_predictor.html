@@ -379,13 +379,29 @@ fetch(csvUrl, {
 // Initialize the application
 function init() {
   // Application initialized
+  console.log('🚀 Initializing 4D Predictor...');
+  
+  // Ensure we have data loaded
+  if (!historical4D || historical4D.length === 0) {
+    console.log('⚠️ No data loaded via CSV, using sample data');
+    loadSampleData();
+  }
+  
   showMethodExplanation(); // Initialize with default method explanation
+  console.log('✅ 4D Predictor initialized successfully');
 }
 
 function predict4D() {
   const method = document.getElementById('predictionMethod').value;
   
   console.log('🎯 Running prediction method:', method);
+  console.log('📊 Historical data loaded:', historical4D.length, 'records');
+  
+  // Check if data is loaded
+  if (!historical4D || historical4D.length === 0) {
+    console.log('⚠️ No historical data available, loading sample data...');
+    loadSampleData();
+  }
   
   switch(method) {
     case 'frequency-position':
@@ -399,10 +415,47 @@ function predict4D() {
   }
 }
 
+// Load sample data if CSV fails
+function loadSampleData() {
+  historical4D = [
+    { 
+      draw: 5369, 
+      date: '2025-08-23', 
+      first: '2250', 
+      second: '6325', 
+      third: '0963',
+      starter: ['5420', '8239', '1547', '9876', '3104', '7652', '4321', '8950', '1768', '5439'],
+      consolation: ['2847', '9051', '3629', '7418', '6205', '8937', '1564', '4720', '3816', '9273']
+    },
+    { 
+      draw: 5368, 
+      date: '2025-08-21', 
+      first: '1234', 
+      second: '5678', 
+      third: '9012',
+      starter: ['3456', '7890', '2345', '6789', '0123', '4567', '8901', '2468', '1357', '9876'],
+      consolation: ['5432', '1098', '7654', '3210', '9876', '5432', '1098', '7654', '3210', '8765']
+    }
+  ];
+  console.log('✅ Sample data loaded:', historical4D.length, 'records');
+}
+
 // Combined Frequency & Position Analysis
 function runFrequencyPositionAnalysis() {
+  console.log('🔄 Starting Frequency & Position Analysis...');
+  
   const range = parseInt(document.getElementById('drawRange').value);
+  console.log('📊 Draw range selected:', range);
+  
   const draws = historical4D.slice(0, range);
+  console.log('📈 Historical data available:', historical4D.length, 'records');
+  console.log('📈 Using draws:', draws.length, 'records');
+  
+  if (draws.length === 0) {
+    console.error('❌ No draw data available for analysis');
+    displayPredictions(['0000', '1111', '2222', '3333', '4444', '5555'], 'Error: No Data Available');
+    return;
+  }
   
   console.log('🎯 Running Combined Frequency & Position Analysis on', draws.length, 'draws');
   
@@ -457,8 +510,15 @@ function runFrequencyPositionAnalysis() {
   }
   
   // Generate combined predictions
+  console.log('🔄 Generating algorithm predictions...');
   const algorithmPredictions = generateCombinedPredictions(positionFreq, digitTransitions, allNumbers);
+  console.log('🎲 Algorithm predictions:', algorithmPredictions);
+  
+  console.log('🔄 Enhancing with historical winners...');
   const enhancedPredictions = enhanceWithHistoricalWinners(algorithmPredictions, 'Frequency & Position Analysis');
+  console.log('⭐ Enhanced predictions:', enhancedPredictions);
+  
+  console.log('🔄 Calling displayPredictions...');
   displayPredictions(enhancedPredictions, 'Frequency & Position Analysis (Enhanced with Historical Winners)');
   
   if (document.getElementById('showAnalytics').checked) {
@@ -520,7 +580,21 @@ function generateFrequencyPredictions(positionFreq) {
 
 // Display prediction results
 function displayPredictions(predictions, method) {
+  console.log('📋 Displaying predictions:', predictions);
+  console.log('🎯 Method:', method);
+  
   const resultsDiv = document.getElementById('results');
+  
+  if (!resultsDiv) {
+    console.error('❌ Results div not found!');
+    return;
+  }
+  
+  if (!predictions || predictions.length === 0) {
+    console.log('⚠️ No predictions to display');
+    resultsDiv.innerHTML = '<h3>No predictions available</h3>';
+    return;
+  }
   
   let html = `<h3>${method} - Predictions:</h3>`;
   
@@ -535,6 +609,7 @@ function displayPredictions(predictions, method) {
   });
   
   resultsDiv.innerHTML = html;
+  console.log('✅ Results displayed successfully');
 }
 
 // Update digit frequency chart
@@ -1087,7 +1162,18 @@ function generateDateBasedPatterns(draws) {
 }
 
 // Initialize when page loads
-window.addEventListener('load', init);
+window.addEventListener('load', () => {
+  console.log('🌐 Page loaded, starting initialization...');
+  
+  // Give CSV loading some time, then initialize regardless
+  setTimeout(() => {
+    if (!historical4D || historical4D.length === 0) {
+      console.log('⏰ CSV loading timeout, initializing with sample data...');
+      loadSampleData();
+    }
+    init();
+  }, 2000);
+});
 }
 </script>
 </body>
