@@ -248,8 +248,8 @@
     <!-- Header Section -->
     <div style="text-align: center; border-bottom: 2px solid #f0f8ff; padding-bottom: 15px; margin-bottom: 20px;">
       <h2 style="margin: 0; color: #2c5aa0; font-size: 24px; font-weight: 600;">Latest 4D Results</h2>
-      <div style="margin-top: 8px; font-size: 14px; color: #666;">
-        <span style="font-weight: 500;">Draw 5369</span> • <span>Saturday, 23 August 2025</span>
+      <div id="latest-draw-info" style="margin-top: 8px; font-size: 14px; color: #666;">
+        <span style="font-weight: 500;">Loading...</span> • <span>Please wait</span>
       </div>
     </div>
     
@@ -261,19 +261,19 @@
         <!-- 1st Prize -->
         <div style="text-align: center; border: 2px solid #e2e8f0; padding: 15px 20px; border-radius: 10px; min-width: 120px;">
           <div style="font-size: 12px; font-weight: 600; color: #718096; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">1st Prize</div>
-          <div style="font-size: 24px; font-weight: bold; color: #2d3748; font-family: 'Courier New', monospace;">2250</div>
+          <div id="first-prize" style="font-size: 24px; font-weight: bold; color: #2d3748; font-family: 'Courier New', monospace;">----</div>
         </div>
         
         <!-- 2nd Prize -->
         <div style="text-align: center; border: 2px solid #e2e8f0; padding: 15px 20px; border-radius: 10px; min-width: 120px;">
           <div style="font-size: 12px; font-weight: 600; color: #718096; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">2nd Prize</div>
-          <div style="font-size: 24px; font-weight: bold; color: #2d3748; font-family: 'Courier New', monospace;">6325</div>
+          <div id="second-prize" style="font-size: 24px; font-weight: bold; color: #2d3748; font-family: 'Courier New', monospace;">----</div>
         </div>
         
         <!-- 3rd Prize -->
         <div style="text-align: center; border: 2px solid #e2e8f0; padding: 15px 20px; border-radius: 10px; min-width: 120px;">
           <div style="font-size: 12px; font-weight: 600; color: #718096; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">3rd Prize</div>
-          <div style="font-size: 24px; font-weight: bold; color: #2d3748; font-family: 'Courier New', monospace;">0963</div>
+          <div id="third-prize" style="font-size: 24px; font-weight: bold; color: #2d3748; font-family: 'Courier New', monospace;">----</div>
         </div>
         
       </div>
@@ -286,12 +286,12 @@
       <div>
         <h4 style="margin: 0 0 10px 0; color: #2d3748; font-size: 16px; font-weight: 600;">Starter Prizes</h4>
         <div style="padding: 12px; border-radius: 8px; border: 2px solid #e2e8f0;">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; color: #2d3748;">
-            <span>0297</span><span>0721</span>
-            <span>0759</span><span>2136</span>
-            <span>2807</span><span>4877</span>
-            <span>5486</span><span>5583</span>
-            <span>8575</span><span>9399</span>
+          <div id="starter-prizes" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; color: #2d3748;">
+            <span>----</span><span>----</span>
+            <span>----</span><span>----</span>
+            <span>----</span><span>----</span>
+            <span>----</span><span>----</span>
+            <span>----</span><span>----</span>
           </div>
         </div>
       </div>
@@ -300,12 +300,12 @@
       <div>
         <h4 style="margin: 0 0 10px 0; color: #2d3748; font-size: 16px; font-weight: 600;">Consolation Prizes</h4>
         <div style="padding: 12px; border-radius: 8px; border: 2px solid #e2e8f0;">
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; color: #2d3748;">
-            <span>0300</span><span>1056</span>
-            <span>1330</span><span>2354</span>
-            <span>2870</span><span>3128</span>
-            <span>3762</span><span>4234</span>
-            <span>7566</span><span>9185</span>
+          <div id="consolation-prizes" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: bold; color: #2d3748;">
+            <span>----</span><span>----</span>
+            <span>----</span><span>----</span>
+            <span>----</span><span>----</span>
+            <span>----</span><span>----</span>
+            <span>----</span><span>----</span>
           </div>
         </div>
       </div>
@@ -313,8 +313,8 @@
     </div>
     
     <!-- Footer -->
-    <div style="text-align: center; padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #718096;">
-      Last updated: 24/08/2025, 12:41:23 am • Source: Singapore Pools Official
+    <div id="latest-results-footer" style="text-align: center; padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #718096;">
+      Waiting for data... • Source: Singapore Pools Official
     </div>
     
   </div>
@@ -354,6 +354,86 @@
 <script>
 let historical4D = [];
 let chartInstance = null;
+
+// Function to populate latest results display from data
+function updateLatestResultsDisplay() {
+  if (historical4D.length === 0) {
+    showNoDataMessage();
+    return;
+  }
+  
+  const latest = historical4D[0]; // Most recent result
+  
+  // Update draw info
+  const drawInfo = document.getElementById('latest-draw-info');
+  if (drawInfo) {
+    const date = new Date(latest.date);
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    const formattedDate = date.toLocaleDateString('en-US', options);
+    drawInfo.innerHTML = `
+      <span style="font-weight: 500;">Draw ${latest.draw}</span> • <span>${formattedDate}</span>
+    `;
+  }
+  
+  // Update main prizes
+  const firstPrize = document.getElementById('first-prize');
+  const secondPrize = document.getElementById('second-prize');
+  const thirdPrize = document.getElementById('third-prize');
+  
+  if (firstPrize) firstPrize.textContent = latest.first || '----';
+  if (secondPrize) secondPrize.textContent = latest.second || '----';
+  if (thirdPrize) thirdPrize.textContent = latest.third || '----';
+  
+  // Update starter prizes
+  const starterPrizes = document.getElementById('starter-prizes');
+  if (starterPrizes && latest.starter) {
+    starterPrizes.innerHTML = latest.starter.map(num => `<span>${num}</span>`).join('');
+  }
+  
+  // Update consolation prizes
+  const consolationPrizes = document.getElementById('consolation-prizes');
+  if (consolationPrizes && latest.consolation) {
+    consolationPrizes.innerHTML = latest.consolation.map(num => `<span>${num}</span>`).join('');
+  }
+  
+  // Update footer
+  const footer = document.getElementById('latest-results-footer');
+  if (footer) {
+    const now = new Date();
+    const timestamp = now.toLocaleDateString('en-GB') + ', ' + now.toLocaleTimeString('en-US', { hour12: true });
+    footer.innerHTML = `Last updated: ${timestamp} • Source: Singapore Pools Official`;
+  }
+}
+
+// Function to show no data message
+function showNoDataMessage() {
+  const drawInfo = document.getElementById('latest-draw-info');
+  if (drawInfo) {
+    drawInfo.innerHTML = '<span style="color: #dc3545;">No data available</span> • <span>Please check CSV file</span>';
+  }
+  
+  // Reset all prize displays
+  const elements = ['first-prize', 'second-prize', 'third-prize'];
+  elements.forEach(id => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = '----';
+  });
+  
+  const starterPrizes = document.getElementById('starter-prizes');
+  if (starterPrizes) {
+    starterPrizes.innerHTML = Array(10).fill('<span>----</span>').join('');
+  }
+  
+  const consolationPrizes = document.getElementById('consolation-prizes');
+  if (consolationPrizes) {
+    consolationPrizes.innerHTML = Array(10).fill('<span>----</span>').join('');
+  }
+  
+  const footer = document.getElementById('latest-results-footer');
+  if (footer) {
+    footer.innerHTML = 'No data available • Please ensure 4dResult.csv is accessible';
+  }
+}
 
 // Enhanced cache-busting with multiple parameters to ensure fresh CSV data
 const cacheBuster = new Date().getTime();
@@ -414,40 +494,21 @@ fetch(csvUrl, {
     });
     
     console.log('✅ Loaded', historical4D.length, '4D records');
+    
+    // Update the latest results display
+    updateLatestResultsDisplay();
+    
     init();
   })
   .catch(error => {
-    console.error('❌ Failed to load 4D CSV, using sample data:', error);
-    // Fallback to sample data with correct structure
-    historical4D = [
-      { 
-        draw: 5369, 
-        date: '2025-08-23', 
-        first: '2250', 
-        second: '6325', 
-        third: '0963', 
-        starter: ['0297', '0721', '0759', '2136', '2807', '4877', '5486', '5583', '8575', '9399'], 
-        consolation: ['0300', '1056', '1330', '2354', '2870', '3128', '3762', '4234', '7566', '9185'] 
-      },
-      { 
-        draw: 5368, 
-        date: '2025-08-21', 
-        first: '7477', 
-        second: '7066', 
-        third: '2520', 
-        starter: ['0546', '1411', '3164', '3705', '4201', '4649', '4807', '5728', '8437', '9746'], 
-        consolation: ['0726', '2459', '2734', '3056', '4490', '5098', '5203', '5811', '6828', '9522'] 
-      },
-      { 
-        draw: 5367, 
-        date: '2025-08-18', 
-        first: '4315', 
-        second: '2555', 
-        third: '5488', 
-        starter: ['1244', '3076', '4615', '5597', '5729', '5860', '7276', '7305', '8841', '9655'], 
-        consolation: ['1264', '2168', '2630', '2927', '4965', '5483', '6463', '7294', '8090', '9649'] 
-      }
-    ];
+    console.error('❌ Failed to load 4D CSV, no fallback data available:', error);
+    // No hardcoded fallback data - force dynamic loading
+    historical4D = [];
+    console.log('⚠️ No historical data available. Please ensure 4dResult.csv exists and is accessible.');
+    
+    // Show error message in the results display
+    showNoDataMessage();
+    init();
     init();
   });
 
@@ -1527,52 +1588,27 @@ class AutoRefreshManager {
   }
 
   hasNewData(newData) {
-    const currentDrawElement = document.querySelector('.latest-results-container div[style*="font-weight: 500"]');
-    if (currentDrawElement) {
-      const currentDraw = currentDrawElement.textContent.match(/Draw (\d+)/);
-      if (currentDraw) {
-        return newData.draw > parseInt(currentDraw[1]);
-      }
+    // Check against the most recent data in our array
+    if (historical4D.length === 0) {
+      return true; // No data yet, so any data is new
     }
-    return false;
+    
+    const currentLatest = historical4D[0];
+    return newData.draw > currentLatest.draw;
   }
 
   updateDisplay(data) {
-    // Update draw number and date
-    const drawElement = document.querySelector('.latest-results-container div[style*="font-weight: 500"]').parentNode;
-    const date = new Date(data.date);
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const formattedDate = date.toLocaleDateString('en-US', options);
+    // Update the global data array
+    if (historical4D.length > 0 && historical4D[0].draw < data.draw) {
+      // Insert new data at the beginning if it's newer
+      historical4D.unshift(data);
+    } else if (historical4D.length === 0) {
+      // Add first data entry
+      historical4D.push(data);
+    }
     
-    drawElement.innerHTML = `
-      <span style="font-weight: 500;">Draw ${data.draw}</span> • <span>${formattedDate}</span>
-    `;
-
-    // Update main prizes
-    const prizeElements = document.querySelectorAll('.latest-results-container div[style*="font-family: \'Courier New\'"][style*="font-size: 24px"]');
-    if (prizeElements.length >= 3) {
-      prizeElements[0].textContent = data.first;
-      prizeElements[1].textContent = data.second;
-      prizeElements[2].textContent = data.third;
-    }
-
-    // Update starter prizes
-    const starterGrid = document.querySelector('.latest-results-container div:contains("Starter Prizes") + div div[style*="grid-template-columns: 1fr 1fr"]');
-    if (starterGrid) {
-      starterGrid.innerHTML = data.starter.map(num => `<span>${num}</span>`).join('');
-    }
-
-    // Update consolation prizes
-    const consolationGrid = document.querySelector('.latest-results-container div:contains("Consolation Prizes") + div div[style*="grid-template-columns: 1fr 1fr"]');
-    if (consolationGrid) {
-      consolationGrid.innerHTML = data.consolation.map(num => `<span>${num}</span>`).join('');
-    }
-
-    // Update footer timestamp
-    const footer = document.querySelector('.latest-results-container div[style*="border-top"]');
-    const now = new Date();
-    const timestamp = now.toLocaleDateString('en-GB') + ', ' + now.toLocaleTimeString('en-US', { hour12: true });
-    footer.innerHTML = footer.innerHTML.replace(/Last updated:.*?•/, `Last updated: ${timestamp} •`);
+    // Use the centralized display update function
+    updateLatestResultsDisplay();
   }
 
   updateStatus(type, message) {
