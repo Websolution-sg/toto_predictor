@@ -1,0 +1,33 @@
+[2025-08-24 19:39:50] Singapore Pools 4D Auto-Fetcher Started (TOTO system unaffected)
+[2025-08-24 19:39:50] Working directory: D:\Timothy\Toto Predictor\Repository\toto_predictor
+[2025-08-24 19:39:50] Target file: 4dResult.csv (NOT totoResult.csv)
+[2025-08-24 19:39:50] Checking 4D system dependencies (separate from TOTO)...
+[2025-08-24 19:39:50] SUCCESS: Node.js found: v24.6.0
+[2025-08-24 19:39:50] SUCCESS: Node modules found
+[2025-08-24 19:39:50] SUCCESS: 4dResult.csv found (separate from TOTO system)
+[2025-08-24 19:39:50] Running 4D system test mode...
+[2025-08-24 19:39:50] Starting 4D results fetch (NOT affecting TOTO system) (TEST MODE)
+[2025-08-24 19:39:53] ERROR: 4D fetch failed with exit code: 1
+[2025-08-24 19:39:53] ERROR: 4D test failed
+[2025-08-24 19:47:15] Singapore Pools 4D Auto-Fetcher Started (TOTO system unaffected)
+[2025-08-24 19:47:15] Working directory: D:\Timothy\Toto Predictor\Repository\toto_predictor
+[2025-08-24 19:47:15] Target file: 4dResult.csv (NOT totoResult.csv)
+[2025-08-24 19:47:15] Checking 4D system dependencies (separate from TOTO)...
+[2025-08-24 19:47:15] SUCCESS: Node.js found: v24.6.0
+[2025-08-24 19:47:15] SUCCESS: Node modules found
+[2025-08-24 19:47:15] SUCCESS: 4dResult.csv found (separate from TOTO system)
+[2025-08-24 19:47:15] Running 4D system test mode...
+[2025-08-24 19:47:15] Starting 4D results fetch (NOT affecting TOTO system) (TEST MODE)
+[2025-08-24 19:47:20] SUCCESS: 4D fetch completed successfully
+[2025-08-24 19:47:20] SUCCESS: 4D test completed successfully
+[2025-08-24 19:55:15] Singapore Pools 4D Auto-Fetcher Started (TOTO system unaffected)
+[2025-08-24 19:55:15] Working directory: D:\Timothy\Toto Predictor\Repository\toto_predictor
+[2025-08-24 19:55:15] Target file: 4dResult.csv (NOT totoResult.csv)
+[2025-08-24 19:55:15] Checking 4D system dependencies (separate from TOTO)...
+[2025-08-24 19:55:15] SUCCESS: Node.js found: v24.6.0
+[2025-08-24 19:55:15] SUCCESS: Node modules found
+[2025-08-24 19:55:15] SUCCESS: 4dResult.csv found (separate from TOTO system)
+[2025-08-24 19:55:15] Running 4D system test mode...
+[2025-08-24 19:55:15] Starting 4D results fetch (NOT affecting TOTO system) (TEST MODE)
+[2025-08-24 19:55:21] SUCCESS: 4D fetch completed successfully
+[2025-08-24 19:55:21] SUCCESS: 4D test completed successfully

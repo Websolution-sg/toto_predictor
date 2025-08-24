@@ -18,209 +18,215 @@
       margin: 0 auto;
       background: white;
       border-radius: 20px;
-      box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-      overflow: hidden;
+      padding: 40px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
     }
     
-    .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
+    .hub-title {
       text-align: center;
-      padding: 40px 20px;
-    }
-    
-    .header h1 {
-      margin: 0 0 10px 0;
-      font-size: 36px;
+      font-size: 32px;
       font-weight: bold;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+      color: #333;
+      margin-bottom: 10px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
     }
     
-    .header p {
-      margin: 0;
+    .hub-subtitle {
+      text-align: center;
       font-size: 18px;
-      opacity: 0.9;
-    }
-    
-    .predictors {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0;
-    }
-    
-    .predictor-card {
-      padding: 40px;
-      text-align: center;
-      transition: all 0.3s ease;
-      border-bottom: 1px solid #eee;
-    }
-    
-    .predictor-card:hover {
-      background: #f8f9ff;
-      transform: translateY(-5px);
-    }
-    
-    .predictor-card:first-child {
-      border-right: 1px solid #eee;
-    }
-    
-    .predictor-icon {
-      font-size: 60px;
-      margin-bottom: 20px;
-      display: block;
-    }
-    
-    .predictor-title {
-      font-size: 24px;
-      font-weight: bold;
-      color: #333;
-      margin: 0 0 15px 0;
-    }
-    
-    .predictor-description {
       color: #666;
-      margin: 0 0 25px 0;
-      line-height: 1.6;
+      margin-bottom: 40px;
     }
     
-    .predictor-btn {
-      display: inline-block;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      text-decoration: none;
-      padding: 15px 30px;
-      border-radius: 25px;
-      font-weight: 600;
-      font-size: 16px;
-      transition: all 0.3s ease;
-      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-    }
-    
-    .predictor-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
-    }
-    
-    .features {
-      background: #f8f9fa;
-      padding: 40px;
-      text-align: center;
-    }
-    
-    .features h3 {
-      margin: 0 0 20px 0;
-      color: #333;
-      font-size: 24px;
-    }
-    
-    .feature-list {
+    .prediction-cards {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
       margin-top: 30px;
     }
     
-    .feature-item {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    .prediction-card {
+      background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+      border-radius: 15px;
+      padding: 30px;
+      text-align: center;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
     }
     
-    .feature-item h4 {
-      margin: 0 0 10px 0;
-      color: #667eea;
-      font-size: 18px;
+    .prediction-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.2);
     }
     
-    .feature-item p {
-      margin: 0;
+    .card-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+    }
+    
+    .card-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 10px;
+    }
+    
+    .card-description {
+      font-size: 16px;
       color: #666;
+      line-height: 1.6;
+    }
+    
+    .toto-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .toto-card .card-title,
+    .toto-card .card-description {
+      color: white;
+    }
+    
+    .fourD-card {
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      color: white;
+    }
+    
+    .fourD-card .card-title,
+    .fourD-card .card-description {
+      color: white;
+    }
+    
+    .features {
+      margin-top: 40px;
+      padding-top: 30px;
+      border-top: 2px solid #eee;
+    }
+    
+    .features-title {
+      text-align: center;
+      font-size: 24px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+    
+    .feature-item {
+      text-align: center;
+      padding: 20px;
+    }
+    
+    .feature-icon {
+      font-size: 32px;
+      margin-bottom: 10px;
+    }
+    
+    .feature-text {
       font-size: 14px;
+      color: #666;
     }
     
     .footer {
-      background: #333;
-      color: white;
       text-align: center;
-      padding: 20px;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+      color: #888;
       font-size: 14px;
-    }
-    
-    @media (max-width: 768px) {
-      .predictors {
-        grid-template-columns: 1fr;
-      }
-      
-      .predictor-card:first-child {
-        border-right: none;
-        border-bottom: 1px solid #eee;
-      }
-      
-      .header h1 {
-        font-size: 28px;
-      }
-      
-      .predictor-icon {
-        font-size: 48px;
-      }
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <h1>🎰 Singapore Pools Prediction Hub</h1>
-      <p>Advanced AI-Powered Lottery Prediction Systems</p>
-    </div>
+    <h1 class="hub-title">🎰 Singapore Pools Prediction Hub</h1>
+    <p class="hub-subtitle">Advanced AI-powered prediction systems for TOTO and 4D draws</p>
     
-    <div class="predictors">
-      <div class="predictor-card">
-        <span class="predictor-icon">🎯</span>
-        <h2 class="predictor-title">TOTO Predictor</h2>
-        <p class="predictor-description">
-          Advanced 6-number prediction system using historical analysis, 
-          pattern recognition, and statistical modeling for TOTO draws.
-        </p>
-        <a href="index.html" class="predictor-btn">Launch TOTO Predictor</a>
-      </div>
+    <div class="prediction-cards">
+      <a href="index.html" class="prediction-card toto-card">
+        <div class="card-icon">🎯</div>
+        <div class="card-title">TOTO Predictor</div>
+        <div class="card-description">
+          Smart analysis of TOTO draws with multiple prediction algorithms including pattern recognition, frequency analysis, and hybrid intelligence models.
+        </div>
+      </a>
       
-      <div class="predictor-card">
-        <span class="predictor-icon">🔢</span>
-        <h2 class="predictor-title">4D Predictor</h2>
-        <p class="predictor-description">
-          Sophisticated 4-digit prediction engine with 5 advanced algorithms, 
-          frequency analysis, and 35+ years of historical validation.
-        </p>
-        <a href="4d_predictor.html" class="predictor-btn">Launch 4D Predictor</a>
-      </div>
+      <a href="4d_predictor.html" class="prediction-card fourD-card">
+        <div class="card-icon">🔢</div>
+        <div class="card-title">4D Predictor</div>
+        <div class="card-description">
+          Comprehensive 4D number prediction using advanced statistical models, trend analysis, and machine learning techniques.
+        </div>
+      </a>
     </div>
     
     <div class="features">
-      <h3>🚀 Advanced Features</h3>
-      <div class="feature-list">
+      <h2 class="features-title">✨ Key Features</h2>
+      <div class="features-grid">
         <div class="feature-item">
-          <h4>📊 Real-Time Data</h4>
-          <p>Latest Singapore Pools results integrated for maximum accuracy</p>
+          <div class="feature-icon">🤖</div>
+          <div class="feature-text">AI-Powered Analysis</div>
         </div>
         <div class="feature-item">
-          <h4>🧠 AI Intelligence</h4>
-          <p>Multiple algorithms combining statistical and pattern analysis</p>
+          <div class="feature-icon">📊</div>
+          <div class="feature-text">Real-time Data</div>
         </div>
         <div class="feature-item">
-          <h4>📈 Historical Validation</h4>
-          <p>35+ years of Singapore Pools data for proven predictions</p>
+          <div class="feature-icon">🎲</div>
+          <div class="feature-text">Multiple Algorithms</div>
         </div>
         <div class="feature-item">
-          <h4>🎯 High Accuracy</h4>
-          <p>Enhanced prediction confidence through multi-layer validation</p>
+          <div class="feature-icon">📈</div>
+          <div class="feature-text">Trend Analysis</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">🔄</div>
+          <div class="feature-text">Auto Updates</div>
+        </div>
+        <div class="feature-item">
+          <div class="feature-icon">📱</div>
+          <div class="feature-text">Mobile Friendly</div>
         </div>
       </div>
     </div>
     
     <div class="footer">
-      © 2025 Singapore Pools Prediction Hub • Advanced Lottery Analytics Platform
+      <p>🏆 Professional prediction system for Singapore Pools draws</p>
+      <p>Disclaimer: For entertainment purposes only. Results not guaranteed.</p>
     </div>
   </div>
+  
+  <script>
+    // Add click tracking
+    document.querySelectorAll('.prediction-card').forEach(card => {
+      card.addEventListener('click', function(e) {
+        const title = this.querySelector('.card-title').textContent;
+        console.log(`Navigating to: ${title}`);
+      });
+    });
+    
+    // Add some interactive effects
+    document.querySelectorAll('.feature-item').forEach(item => {
+      item.addEventListener('mouseenter', function() {
+        this.style.transform = 'scale(1.05)';
+        this.style.transition = 'transform 0.3s ease';
+      });
+      
+      item.addEventListener('mouseleave', function() {
+        this.style.transform = 'scale(1)';
+      });
+    });
+  </script>
 </body>
 </html>

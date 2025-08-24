@@ -43,7 +43,8 @@
     "axios": "^1.6.0",
     "cheerio": "^1.0.0-rc.12",
     "cheerio-select": "^2.1.0",
-    "domutils": "^3.2.2"
+    "domutils": "^3.2.2",
+    "puppeteer": "^24.17.0"
   },
   "browserslist": [
     "> 1%",
