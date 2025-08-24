@@ -249,13 +249,21 @@
 
   <div>
     <label>Prediction Method:</label><br/>
-    <select id="predictionMethod">
+    <select id="predictionMethod" onchange="showMethodExplanation()">
       <option value="frequency">🔢 Digit Frequency Analysis</option>
       <option value="position">🎯 Position-based Analysis</option>
       <option value="pattern">🔍 Advanced Pattern Recognition</option>
       <option value="hybrid">🧠 Hybrid Intelligence Model</option>
       <option value="trend">📈 Trend Analysis</option>
     </select>
+  </div>
+
+  <!-- Method Explanation Section -->
+  <div id="methodExplanation" style="margin: 15px 0; padding: 15px; border: 2px solid #4299e1; border-radius: 8px; background: #f0f8ff;">
+    <h4 style="margin: 0 0 10px 0; color: #2d3748;">📚 Prediction Method Guide</h4>
+    <div id="explanationContent">
+      <!-- Dynamic content will be loaded here by JavaScript -->
+    </div>
   </div>
 
   <label><input type="checkbox" id="showAnalytics" checked/> Show detailed analytics</label><br/>
@@ -272,6 +280,52 @@ let chartInstance = null;
 
 // Enhanced cache-busting with multiple parameters to ensure fresh CSV data
 const cacheBuster = new Date().getTime();
+
+// Function to show method-specific explanations
+function showMethodExplanation() {
+  const method = document.getElementById('predictionMethod').value;
+  const content = document.getElementById('explanationContent');
+  
+  const explanations = {
+    'frequency': `
+      <div style="background: #e6f3ff; padding: 12px; border-radius: 6px; border-left: 4px solid #2196F3;">
+        <h5 style="margin: 0 0 8px 0; color: #1976D2;">🔢 Digit Frequency Analysis</h5>
+        <p style="margin: 0;"><strong>How it works:</strong> Analyzes how often each digit (0-9) appears in each of the 4 positions across all historical winning numbers.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Finding consistently popular digits that appear regularly. Reliable baseline method.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Data used:</strong> All 23 winning numbers per draw (1st, 2nd, 3rd prizes + 10 starter + 10 consolation)</p>
+      </div>`,
+    'position': `
+      <div style="background: #fff3e0; padding: 12px; border-radius: 6px; border-left: 4px solid #FF9800;">
+        <h5 style="margin: 0 0 8px 0; color: #F57C00;">🎯 Position-based Analysis</h5>
+        <p style="margin: 0;"><strong>How it works:</strong> Studies digit transition patterns between consecutive draws. Analyzes what digit typically follows another digit in each position.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Capturing sequential momentum and digit flow patterns. Advanced mathematical approach.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Example:</strong> If position 1 shows "5", history shows it's often followed by "7" or "2"</p>
+      </div>`,
+    'pattern': `
+      <div style="background: #f3e5f5; padding: 12px; border-radius: 6px; border-left: 4px solid #9C27B0;">
+        <h5 style="margin: 0 0 8px 0; color: #7B1FA2;">🔍 Advanced Pattern Recognition</h5>
+        <p style="margin: 0;"><strong>How it works:</strong> Identifies complex mathematical patterns: sequential (1234), mirror (1221), repeated digits (1122), and sum-based relationships.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Finding structured, special patterns that occur in winning numbers. Unique approach.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Patterns detected:</strong> Ascending/descending sequences, symmetrical numbers, digit repetitions</p>
+      </div>`,
+    'hybrid': `
+      <div style="background: #e8f5e8; padding: 12px; border-radius: 6px; border-left: 4px solid #4CAF50;">
+        <h5 style="margin: 0 0 8px 0; color: #388E3C;">🧠 Hybrid Intelligence Model ⭐ RECOMMENDED</h5>
+        <p style="margin: 0;"><strong>How it works:</strong> Combines all three methods with intelligent weighting: 40% Frequency + 30% Position + 30% Pattern analysis.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Maximum accuracy through multi-method consensus. Uses the strengths of all approaches.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Advantage:</strong> Reduces individual method weaknesses while amplifying collective intelligence</p>
+      </div>`,
+    'trend': `
+      <div style="background: #fce4ec; padding: 12px; border-radius: 6px; border-left: 4px solid #E91E63;">
+        <h5 style="margin: 0 0 8px 0; color: #C2185B;">📈 Trend Analysis</h5>
+        <p style="margin: 0;"><strong>How it works:</strong> Focuses on recent momentum in the last 5-10 draws. Identifies hot/cold digits and current trends.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Catching immediate hot streaks and current digit popularity cycles.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Strategy:</strong> Recent hot digits, ascending/descending patterns, sum progression analysis</p>
+      </div>`
+  };
+  
+  content.innerHTML = explanations[method] || explanations['frequency'];
+}
 const randomId = Math.random().toString(36).substring(7);
 const csvUrl = `4dResult.csv?v=${cacheBuster}&r=${randomId}&nocache=${Date.now()}`;
 
@@ -344,6 +398,7 @@ fetch(csvUrl, {
 // Initialize the application
 function init() {
   // Application initialized
+  showMethodExplanation(); // Initialize with default method explanation
 }
 
 function predict4D() {
@@ -578,7 +633,9 @@ function runHybridAnalysis() {
   ]);
   
   displayPredictions(hybridPredictions, 'Hybrid Intelligence Model');
-  displayHybridAnalytics(hybridPredictions);
+  if (document.getElementById('showAnalytics').checked) {
+    displayHybridAnalytics(hybridPredictions);
+  }
 }
 
 // Trend Analysis - Analyzes recent trends
@@ -598,7 +655,9 @@ function runTrendAnalysis() {
   
   const trendPredictions = analyzeTrends(allNumbers, draws);
   displayPredictions(trendPredictions, 'Trend Analysis');
-  displayTrendAnalytics(allNumbers.slice(0, 10));
+  if (document.getElementById('showAnalytics').checked) {
+    displayTrendAnalytics(allNumbers.slice(0, 10));
+  }
 }
 
 // Supporting functions for Hybrid and Trend Analysis
