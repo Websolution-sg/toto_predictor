@@ -156,14 +156,20 @@ class Client4DFetcher {
     // Look for date patterns like "Saturday, 23 August 2025"
     const dateMatch = text.match(/(\w+day),?\s+(\d{1,2})\s+(\w+)\s+(\d{4})/i);
     if (dateMatch) {
-      const [, day, date, month, year] = dateMatch;
+      const [, dayOfWeek, dayNumber, month, year] = dateMatch;
       const monthNames = {
         'january': '01', 'february': '02', 'march': '03', 'april': '04',
         'may': '05', 'june': '06', 'july': '07', 'august': '08',
         'september': '09', 'october': '10', 'november': '11', 'december': '12'
       };
       const monthNum = monthNames[month.toLowerCase()] || '01';
-      return `${year}-${monthNum}-${date.padStart(2, '0')}`;
+      const formattedDate = `${year}-${monthNum}-${dayNumber.padStart(2, '0')}`;
+      
+      // Validate the date
+      const testDate = new Date(formattedDate);
+      if (!isNaN(testDate.getTime())) {
+        return formattedDate;
+      }
     }
     
     // Fallback to current date

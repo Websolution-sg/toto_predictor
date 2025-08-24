@@ -344,6 +344,59 @@
 let historical4D = [];
 let chartInstance = null;
 
+// Utility function for safe date parsing
+function safeParseDate(dateString, fallbackText = 'Date unavailable') {
+  if (!dateString) return fallbackText;
+  
+  // Try direct parsing first
+  let date = new Date(dateString);
+  if (!isNaN(date.getTime())) {
+    return date;
+  }
+  
+  // Try alternative formats
+  const dateStr = dateString.toString();
+  
+  // Try YYYY-MM-DD format
+  const dashMatch = dateStr.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (dashMatch) {
+    const [, year, month, day] = dashMatch;
+    date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+  }
+  
+  // Try DD/MM/YYYY format
+  const slashMatch = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (slashMatch) {
+    const [, day, month, year] = slashMatch;
+    date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
+  }
+  
+  // Return fallback text if all parsing fails
+  return fallbackText;
+}
+
+// Function to format date safely
+function formatDateSafely(dateInput, fallbackText = 'Date unavailable') {
+  const date = safeParseDate(dateInput, null);
+  if (date === null || typeof date === 'string') {
+    return fallbackText;
+  }
+  
+  try {
+    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    return date.toLocaleDateString('en-US', options);
+  } catch (error) {
+    console.warn('Date formatting error:', error);
+    return fallbackText;
+  }
+}
+
 // Function to populate latest results display from data
 function updateLatestResultsDisplay() {
   if (historical4D.length === 0) {
@@ -356,11 +409,9 @@ function updateLatestResultsDisplay() {
   // Update draw info
   const drawInfo = document.getElementById('latest-draw-info');
   if (drawInfo) {
-    const date = new Date(latest.date);
-    const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-    const formattedDate = date.toLocaleDateString('en-US', options);
+    const formattedDate = formatDateSafely(latest.date);
     drawInfo.innerHTML = `
-      <span style="font-weight: 500;">Draw ${latest.draw}</span> • <span>${formattedDate}</span>
+      <span style="font-weight: 500;">Draw ${latest.draw || 'Unknown'}</span> • <span>${formattedDate}</span>
     `;
   }
   
@@ -388,9 +439,16 @@ function updateLatestResultsDisplay() {
   // Update footer
   const footer = document.getElementById('latest-results-footer');
   if (footer) {
-    const now = new Date();
-    const timestamp = now.toLocaleDateString('en-GB') + ', ' + now.toLocaleTimeString('en-US', { hour12: true });
-    footer.innerHTML = `Last updated: ${timestamp} • Source: Singapore Pools Official`;
+    try {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('en-GB');
+      const timeStr = now.toLocaleTimeString('en-US', { hour12: true });
+      const timestamp = `${dateStr}, ${timeStr}`;
+      footer.innerHTML = `Last updated: ${timestamp} • Source: Singapore Pools Official`;
+    } catch (error) {
+      console.warn('Footer timestamp error:', error);
+      footer.innerHTML = 'Last updated: Recently • Source: Singapore Pools Official';
+    }
   }
 }
 
