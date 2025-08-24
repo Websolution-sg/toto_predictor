@@ -9,9 +9,78 @@
     body { font: 16px/1.5 Arial; padding: 20px; max-width: 600px; margin: auto; }
     select, button, input { font-size: 1em; margin: 0.5em 0; }
     canvas { max-width: 100%; }
+    
+    /* Navigation Styles */
+    .nav-container {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 25px;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    .nav-title {
+      color: white;
+      font-size: 24px;
+      font-weight: bold;
+      margin: 0 0 15px 0;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+    }
+    .nav-links {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    .nav-link {
+      background: rgba(255,255,255,0.9);
+      color: #333;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 25px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .nav-link:hover {
+      background: white;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    .nav-link.active {
+      background: #28a745;
+      color: white;
+    }
   </style>
 </head>
 <body>
+  <!-- Navigation Section -->
+  <div class="nav-container">
+    <div class="nav-title">🎰 Singapore Pools Prediction Hub</div>
+    <div class="nav-links">
+      <a href="./prediction_hub.html" class="nav-link" onclick="navigateToHub(event)">🏠 Home</a>
+      <a href="./index.html" class="nav-link active" onclick="navigateToToto(event)">🎯 TOTO Predictor</a>
+      <a href="./4d_predictor.html" class="nav-link" onclick="navigateTo4D(event)">🔢 4D Predictor</a>
+    </div>
+  </div>
+
+  <script>
+    function navigateToHub(event) {
+      event.preventDefault();
+      window.location.href = './prediction_hub.html';
+    }
+    
+    function navigateToToto(event) {
+      event.preventDefault();
+      window.location.reload();
+    }
+    
+    function navigateTo4D(event) {
+      event.preventDefault();
+      window.location.href = './4d_predictor.html';
+    }
+  </script>
+
   <h1>Singapore TOTO Predictor</h1>
   <p id="recentResult">RECENT RESULT: Loading...</p>
   <p>By default, the previous lottery result is selected:</p>
@@ -73,9 +142,34 @@ fetch(csvUrl, {
     'Expires': '0'
   }
 })
-  .then(response => response.text())
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    return response.text();
+  })
   .then(text => {
-    historical = text.trim().split('\n').map(line => line.split(',').map(Number));
+    console.log('✅ CSV loaded successfully, length:', text.length);
+    if (!text.trim()) {
+      throw new Error('CSV file is empty');
+    }
+    
+    historical = text.trim().split('\n').map(line => {
+      const numbers = line.split(',').map(Number);
+      if (numbers.length !== 7) {
+        console.warn('Invalid line detected:', line);
+        return null;
+      }
+      return numbers;
+    }).filter(line => line !== null);
+    
+    if (historical.length === 0) {
+      throw new Error('No valid data found in CSV');
+    }
+    
+    console.log('📊 Historical data loaded:', historical.length, 'records');
+    
+    // Initialize dropdowns
     for (let i = 1; i <= 49; i++) {
       ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
         const opt = document.createElement('option');
@@ -83,6 +177,7 @@ fetch(csvUrl, {
         document.getElementById(id).append(opt);
       });
     }
+    
     const recent = historical[0];
     ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
       document.getElementById(id).value = recent[idx];
@@ -94,8 +189,48 @@ fetch(csvUrl, {
     updateLatestResult(recent.slice(0, 6), recent[6], dateStr);
   })
   .catch(error => {
-    alert("Failed to load historical data.");
-    console.error(error);
+    console.error('❌ CSV loading error:', error);
+    
+    // Fallback to sample data
+    console.log('🔄 Loading fallback sample data...');
+    historical = [
+      [4,13,22,36,38,46,12],
+      [1,4,18,24,37,42,26],
+      [22,25,29,31,34,43,11],
+      [9,24,31,34,43,44,1],
+      [2,15,28,39,42,44,5],
+      [30,32,40,43,45,49,5],
+      [7,19,20,21,22,29,37],
+      [2,14,16,21,36,47,1],
+      [9,11,24,32,39,49,26],
+      [2,5,10,12,14,37,17]
+    ];
+    
+    // Initialize dropdowns with fallback data
+    for (let i = 1; i <= 49; i++) {
+      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
+        const opt = document.createElement('option');
+        opt.value = opt.textContent = i;
+        document.getElementById(id).append(opt);
+      });
+    }
+    
+    const recent = historical[0];
+    ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
+      document.getElementById(id).value = recent[idx];
+    });
+    document.getElementById('additional').value = recent[6];
+    document.getElementById('includeAdd').checked = false;
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('en-SG', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    updateLatestResult(recent.slice(0, 6), recent[6], dateStr);
+    
+    // Show user-friendly message
+    const resultElement = document.getElementById('recentResult');
+    if (resultElement) {
+      resultElement.innerHTML = '⚠️ Using sample data (CSV load failed) - ' + resultElement.textContent;
+      resultElement.style.color = '#ff6600';
+    }
   });
 
 function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
