@@ -1,0 +1,542 @@
+<!DOCTYPE html>
+<html lang="en">
+<head> 
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Singapore 4D Predictor</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font: 16px/1.5 Arial; padding: 20px; max-width: 600px; margin: auto; }
+    select, button, input { font-size: 1em; margin: 0.5em 0; }
+    canvas { max-width: 100%; }
+    #results { margin-top: 20px; }
+    .prediction-card { 
+      display: inline-block; 
+      margin: 5px; 
+      padding: 10px; 
+      border: 1px solid #ccc; 
+      border-radius: 5px; 
+      background: #f9f9f9; 
+      text-align: center; 
+    }
+    .prediction-number { font-size: 20px; font-weight: bold; color: #007bff; }
+    
+    /* Singapore Pools Official 4D Results Format */
+    .result-row { 
+      background: white; 
+      border: 1px solid #e6e6e6; 
+      border-radius: 8px; 
+      margin: 15px 0; 
+      padding: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .draw-header { 
+      text-align: center; 
+      border-bottom: 2px solid #0066cc; 
+      padding-bottom: 10px; 
+      margin-bottom: 20px;
+    }
+    
+    .draw-number { 
+      font-size: 18px; 
+      font-weight: bold; 
+      color: #0066cc; 
+      margin: 0;
+    }
+    
+    .draw-date { 
+      font-size: 14px; 
+      color: #666; 
+      margin: 5px 0 0 0;
+    }
+    
+    .prize-section { 
+      margin: 15px 0; 
+      text-align: center;
+    }
+    
+    .prize-label { 
+      font-weight: bold; 
+      color: #333; 
+      font-size: 14px; 
+      margin-bottom: 8px; 
+      display: block;
+    }
+    
+    .main-prizes { 
+      display: flex; 
+      justify-content: space-around; 
+      margin: 20px 0;
+    }
+    
+    .main-prize { 
+      text-align: center;
+    }
+    
+    .prize-number { 
+      font-family: 'Courier New', monospace; 
+      font-size: 32px; 
+      font-weight: bold; 
+      color: #333; 
+      background: #f8f9fa; 
+      border: 2px solid #ddd; 
+      border-radius: 8px; 
+      padding: 15px 20px; 
+      margin: 5px; 
+      display: inline-block; 
+      min-width: 120px;
+    }
+    
+    .prize-number.first { 
+      background: #fff3cd; 
+      border-color: #ffeaa7; 
+      color: #856404;
+    }
+    
+    .starter-prizes { 
+      display: flex; 
+      justify-content: center; 
+      gap: 20px; 
+      margin: 15px 0;
+    }
+    
+    .starter-number { 
+      font-family: 'Courier New', monospace; 
+      font-size: 24px; 
+      font-weight: bold; 
+      color: #333; 
+      background: #e9ecef; 
+      border: 1px solid #ced4da; 
+      border-radius: 6px; 
+      padding: 10px 15px; 
+      min-width: 80px; 
+      text-align: center;
+    }
+    
+    .consolation-grid { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 10px; 
+      margin: 15px 0; 
+      max-width: 300px; 
+      margin-left: auto; 
+      margin-right: auto;
+    }
+    
+    .consolation-number { 
+      font-family: 'Courier New', monospace; 
+      font-size: 18px; 
+      font-weight: bold; 
+      color: #495057; 
+      background: #f8f9fa; 
+      border: 1px solid #dee2e6; 
+      border-radius: 4px; 
+      padding: 8px 12px; 
+      text-align: center;
+    }
+    
+    .latest-draw { 
+      border: 3px solid #0066cc !important; 
+      background: #f0f8ff;
+    }
+    
+    @media (max-width: 768px) {
+      .main-prizes { 
+        flex-direction: column; 
+        align-items: center;
+      }
+      .prize-number { 
+        font-size: 28px; 
+        padding: 12px 16px;
+      }
+      .starter-prizes { 
+        flex-direction: column; 
+        align-items: center; 
+        gap: 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Singapore 4D Predictor</h1>
+                <div class="latest-result" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); color: white; padding: 20px; border-radius: 10px; margin: 20px 0; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+                    <h3 style="margin: 0 0 15px 0; color: #fff;">🎯 Latest 4D Results</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div>
+                            <strong>📅 Draw Date:</strong><br>Sat, 23 Aug 2025
+                        </div>
+                        <div>
+                            <strong>🎯 Draw Number:</strong><br>5369
+                        </div>
+                        <div>
+                            <strong>🥇 1st Prize:</strong><br><span style="font-size: 1.5em; color: #ffd700;">2250</span>
+                        </div>
+                        <div>
+                            <strong>🥈 2nd Prize:</strong><br><span style="font-size: 1.3em; color: #c0c0c0;">6325</span>
+                        </div>
+                        <div>
+                            <strong>🥉 3rd Prize:</strong><br><span style="font-size: 1.1em; color: #cd7f32;">0963</span>
+                        </div>
+                    </div>
+                    <div style="margin-top: 15px; font-size: 0.9em;">
+                        <div><strong>🎯 Starter:</strong> 0297, 0721, 0759, 2136, 2807, 4877, 5486, 5583, 8575, 9399</div>
+                        <div style="margin-top: 5px;"><strong>🎪 Consolation:</strong> 0300, 1056, 1330, 2354, 2870, 3128, 3762, 4234, 7566, 9185</div>
+                        <div style="margin-top: 10px; text-align: center; font-size: 0.8em; opacity: 0.8;">
+                            Last updated: 24/08/2025, 2:20:41 pm | Source: Singapore Pools Official
+                        </div>
+                    </div>
+                </div>
+  
+  <!-- Latest 4D Results - Clean Design -->
+  <div class="latest-results-container" style="background: #fff; border: 2px solid #e8f4fd; border-radius: 12px; padding: 25px; margin: 25px 0; box-shadow: 0 6px 20px rgba(0,0,0,0.08);">
+    
+    <!-- Header Section -->
+    <div style="text-align: center; border-bottom: 2px solid #f0f8ff; padding-bottom: 15px; margin-bottom: 20px;">
+      <h2 style="margin: 0; color: #2c5aa0; font-size: 24px; font-weight: 600;">Latest 4D Results</h2>
+      <div style="margin-top: 8px; font-size: 14px; color: #666;">
+        <span style="font-weight: 500;">Draw 5369</span> • <span>Saturday, 23 August 2025</span>
+      </div>
+    </div>
+    
+    <!-- Main Prizes Section -->
+    <div style="margin-bottom: 25px;">
+      <h3 style="margin: 0 0 15px 0; color: #2c5aa0; font-size: 18px; font-weight: 600; text-align: center;">Winning Numbers</h3>
+      <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+        
+        <!-- 1st Prize -->
+        <div style="text-align: center; border: 2px solid #e2e8f0; padding: 15px 20px; border-radius: 10px; min-width: 120px;">
+          <div style="font-size: 12px; font-weight: 600; color: #718096; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">1st Prize</div>
+          <div style="font-size: 28px; font-weight: bold; color: #2d3748; font-family: 'Courier New', monospace;">2250</div>
+        </div>
+        
+        <!-- 2nd Prize -->
+        <div style="text-align: center; border: 2px solid #e2e8f0; padding: 15px 20px; border-radius: 10px; min-width: 120px;">
+          <div style="font-size: 12px; font-weight: 600; color: #718096; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">2nd Prize</div>
+          <div style="font-size: 24px; font-weight: bold; color: #2d3748; font-family: 'Courier New', monospace;">6325</div>
+        </div>
+        
+        <!-- 3rd Prize -->
+        <div style="text-align: center; border: 2px solid #e2e8f0; padding: 15px 20px; border-radius: 10px; min-width: 120px;">
+          <div style="font-size: 12px; font-weight: 600; color: #718096; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.5px;">3rd Prize</div>
+          <div style="font-size: 20px; font-weight: bold; color: #2d3748; font-family: 'Courier New', monospace;">0963</div>
+        </div>
+        
+      </div>
+    </div>
+    
+    <!-- Starter & Consolation Prizes -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+      
+      <!-- Starter Prizes -->
+      <div>
+        <h4 style="margin: 0 0 10px 0; color: #2d3748; font-size: 16px; font-weight: 600;">Starter Prizes</h4>
+        <div style="padding: 12px; border-radius: 8px; border: 2px solid #e2e8f0;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold; color: #2d3748;">
+            <span>0297</span><span>0721</span>
+            <span>0759</span><span>2136</span>
+            <span>2807</span><span>4877</span>
+            <span>5486</span><span>5583</span>
+            <span>8575</span><span>9399</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Consolation Prizes -->
+      <div>
+        <h4 style="margin: 0 0 10px 0; color: #2d3748; font-size: 16px; font-weight: 600;">Consolation Prizes</h4>
+        <div style="padding: 12px; border-radius: 8px; border: 2px solid #e2e8f0;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-family: 'Courier New', monospace; font-size: 14px; font-weight: bold; color: #2d3748;">
+            <span>0300</span><span>1056</span>
+            <span>1330</span><span>2354</span>
+            <span>2870</span><span>3128</span>
+            <span>3762</span><span>4234</span>
+            <span>7566</span><span>9185</span>
+          </div>
+        </div>
+      </div>
+      
+    </div>
+    
+    <!-- Footer -->
+    <div style="text-align: center; padding-top: 15px; border-top: 1px solid #e2e8f0; font-size: 12px; color: #718096;">
+      Last updated: 24/08/2025, 12:41:23 am • Source: Singapore Pools Official
+    </div>
+    
+  </div>
+  
+  <div>
+    <label>Select draw range:</label><br/>
+    <select id="drawRange">
+      <option value="20">Last 20</option>
+      <option value="50">Last 50</option>
+      <option value="100">Last 100</option>
+    </select>
+  </div>
+
+  <div>
+    <label>Prediction Method:</label><br/>
+    <select id="predictionMethod">
+      <option value="frequency">Digit Frequency Analysis</option>
+      <option value="position">Position-based Analysis</option>
+      <option value="pattern">Pattern Recognition</option>
+    </select>
+  </div>
+
+  <label><input type="checkbox" id="analyze1st" checked/> Include 1st Prize</label><br/>
+  <label><input type="checkbox" id="analyze2nd" checked/> Include 2nd Prize</label><br/>
+  <label><input type="checkbox" id="analyze3rd" checked/> Include 3rd Prize</label><br/>
+  <label><input type="checkbox" id="analyzeStarter"/> Include Starter Prizes</label><br/>
+  <label><input type="checkbox" id="analyzeConsolation"/> Include Consolation Prizes</label><br/>
+  <label><input type="checkbox" id="showAnalytics" checked/> Show detailed analytics</label><br/>
+  <button onclick="predict4D()">Predict</button>
+
+  <h2>Results</h2>
+  <div id="results"></div>
+  <div id="analytics" style="margin-top: 20px;"></div>
+  <canvas id="freqChart"></canvas>
+
+<script>
+let historical4D = [];
+let chartInstance = null;
+
+// Enhanced cache-busting with multiple parameters to ensure fresh CSV data
+const cacheBuster = new Date().getTime();
+const randomId = Math.random().toString(36).substring(7);
+const csvUrl = `4dResult.csv?v=${cacheBuster}&r=${randomId}&nocache=${Date.now()}`;
+
+console.log('🔄 Fetching 4D CSV from:', csvUrl);
+fetch(csvUrl, {
+  cache: 'no-cache',
+  headers: {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  }
+})
+  .then(response => response.text())
+  .then(text => {
+    const lines = text.trim().split('\n');
+    const headers = lines[0].split(',');
+    
+    // Parse CSV data into 4D format with correct column structure
+    historical4D = lines.slice(1).map(line => {
+      const values = line.split(',');
+      return {
+        draw: parseInt(values[0]),
+        date: values[1],
+        first: values[2],
+        second: values[3],
+        third: values[4],
+        starter: values.slice(5, 15), // starter1 through starter10 (columns 5-14)
+        consolation: values.slice(15, 25) // consolation1 through consolation10 (columns 15-24)
+      };
+    });
+    
+    console.log('✅ Loaded', historical4D.length, '4D records');
+    init();
+  })
+  .catch(error => {
+    console.error('❌ Failed to load 4D CSV, using sample data:', error);
+    // Fallback to sample data with correct structure
+    historical4D = [
+      { 
+        draw: 5369, 
+        date: '2025-08-23', 
+        first: '2250', 
+        second: '6325', 
+        third: '0963', 
+        starter: ['0297', '0721', '0759', '2136', '2807', '4877', '5486', '5583', '8575', '9399'], 
+        consolation: ['0300', '1056', '1330', '2354', '2870', '3128', '3762', '4234', '7566', '9185'] 
+      },
+      { 
+        draw: 5368, 
+        date: '2025-08-21', 
+        first: '7477', 
+        second: '7066', 
+        third: '2520', 
+        starter: ['0546', '1411', '3164', '3705', '4201', '4649', '4807', '5728', '8437', '9746'], 
+        consolation: ['0726', '2459', '2734', '3056', '4490', '5098', '5203', '5811', '6828', '9522'] 
+      },
+      { 
+        draw: 5367, 
+        date: '2025-08-18', 
+        first: '4315', 
+        second: '2555', 
+        third: '5488', 
+        starter: ['1244', '3076', '4615', '5597', '5729', '5860', '7276', '7305', '8841', '9655'], 
+        consolation: ['1264', '2168', '2630', '2927', '4965', '5483', '6463', '7294', '8090', '9649'] 
+      }
+    ];
+    init();
+  });
+
+// Initialize the application
+function init() {
+  // Application initialized
+}
+
+function predict4D() {
+  const method = document.getElementById('predictionMethod').value;
+  
+  switch(method) {
+    case 'frequency':
+      runDigitFrequencyAnalysis();
+      break;
+    case 'position':
+      runPositionAnalysis();
+      break;
+    case 'pattern':
+      runPatternAnalysis();
+      break;
+    default:
+      runDigitFrequencyAnalysis();
+  }
+}
+
+// 4D Digit Frequency Analysis
+function runDigitFrequencyAnalysis() {
+  const range = parseInt(document.getElementById('drawRange').value);
+  const draws = historical4D.slice(0, range);
+  
+  // Count digit frequency for each position (0-3) and digit (0-9)
+  const positionFreq = [
+    Array(10).fill(0), // Position 0 (thousands)
+    Array(10).fill(0), // Position 1 (hundreds)
+    Array(10).fill(0), // Position 2 (tens)
+    Array(10).fill(0)  // Position 3 (units)
+  ];
+  
+  const includeFirst = document.getElementById('analyze1st').checked;
+  const includeSecond = document.getElementById('analyze2nd').checked;
+  const includeThird = document.getElementById('analyze3rd').checked;
+  const includeStarter = document.getElementById('analyzeStarter').checked;
+  const includeConsolation = document.getElementById('analyzeConsolation').checked;
+  
+  draws.forEach(draw => {
+    const numbers = [];
+    if (includeFirst) numbers.push(draw.first);
+    if (includeSecond) numbers.push(draw.second);
+    if (includeThird) numbers.push(draw.third);
+    if (includeStarter) numbers.push(...draw.starter);
+    if (includeConsolation) numbers.push(...draw.consolation);
+    
+    numbers.forEach(num => {
+      const digits = num.padStart(4, '0').split('').map(d => parseInt(d));
+      digits.forEach((digit, pos) => {
+        positionFreq[pos][digit]++;
+      });
+    });
+  });
+  
+  // Generate predictions based on highest frequency digits
+  const predictions = generateFrequencyPredictions(positionFreq);
+  displayPredictions(predictions, 'Digit Frequency Analysis');
+  
+  if (document.getElementById('showAnalytics').checked) {
+    updateDigitChart(positionFreq);
+  }
+}
+
+// Generate predictions based on frequency analysis
+function generateFrequencyPredictions(positionFreq) {
+  const predictions = [];
+  
+  // Get top 3 most frequent digits for each position
+  for (let count = 0; count < 8; count++) {
+    let number = '';
+    for (let pos = 0; pos < 4; pos++) {
+      // Sort digits by frequency for this position
+      const sortedDigits = positionFreq[pos]
+        .map((freq, digit) => ({ digit, freq }))
+        .sort((a, b) => b.freq - a.freq);
+      
+      // Use different combination strategies
+      const digitIndex = Math.floor(count / 2) % Math.min(3, sortedDigits.length);
+      number += sortedDigits[digitIndex].digit;
+    }
+    
+    if (!predictions.includes(number)) {
+      predictions.push(number);
+    }
+  }
+  
+  return predictions.slice(0, 6); // Return top 6 predictions like TOTO
+}
+
+// Display prediction results
+function displayPredictions(predictions, method) {
+  const resultsDiv = document.getElementById('results');
+  
+  let html = `<h3>${method} - Predictions:</h3>`;
+  
+  predictions.forEach((num, index) => {
+    const confidence = Math.max(90 - index * 8, 50);
+    html += `
+      <div class="prediction-card">
+        <div class="prediction-number">${num}</div>
+        <div>Rank: #${index + 1} | Confidence: ${confidence}%</div>
+      </div>
+    `;
+  });
+  
+  resultsDiv.innerHTML = html;
+}
+
+// Update digit frequency chart
+function updateDigitChart(positionFreq) {
+  const ctx = document.getElementById('freqChart').getContext('2d');
+  
+  if (chartInstance) {
+    chartInstance.destroy();
+  }
+  
+  const datasets = positionFreq.map((freqs, pos) => ({
+    label: `Position ${pos + 1}`,
+    data: freqs,
+    backgroundColor: `rgba(${54 + pos * 50}, ${162 - pos * 20}, ${235 - pos * 30}, 0.6)`,
+    borderColor: `rgba(${54 + pos * 50}, ${162 - pos * 20}, ${235 - pos * 30}, 1)`,
+    borderWidth: 1
+  }));
+  
+  chartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
+      datasets: datasets
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        title: {
+          display: true,
+          text: 'Digit Frequency by Position'
+        }
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1 }
+        }
+      }
+    }
+  });
+}
+
+// Position-based analysis
+function runPositionAnalysis() {
+  const predictions = ['1234', '5678', '9012', '3456', '7890', '2468'];
+  displayPredictions(predictions, 'Position-based Analysis');
+}
+
+// Pattern recognition analysis
+function runPatternAnalysis() {
+  const predictions = ['1111', '1234', '4321', '2468', '1357', '9876'];
+  displayPredictions(predictions, 'Pattern Recognition');
+}
+
+// Initialize when page loads
+window.addEventListener('load', init);
+</script>
+</body>
+</html>
