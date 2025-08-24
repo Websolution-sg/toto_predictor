@@ -250,8 +250,10 @@
   <div>
     <label>Prediction Method:</label><br/>
     <select id="predictionMethod" onchange="showMethodExplanation()">
-      <option value="frequency-position">🎯 Frequency & Position Analysis</option>
-      <option value="advanced-intelligence">🧠 Advanced Intelligence Model</option>
+      <option value="frequency-position">🎯 Frequency & Position Analysis - Combined dual-method approach</option>
+      <option value="pattern-recognition">🔍 Advanced Pattern Recognition - Mathematical sequence detection</option>
+      <option value="hybrid-intelligence">🧠 Hybrid Intelligence Model ⭐ RECOMMENDED - Multi-method consensus</option>
+      <option value="trend-analysis">📈 Trend Analysis - Recent momentum patterns</option>
     </select>
   </div>
 
@@ -293,12 +295,26 @@ function showMethodExplanation() {
         <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Dual-method approach capturing both statistical frequency and sequential momentum with historical validation.</p>
         <p style="margin: 5px 0 0 0;"><strong>Enhancement:</strong> Merges algorithmic intelligence from two proven methods with 35+ years of Singapore Pools winners</p>
       </div>`,
-    'advanced-intelligence': `
+    'pattern-recognition': `
+      <div style="background: #fff7e6; padding: 12px; border-radius: 6px; border-left: 4px solid #fa8c16;">
+        <h5 style="margin: 0 0 8px 0; color: #d46b08;">🔍 Advanced Pattern Recognition</h5>
+        <p style="margin: 0;"><strong>How it works:</strong> Mathematical sequence detection analyzing number relationships, gaps, and progression patterns in historical data.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Identifying hidden mathematical sequences and number relationships that repeat over time.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Enhancement:</strong> Advanced algorithmic pattern detection enhanced with Top 100 historical winners</p>
+      </div>`,
+    'hybrid-intelligence': `
       <div style="background: #e8f5e8; padding: 12px; border-radius: 6px; border-left: 4px solid #4CAF50;">
-        <h5 style="margin: 0 0 8px 0; color: #388E3C;">🧠 Advanced Intelligence Model ⭐ ULTIMATE POWER</h5>
-        <p style="margin: 0;"><strong>How it works:</strong> Combines Pattern Recognition + Hybrid Multi-Method + Trend Analysis, then enhanced with Top 100 historical winners.</p>
-        <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Maximum analytical power through consensus of all advanced algorithms plus historical validation.</p>
-        <p style="margin: 5px 0 0 0;"><strong>Enhancement:</strong> Triple-method intelligence (patterns, trends, hybrid consensus) + decades of proven Singapore Pools winners</p>
+        <h5 style="margin: 0 0 8px 0; color: #388E3C;">🧠 Hybrid Intelligence Model ⭐ RECOMMENDED</h5>
+        <p style="margin: 0;"><strong>How it works:</strong> Multi-method consensus combining frequency analysis, pattern detection, and trend momentum for maximum accuracy.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Highest accuracy through consensus of multiple advanced algorithms plus historical validation.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Enhancement:</strong> Triple-method intelligence consensus + decades of proven Singapore Pools winners</p>
+      </div>`,
+    'trend-analysis': `
+      <div style="background: #f6f5ff; padding: 12px; border-radius: 6px; border-left: 4px solid #722ed1;">
+        <h5 style="margin: 0 0 8px 0; color: #531dab;">📈 Trend Analysis</h5>
+        <p style="margin: 0;"><strong>How it works:</strong> Recent momentum patterns analyzing number velocity, acceleration, and trending behaviors in recent draws.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Capturing current momentum and identifying numbers with recent trending patterns.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Enhancement:</strong> Advanced trend detection algorithms enhanced with Top 100 historical winners</p>
       </div>`
   };
   
@@ -404,8 +420,14 @@ function predict4D() {
     case 'frequency-position':
       runFrequencyPositionAnalysis();
       break;
-    case 'advanced-intelligence':
-      runAdvancedIntelligenceModel();
+    case 'pattern-recognition':
+      runPatternRecognitionAnalysis();
+      break;
+    case 'hybrid-intelligence':
+      runHybridIntelligenceModel();
+      break;
+    case 'trend-analysis':
+      runTrendAnalysis();
       break;
     default:
       runFrequencyPositionAnalysis();
@@ -1125,6 +1147,50 @@ function findSumBasedPatterns(numbers) {
   });
   
   return patterns.slice(0, 15);
+}
+
+// Individual method functions for the 4 prediction methods
+
+function runPatternRecognitionAnalysis() {
+  const range = parseInt(document.getElementById('drawRange').value);
+  const draws = historical4D.slice(0, range);
+  const allNumbers = [];
+  
+  draws.forEach(draw => {
+    allNumbers.push(draw.first, draw.second, draw.third);
+  });
+  
+  const patternPredictions = generatePatternPredictions(allNumbers, draws);
+  const enhancedPredictions = enhanceWithHistoricalWinners(patternPredictions, 'Pattern Recognition');
+  displayPredictions(enhancedPredictions, 'Advanced Pattern Recognition (Mathematical Sequence Detection + Historical Winners)');
+}
+
+function runHybridIntelligenceModel() {
+  const range = parseInt(document.getElementById('drawRange').value);
+  const draws = historical4D.slice(0, range);
+  const allNumbers = [];
+  
+  draws.forEach(draw => {
+    allNumbers.push(draw.first, draw.second, draw.third);
+  });
+  
+  const hybridPredictions = performHybridAnalysis(draws, allNumbers);
+  const enhancedPredictions = enhanceWithHistoricalWinners(hybridPredictions, 'Hybrid Intelligence');
+  displayPredictions(enhancedPredictions, 'Hybrid Intelligence Model (Multi-Method Consensus + Historical Winners)');
+}
+
+function runTrendAnalysis() {
+  const range = parseInt(document.getElementById('drawRange').value);
+  const draws = historical4D.slice(0, range);
+  const allNumbers = [];
+  
+  draws.forEach(draw => {
+    allNumbers.push(draw.first, draw.second, draw.third);
+  });
+  
+  const trendPredictions = analyzeTrends(allNumbers, draws);
+  const enhancedPredictions = enhanceWithHistoricalWinners(trendPredictions, 'Trend Analysis');
+  displayPredictions(enhancedPredictions, 'Trend Analysis (Recent Momentum Patterns + Historical Winners)');
 }
 
 function generateDateBasedPatterns(draws) {
