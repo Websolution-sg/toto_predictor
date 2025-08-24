@@ -320,8 +320,9 @@
   <div>
     <label>Prediction Method:</label><br/>
     <select id="predictionMethod" onchange="showMethodExplanation()">
-      <option value="comprehensive">🔢 Smart Analysis (Frequency + Position)</option>
-      <option value="hybrid">🧠 Hybrid Intelligence Model</option>
+  <option value="comprehensive">🔢 Smart Analysis (Frequency + Position)</option>
+  <option value="hybrid">🧠 Hybrid Intelligence Model</option>
+  <option value="compatibility">🔗 Digit Compatibility Analysis</option>
     </select>
   </div>
 
@@ -504,7 +505,16 @@ function showMethodExplanation() {
         <p style="margin: 0;"><strong>How it works:</strong> Combines Smart Analysis and Pattern Recognition with intelligent weighting, enhanced with Top 100 historical winners.</p>
         <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Maximum accuracy through multi-method consensus plus historical validation.</p>
         <p style="margin: 5px 0 0 0;"><strong>Enhancement:</strong> Ultimate reliability - comprehensive analysis + pattern recognition + decades of proven winners</p>
+      </div>`,
+    'compatibility': `
+      <div style="background: #fffbe6; padding: 12px; border-radius: 6px; border-left: 4px solid #FFC107;">
+        <h5 style="margin: 0 0 8px 0; color: #FFA000;">🔗 Digit Compatibility Analysis</h5>
+        <p style="margin: 0;"><strong>How it works:</strong> Combines digit frequency and repeated digit pair analysis to generate numbers with high probability of repeat occurrence.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Best for:</strong> Identifying numbers with strong historical digit and pair patterns.</p>
+        <p style="margin: 5px 0 0 0;"><strong>Enhancement:</strong> Uses both digit frequency and compatibility of digit pairs for prediction.</p>
       </div>`
+  };
+  content.innerHTML = explanations[method] || explanations['comprehensive'];
   };
   
   content.innerHTML = explanations[method] || explanations['comprehensive'];
@@ -577,9 +587,61 @@ function predict4D() {
     case 'hybrid':
       runHybridAnalysis();
       break;
+    case 'compatibility':
+      runCompatibilityAnalysis();
+      break;
     default:
       runComprehensiveAnalysis();
   }
+// Digit Frequency & Compatibility Analysis Prediction Model
+function runCompatibilityAnalysis() {
+  const range = parseInt(document.getElementById('drawRange').value);
+  const draws = historical4D.slice(0, range);
+
+  // Collect digit and pair frequencies
+  const digitCounts = Array(10).fill(0);
+  const pairCounts = {};
+  draws.forEach(draw => {
+    [draw.first, draw.second, draw.third].forEach(num => {
+      if (num && num.length === 4 && /^\d{4}$/.test(num)) {
+        num.split('').forEach(d => digitCounts[parseInt(d)]++);
+        for (let j = 0; j < 3; j++) {
+          const pair = num[j] + num[j+1];
+          pairCounts[pair] = (pairCounts[pair] || 0) + 1;
+        }
+      }
+    });
+  });
+
+  // Get top digits and compatible pairs
+  const topDigits = digitCounts
+    .map((count, digit) => ({ digit, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 4)
+    .map(item => item.digit);
+
+  const topPairs = Object.entries(pairCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6)
+    .map(([pair]) => pair);
+
+  // Generate predictions using digit frequency and compatible pairs
+  const predictions = [];
+  for (let i = 0; i < topPairs.length; i++) {
+    // Use compatible pairs in positions 1-2, 2-3, or 3-4
+    predictions.push(topPairs[i] + topDigits[2] + topDigits[3]);
+    predictions.push(topDigits[0] + topPairs[i] + topDigits[3]);
+    predictions.push(topDigits[0] + topDigits[1] + topPairs[i]);
+  }
+
+  // Filter to valid 4-digit numbers and select top 6
+  const validPredictions = predictions.filter(num => num.length === 4).slice(0, 6);
+
+  // Display results
+  const resultsDiv = document.getElementById('results');
+  resultsDiv.innerHTML = `<h3>4D Predictions (Digit Frequency & Compatibility Analysis):</h3>` +
+    validPredictions.map((num, idx) => `<div class='prediction-card'><span class='prediction-number'>#${idx + 1}: ${num}</span></div>`).join('');
+}
 }
 
 // Comprehensive Analysis - Combines Frequency and Position Analysis
