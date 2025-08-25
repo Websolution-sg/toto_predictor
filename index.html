@@ -224,9 +224,16 @@ class TotoAutoRefreshManager {
     });
     document.getElementById('additional').value = recent[6];
     document.getElementById('includeAdd').checked = false;
-    const today = new Date();
-    const dateStr = today.toLocaleDateString('en-SG', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    updateLatestResult(recent.slice(0, 6), recent[6], dateStr);
+    // Try to get draw date from CSV (assume column 7 or last column if present)
+    let drawDate = '';
+    if (recent.length > 7 && recent[7]) {
+      drawDate = recent[7];
+    } else if (recent.length > 6 && typeof recent[6] === 'string' && /\d{4}/.test(recent[6])) {
+      drawDate = recent[6];
+    } else {
+      drawDate = '';
+    }
+    updateLatestResult(recent.slice(0, 6), recent[6], drawDate);
   }
 
   updateStatus(type, text) {
