@@ -121,85 +121,91 @@
 <script>
 let historical = [];
 let chartInstance = null;
+// Auto-refresh interval in milliseconds (e.g., 5 minutes)
+const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000;
 
-// Enhanced cache-busting with multiple parameters to ensure fresh CSV data
-const cacheBuster = new Date().getTime();
-const randomId = Math.random().toString(36).substring(7);
-const csvUrl = `totoResult.csv?v=${cacheBuster}&r=${randomId}&nocache=${Date.now()}`;
+function fetchCsvAndUpdate() {
+  // Enhanced cache-busting with multiple parameters to ensure fresh CSV data
+  const cacheBuster = new Date().getTime();
+  const randomId = Math.random().toString(36).substring(7);
+  const csvUrl = `totoResult.csv?v=${cacheBuster}&r=${randomId}&nocache=${Date.now()}`;
 
-console.log('Fetching CSV from:', csvUrl);
-fetch(csvUrl, {
-  cache: 'no-cache',
-  headers: {
-    'Cache-Control': 'no-cache, no-store, must-revalidate',
-    'Pragma': 'no-cache',
-    'Expires': '0'
-  }
-})
-  .then(response => {
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+  fetch(csvUrl, {
+    cache: 'no-cache',
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     }
-    return response.text();
   })
-  .then(text => {
-    console.log('CSV loaded successfully, length:', text.length);
-    if (!text.trim()) {
-      throw new Error('CSV file is empty');
-    }
-    
-    historical = text.trim().split('\n').map(line => {
-      const numbers = line.split(',').map(Number);
-      if (numbers.length !== 7) {
-        console.warn('Invalid line detected:', line);
-        return null;
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      return numbers;
-    }).filter(line => line !== null);
-    
-    if (historical.length === 0) {
-      throw new Error('No valid data found in CSV');
-    }
-    
-    console.log('Historical data loaded:', historical.length, 'records');
-    
-    // Initialize dropdowns
-    for (let i = 1; i <= 49; i++) {
-      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
-        const opt = document.createElement('option');
-        opt.value = opt.textContent = i;
-        document.getElementById(id).append(opt);
+      return response.text();
+    })
+    .then(text => {
+      if (!text.trim()) {
+        throw new Error('CSV file is empty');
+      }
+      historical = text.trim().split('\n').map(line => {
+        const numbers = line.split(',').map(Number);
+        if (numbers.length !== 7) {
+          return null;
+        }
+        return numbers;
+      }).filter(line => line !== null);
+      if (historical.length === 0) {
+        throw new Error('No valid data found in CSV');
+      }
+      // Update dropdowns and latest result
+      for (let i = 1; i <= 49; i++) {
+        ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
+          const select = document.getElementById(id);
+          if (select && !select.querySelector(`option[value='${i}']`)) {
+            const opt = document.createElement('option');
+            opt.value = opt.textContent = i;
+            select.append(opt);
+          }
+        });
+      }
+      const recent = historical[0];
+      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
+        document.getElementById(id).value = recent[idx];
       });
-    }
-    
-    const recent = historical[0];
-    ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
-      document.getElementById(id).value = recent[idx];
+      document.getElementById('additional').value = recent[6];
+      document.getElementById('includeAdd').checked = false;
+      const today = new Date();
+      const dateStr = today.toLocaleDateString('en-SG', { day: '2-digit', month: '2-digit', year: 'numeric' });
+      updateLatestResult(recent.slice(0, 6), recent[6], dateStr);
+      // Enable prediction button
+      const predictBtn = document.querySelector('button[onclick="predict()"]');
+      if (predictBtn) predictBtn.disabled = false;
+    })
+    .catch(error => {
+      // Show error message in UI, do not use any hardcoded results
+      const resultElement = document.getElementById('recentResult');
+      if (resultElement) {
+        resultElement.textContent = 'RECENT RESULT: No data available. Please check totoResult.csv.';
+        resultElement.style.color = '#dc3545';
+      }
+      // Disable prediction button
+      const predictBtn = document.querySelector('button[onclick="predict()"]');
+      if (predictBtn) predictBtn.disabled = true;
+      // Clear dropdowns
+      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
+        const select = document.getElementById(id);
+        if (select) select.innerHTML = '<option value="">No data</option>';
+      });
     });
-    document.getElementById('additional').value = recent[6];
-    document.getElementById('includeAdd').checked = false;
-    const today = new Date();
-    const dateStr = today.toLocaleDateString('en-SG', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    updateLatestResult(recent.slice(0, 6), recent[6], dateStr);
-  })
-  .catch(error => {
-    console.error('CSV loading error:', error);
-    // Show error message in UI, do not use any hardcoded results
-    const resultElement = document.getElementById('recentResult');
-    if (resultElement) {
-      resultElement.textContent = 'RECENT RESULT: No data available. Please check totoResult.csv.';
-      resultElement.style.color = '#dc3545';
-    }
-    // Disable prediction button
-    const predictBtn = document.querySelector('button[onclick="predict()"]');
-    if (predictBtn) predictBtn.disabled = true;
-    // Clear dropdowns
-    ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
-      const select = document.getElementById(id);
-      if (select) select.innerHTML = '<option value="">No data</option>';
-    });
-  });
+}
 
+
+// Initial fetch on page load
+fetchCsvAndUpdate();
+
+// Auto-refresh in the background
+setInterval(fetchCsvAndUpdate, AUTO_REFRESH_INTERVAL);
 function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
   const resultText = `${winningNumbers.join(',')}(${additionalNumber})`;
   const resultElement = document.getElementById('recentResult');
