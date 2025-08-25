@@ -122,103 +122,57 @@
 let historical = [];
 let chartInstance = null;
 
-// Auto-refresh functionality for latest TOTO results
-class TotoAutoRefreshManager {
-  constructor() {
-    this.refreshInterval = 5 * 60 * 1000; // 5 minutes
-    this.lastUpdateTime = null;
-    this.intervalId = null;
-    this.isRefreshing = false;
-    this.statusElement = null;
-    this.init();
-  }
+// Enhanced cache-busting with multiple parameters to ensure fresh CSV data
+const cacheBuster = new Date().getTime();
+const randomId = Math.random().toString(36).substring(7);
+const csvUrl = `totoResult.csv?v=${cacheBuster}&r=${randomId}&nocache=${Date.now()}`;
 
-  init() {
-    this.createStatusIndicator();
-    this.startAutoRefresh();
-    this.checkForUpdates(); // Initial check
+console.log('Fetching CSV from:', csvUrl);
+fetch(csvUrl, {
+  cache: 'no-cache',
+  headers: {
+    'Cache-Control': 'no-cache, no-store, must-revalidate',
+    'Pragma': 'no-cache',
+    'Expires': '0'
   }
-
-  createStatusIndicator() {
-    const resultElement = document.getElementById('recentResult');
-    if (resultElement) {
-      // Add refresh status indicator
-      const statusHtml = `
-        <div id="refresh-status" style="margin-top: 8px; font-size: 11px; color: #666;">
-          <span id="refresh-indicator" style="display: inline-block; width: 8px; height: 8px; background: #28a745; border-radius: 50%; margin-right: 6px;"></span>
-          <span id="refresh-text">Auto-refresh active</span>
-          <span style="margin-left: 10px; font-size: 10px; color: #999;">Next check in <span id="countdown">5:00</span></span>
-        </div>
-      `;
-      resultElement.insertAdjacentHTML('afterend', statusHtml);
-      this.statusElement = document.getElementById('refresh-status');
-      this.startCountdown();
+})
+  .then(response => {
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  }
-
-  startAutoRefresh() {
-    this.intervalId = setInterval(() => {
-      this.checkForUpdates();
-    }, this.refreshInterval);
-    this.startCountdown();
-  }
-
-  startCountdown() {
-    let seconds = this.refreshInterval / 1000;
-    const countdown = document.getElementById('countdown');
-    if (!countdown) return;
-    countdown.textContent = `${Math.floor(seconds / 60)}:${('0' + (seconds % 60)).slice(-2)}`;
-    clearInterval(this.countdownId);
-    this.countdownId = setInterval(() => {
-      seconds--;
-      if (seconds < 0) seconds = this.refreshInterval / 1000;
-      countdown.textContent = `${Math.floor(seconds / 60)}:${('0' + (seconds % 60)).slice(-2)}`;
-    }, 1000);
-  }
-
-  async checkForUpdates() {
-    if (this.isRefreshing) return;
-    try {
-      this.isRefreshing = true;
-      this.updateStatus('checking', 'Checking for latest TOTO results...');
-      const cacheBuster = Date.now();
-      const csvUrl = `totoResult.csv?nocache=${cacheBuster}`;
-      const response = await fetch(csvUrl, {
-        cache: 'no-cache',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-          'Expires': '0'
-        }
+    return response.text();
+  })
+  .then(text => {
+    console.log('CSV loaded successfully, length:', text.length);
+    if (!text.trim()) {
+      throw new Error('CSV file is empty');
+    }
+    
+    historical = text.trim().split('\n').map(line => {
+      const numbers = line.split(',').map(Number);
+      if (numbers.length !== 7) {
+        console.warn('Invalid line detected:', line);
+        return null;
+      }
+      return numbers;
+    }).filter(line => line !== null);
+    
+    if (historical.length === 0) {
+      throw new Error('No valid data found in CSV');
+    }
+    
+    console.log('Historical data loaded:', historical.length, 'records');
+    
+    // Initialize dropdowns
+    for (let i = 1; i <= 49; i++) {
+      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
+        const opt = document.createElement('option');
+        opt.value = opt.textContent = i;
+        document.getElementById(id).append(opt);
       });
-      if (!response.ok) throw new Error('Failed to fetch CSV');
-      const text = await response.text();
-      if (!text.trim()) throw new Error('CSV file is empty');
-      historical = text.trim().split('\n').map(line => {
-        const numbers = line.split(',').map(Number);
-        if (numbers.length !== 7) return null;
-        return numbers;
-      }).filter(line => line !== null);
-      if (historical.length === 0) throw new Error('No valid data found in CSV');
-      this.updateDisplay(historical[0]);
-      this.updateStatus('updated', 'Updated with latest TOTO results!');
-      this.showUpdateNotification('New TOTO results available!', 'success');
-    } catch (error) {
-      console.error('TOTO CSV update error:', error);
-      this.updateStatus('error', 'Update check failed');
-      this.showUpdateNotification('Update check failed', 'error');
-      // Fallback to sample data
-      this.loadFallbackData();
-    } finally {
-      this.isRefreshing = false;
-      setTimeout(() => {
-        this.updateStatus('active', 'Auto-refresh active');
-      }, 3000);
     }
-  }
-
-  updateDisplay(recent) {
-    if (!recent) return;
+    
+    const recent = historical[0];
     ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
       document.getElementById(id).value = recent[idx];
     });
@@ -227,50 +181,12 @@ class TotoAutoRefreshManager {
     const today = new Date();
     const dateStr = today.toLocaleDateString('en-SG', { day: '2-digit', month: '2-digit', year: 'numeric' });
     updateLatestResult(recent.slice(0, 6), recent[6], dateStr);
-  }
-
-  updateStatus(type, text) {
-    const indicator = document.getElementById('refresh-indicator');
-    const statusText = document.getElementById('refresh-text');
-    if (!indicator || !statusText) return;
-    const colors = {
-      'active': '#28a745',
-      'checking': '#17a2b8',
-      'updated': '#ffc107',
-      'error': '#dc3545'
-    };
-    indicator.style.background = colors[type] || colors.active;
-    statusText.textContent = text;
-  }
-
-  showUpdateNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.style.cssText = `
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      padding: 12px 20px;
-      border-radius: 6px;
-      color: white;
-      font-weight: 500;
-      z-index: 10000;
-      animation: slideIn 0.3s ease;
-    `;
-    const colors = {
-      'success': '#28a745',
-      'error': '#dc3545',
-      'info': '#17a2b8',
-      'warning': '#ffc107'
-    };
-    notification.style.background = colors[type] || colors.info;
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    setTimeout(() => {
-      notification.remove();
-    }, 3000);
-  }
-
-  loadFallbackData() {
+  })
+  .catch(error => {
+    console.error('CSV loading error:', error);
+    
+    // Fallback to sample data
+    console.log('Loading fallback sample data...');
     historical = [
       [4,13,22,36,38,46,12],
       [1,4,18,24,37,42,26],
@@ -283,18 +199,32 @@ class TotoAutoRefreshManager {
       [9,11,24,32,39,49,26],
       [2,5,10,12,14,37,17]
     ];
-    this.updateDisplay(historical[0]);
+    
+    // Initialize dropdowns with fallback data
+    for (let i = 1; i <= 49; i++) {
+      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
+        const opt = document.createElement('option');
+        opt.value = opt.textContent = i;
+        document.getElementById(id).append(opt);
+      });
+    }
+    
+    const recent = historical[0];
+    ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
+      document.getElementById(id).value = recent[idx];
+    });
+    document.getElementById('additional').value = recent[6];
+    document.getElementById('includeAdd').checked = false;
+    const today = new Date();
+    const dateStr = today.toLocaleDateString('en-SG', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    updateLatestResult(recent.slice(0, 6), recent[6], dateStr);
+    
     // Ensure text color is black
     const resultElement = document.getElementById('recentResult');
     if (resultElement) {
       resultElement.style.color = '#000000';
     }
-  }
-}
-
-window.addEventListener('DOMContentLoaded', () => {
-  new TotoAutoRefreshManager();
-});
+  });
 
 function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
   const resultText = `${winningNumbers.join(',')}(${additionalNumber})`;
