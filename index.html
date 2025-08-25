@@ -184,46 +184,20 @@ fetch(csvUrl, {
   })
   .catch(error => {
     console.error('CSV loading error:', error);
-    
-    // Fallback to sample data
-    console.log('Loading fallback sample data...');
-    historical = [
-      [4,13,22,36,38,46,12],
-      [1,4,18,24,37,42,26],
-      [22,25,29,31,34,43,11],
-      [9,24,31,34,43,44,1],
-      [2,15,28,39,42,44,5],
-      [30,32,40,43,45,49,5],
-      [7,19,20,21,22,29,37],
-      [2,14,16,21,36,47,1],
-      [9,11,24,32,39,49,26],
-      [2,5,10,12,14,37,17]
-    ];
-    
-    // Initialize dropdowns with fallback data
-    for (let i = 1; i <= 49; i++) {
-      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
-        const opt = document.createElement('option');
-        opt.value = opt.textContent = i;
-        document.getElementById(id).append(opt);
-      });
-    }
-    
-    const recent = historical[0];
-    ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
-      document.getElementById(id).value = recent[idx];
-    });
-    document.getElementById('additional').value = recent[6];
-    document.getElementById('includeAdd').checked = false;
-    const today = new Date();
-    const dateStr = today.toLocaleDateString('en-SG', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    updateLatestResult(recent.slice(0, 6), recent[6], dateStr);
-    
-    // Ensure text color is black
+    // Show error message in UI, do not use any hardcoded results
     const resultElement = document.getElementById('recentResult');
     if (resultElement) {
-      resultElement.style.color = '#000000';
+      resultElement.textContent = 'RECENT RESULT: No data available. Please check totoResult.csv.';
+      resultElement.style.color = '#dc3545';
     }
+    // Disable prediction button
+    const predictBtn = document.querySelector('button[onclick="predict()"]');
+    if (predictBtn) predictBtn.disabled = true;
+    // Clear dropdowns
+    ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
+      const select = document.getElementById(id);
+      if (select) select.innerHTML = '<option value="">No data</option>';
+    });
   });
 
 function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
