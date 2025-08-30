@@ -108,8 +108,21 @@ async function fetchLatestByDateAnalysis() {
         }
       }
       if (drawDate && numbers.length >= 6) {
-        console.log(`✅ Found latest completed draw: [${numbers.join(', ')}] for draw date: ${drawDate}`);
-        return { numbers, drawDate };
+        // Format drawDate as DD-MMM-YY for consistency with CSV
+        function formatDateDDMMMYYYY(dateStr) {
+          let d = dateStr.replace(/-/g, ' ').replace(/\//g, ' ');
+          let parts = d.split(' ');
+          if (parts.length === 3) {
+            let day = parts[0].padStart(2, '0');
+            let month = parts[1].length === 3 ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1,3).toLowerCase() : parts[1].slice(0,3).charAt(0).toUpperCase() + parts[1].slice(1,3).toLowerCase();
+            let year = parts[2].length === 2 ? '20'+parts[2] : parts[2];
+            return `${day} ${month} ${year}`;
+          }
+          return dateStr;
+        }
+        const formattedDrawDate = formatDateDDMMMYYYY(drawDate);
+        console.log(`✅ Found latest completed draw: [${numbers.join(', ')}] for draw date: ${drawDate} (formatted: ${formattedDrawDate})`);
+        return { numbers, drawDate: formattedDrawDate };
       }
     } catch (error) {
       console.log(`❌ Error with ${url}:`, error.message);
@@ -127,16 +140,97 @@ async function comprehensiveLatestAnalysis() {
   // ...function body from updateTotoCSV.cjs...
 }
 function validateTotoNumbers(numbers) {
-  // ...function body from updateTotoCSV.cjs...
+  // Validate that numbers is an array of 7 unique integers between 1 and 49
+  if (!Array.isArray(numbers) || numbers.length !== 7) return false;
+  const unique = new Set(numbers);
+  if (unique.size !== 7) return false;
+  for (const n of numbers) {
+    if (typeof n !== 'number' || n < 1 || n > 49) return false;
+  }
+  return true;
 }
-function isNewerThanCurrent(newNumbers) {
-  // ...function body from updateTotoCSV.cjs...
+function isNewerThanCurrent(newResult) {
+  try {
+    const csvContent = fs.readFileSync(CSV_FILE, 'utf8');
+    const lines = csvContent.trim().split('\n');
+    if (lines.length === 0) return true;
+    const currentFirst = lines[0].split(',');
+    // Extract date and numbers from CSV
+    const currentDateRaw = currentFirst[0].trim();
+    const currentNumbers = currentFirst.slice(1).map(n => parseInt(n.trim()));
+    // Normalize date formats for comparison
+    function normalizeDate(dateStr) {
+      // Accepts DD MMM YYYY, DD-MMM-YY, DD/MM/YYYY, DD-MMM-YYYY, etc.
+      let d = dateStr.replace(/-/g, ' ').replace(/\//g, ' ');
+      let parts = d.split(' ');
+      if (parts.length === 3) {
+        let day = parts[0].padStart(2, '0');
+        let month = parts[1].length === 3 ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1,3).toLowerCase() : parts[1].slice(0,3).charAt(0).toUpperCase() + parts[1].slice(1,3).toLowerCase();
+        let year = parts[2].length === 2 ? '20'+parts[2] : parts[2];
+        return `${day} ${month} ${year}`;
+      }
+      return dateStr;
+    }
+  const currentDate = normalizeDate(currentDateRaw);
+  const newDate = normalizeDate(newResult.drawDate);
+  console.log(`DEBUG: Comparing normalized dates and numbers:`);
+  console.log(`  Current CSV date: '${currentDateRaw}' normalized: '${currentDate}'`);
+  console.log(`  New result date: '${newResult.drawDate}' normalized: '${newDate}'`);
+  console.log(`  Current CSV numbers: [${currentNumbers.join(', ')}]`);
+  console.log(`  New result numbers: [${newResult.numbers.join(', ')}]`);
+  // Compare date and numbers
+  const numbersEqual = arraysEqual(newResult.numbers, currentNumbers);
+  const dateEqual = currentDate === newDate;
+  console.log(`  numbersEqual=${numbersEqual}, dateEqual=${dateEqual}`);
+  return !(numbersEqual && dateEqual);
+  } catch (error) {
+    console.log('❌ Error reading current CSV:', error.message);
+    return true; // If can't read, assume it's newer
+  }
 }
 function arraysEqual(a, b) {
-  // ...function body from updateTotoCSV.cjs...
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 }
 async function updateCSV({ drawDate, numbers }) {
-  // ...function body from updateTotoCSV.cjs...
+  try {
+    console.log(`💾 Updating CSV with new result: [${numbers.join(', ')}] for draw date: ${drawDate}`);
+    let csvContent = '';
+    try {
+      csvContent = fs.readFileSync(CSV_FILE, 'utf8');
+    } catch (error) {
+      console.log('📝 CSV file not found, creating new one');
+    }
+    // Format: DD-MMM-YYYY,number1,number2,...,additional
+    function formatDateDDMMMYYYY(dateStr) {
+      // Accepts DD MMM YYYY, DD/MM/YYYY, etc. and returns DD-MMM-YYYY
+      let d = dateStr.replace(/-/g, ' ').replace(/\//g, ' ');
+      let parts = d.split(' ');
+      if (parts.length === 3) {
+        let day = parts[0].padStart(2, '0');
+        let month = parts[1].length === 3 ? parts[1].toUpperCase() : parts[1].slice(0,3).toUpperCase();
+        let year = parts[2].length === 2 ? '20'+parts[2] : parts[2];
+        return `${day}-${month}-${year}`;
+      }
+      return dateStr;
+    }
+    const formattedDate = formatDateDDMMMYYYY(drawDate);
+    const newLine = `${formattedDate},${numbers.slice(0, 6).join(',')},${numbers[6] || ''}`;
+    const lines = csvContent.trim().split('\n').filter(line => line.trim());
+    // Insert new result at the beginning
+    lines.unshift(newLine);
+    // Write back to file
+    fs.writeFileSync(CSV_FILE, lines.join('\n') + '\n');
+    console.log('✅ CSV updated successfully');
+    console.log(`📊 Total entries: ${lines.length}`);
+  } catch (error) {
+    console.log('❌ Error updating CSV:', error.message);
+    throw error;
+  }
 }
 import fs from 'fs';
 import axios from 'axios';
@@ -151,9 +245,13 @@ async function fetchLatestTotoResult() {
   console.log('🎯 Expected format: Latest TOTO winning numbers');
   // Strategy 1: Enhanced date-based dynamic parsing (primary method)
   const dynamicResult = await fetchLatestByDateAnalysis();
-  if (dynamicResult && dynamicResult.numbers && dynamicResult.numbers.length === 7 && validateTotoNumbers(dynamicResult.numbers)) {
-    console.log(`✅ SUCCESS: Date-based parsing found latest result [${dynamicResult.numbers.join(', ')}] for draw date: ${dynamicResult.drawDate}`);
-    return dynamicResult;
+  if (dynamicResult) {
+    console.log(`DEBUG: dynamicResult.numbers length = ${dynamicResult.numbers ? dynamicResult.numbers.length : 'undefined'}`);
+    console.log(`DEBUG: validateTotoNumbers = ${dynamicResult.numbers ? validateTotoNumbers(dynamicResult.numbers) : 'undefined'}`);
+    if (dynamicResult.numbers && dynamicResult.numbers.length === 7 && validateTotoNumbers(dynamicResult.numbers)) {
+      console.log(`✅ SUCCESS: Date-based parsing found latest result [${dynamicResult.numbers.join(', ')}] for draw date: ${dynamicResult.drawDate}`);
+      return dynamicResult;
+    }
   }
   // Strategy 2: Latest result pattern matching
   console.log('🔄 Date-based failed, trying latest result pattern matching...');
@@ -193,13 +291,13 @@ async function fetchLatestTotoResult() {
       process.exit(0); // Exit successfully but without updates
     }
     console.log(`\n🎯 Latest TOTO result found: [${latestResult.numbers.join(', ')}] for draw date: ${latestResult.drawDate}`);
-    // Check if this is newer than current
-    if (isNewerThanCurrent(latestResult.numbers)) {
-      await updateCSV(latestResult);
-      console.log('✅ SUCCESS: CSV updated with latest TOTO result');
-    } else {
-      console.log('📋 INFO: Result is same as current, no update needed');
-    }
+      // Check if this is newer than current
+      if (isNewerThanCurrent(latestResult)) {
+        await updateCSV(latestResult);
+        console.log('✅ SUCCESS: CSV updated with latest TOTO result');
+      } else {
+        console.log('📋 INFO: Result is same as current, no update needed');
+      }
   } catch (error) {
     console.log('💥 CRITICAL ERROR:', error.message);
     console.log('📋 Stack:', error.stack);
