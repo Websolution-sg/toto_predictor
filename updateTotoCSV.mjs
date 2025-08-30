@@ -109,18 +109,18 @@ async function fetchLatestByDateAnalysis() {
       }
       if (drawDate && numbers.length >= 6) {
         // Format drawDate as DD-MMM-YY for consistency with CSV
-        function formatDateDDMMMYYYY(dateStr) {
+        function formatDateDDMMMYY(dateStr) {
           let d = dateStr.replace(/-/g, ' ').replace(/\//g, ' ');
           let parts = d.split(' ');
           if (parts.length === 3) {
             let day = parts[0].padStart(2, '0');
-            let month = parts[1].length === 3 ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1,3).toLowerCase() : parts[1].slice(0,3).charAt(0).toUpperCase() + parts[1].slice(1,3).toLowerCase();
-            let year = parts[2].length === 2 ? '20'+parts[2] : parts[2];
-            return `${day} ${month} ${year}`;
+            let month = parts[1].length === 3 ? parts[1].toUpperCase() : parts[1].slice(0,3).toUpperCase();
+            let year = parts[2].length === 4 ? parts[2].slice(2) : parts[2];
+            return `${day}-${month}-${year}`;
           }
           return dateStr;
         }
-        const formattedDrawDate = formatDateDDMMMYYYY(drawDate);
+        const formattedDrawDate = formatDateDDMMMYY(drawDate);
         console.log(`✅ Found latest completed draw: [${numbers.join(', ')}] for draw date: ${drawDate} (formatted: ${formattedDrawDate})`);
         return { numbers, drawDate: formattedDrawDate };
       }
@@ -165,9 +165,9 @@ function isNewerThanCurrent(newResult) {
       let parts = d.split(' ');
       if (parts.length === 3) {
         let day = parts[0].padStart(2, '0');
-        let month = parts[1].length === 3 ? parts[1].charAt(0).toUpperCase() + parts[1].slice(1,3).toLowerCase() : parts[1].slice(0,3).charAt(0).toUpperCase() + parts[1].slice(1,3).toLowerCase();
-        let year = parts[2].length === 2 ? '20'+parts[2] : parts[2];
-        return `${day} ${month} ${year}`;
+        let month = parts[1].length === 3 ? parts[1].toUpperCase() : parts[1].slice(0,3).toUpperCase();
+        let year = parts[2].length === 4 ? parts[2].slice(2) : parts[2];
+        return `${day}-${month}-${year}`;
       }
       return dateStr;
     }
@@ -206,19 +206,19 @@ async function updateCSV({ drawDate, numbers }) {
       console.log('📝 CSV file not found, creating new one');
     }
     // Format: DD-MMM-YYYY,number1,number2,...,additional
-    function formatDateDDMMMYYYY(dateStr) {
-      // Accepts DD MMM YYYY, DD/MM/YYYY, etc. and returns DD-MMM-YYYY
+    function formatDateDDMMMYY(dateStr) {
+      // Accepts DD MMM YYYY, DD/MM/YYYY, etc. and returns DD-MMM-YY
       let d = dateStr.replace(/-/g, ' ').replace(/\//g, ' ');
       let parts = d.split(' ');
       if (parts.length === 3) {
         let day = parts[0].padStart(2, '0');
         let month = parts[1].length === 3 ? parts[1].toUpperCase() : parts[1].slice(0,3).toUpperCase();
-        let year = parts[2].length === 2 ? '20'+parts[2] : parts[2];
+        let year = parts[2].length === 4 ? parts[2].slice(2) : parts[2];
         return `${day}-${month}-${year}`;
       }
       return dateStr;
     }
-    const formattedDate = formatDateDDMMMYYYY(drawDate);
+    const formattedDate = formatDateDDMMMYY(drawDate);
     const newLine = `${formattedDate},${numbers.slice(0, 6).join(',')},${numbers[6] || ''}`;
     const lines = csvContent.trim().split('\n').filter(line => line.trim());
     // Insert new result at the beginning
