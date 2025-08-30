@@ -18,96 +18,50 @@ async function fetchLatestByDateAnalysis() {
       }
       const html = response.data;
       const $ = cheerio.load(html);
-      let drawDate = null;
-      let numbers = [];
-      // Find all draw date and result blocks
-      $('table, h2, h3, h4, .drawdate').each((i, el) => {
+      // Scan for all draw dates and their associated numbers
+      let draws = [];
+      let currentDate = null;
+      let currentNumbers = [];
+      let currentAdditional = null;
+      $('*').each((i, el) => {
         const text = $(el).text();
-        const dateMatch = text.match(/(\d{1,2} [A-Za-z]{3} \d{4})/);
+        const dateMatch = text.match(/Draw Date\s*:?\s*(\d{1,2} [A-Za-z]{3} \d{4})/);
         if (dateMatch) {
-          drawDate = dateMatch[1];
+          // If previous draw is complete, save it
+          if (currentDate && currentNumbers.length === 6 && currentAdditional !== null) {
+            draws.push({ date: currentDate, numbers: [...currentNumbers], additional: currentAdditional });
+          }
+          // Start new draw
+          currentDate = dateMatch[1];
+          currentNumbers = [];
+          currentAdditional = null;
+        }
+        // Collect numbers
+        const num = parseInt(text.trim());
+        if (!isNaN(num) && num >= 1 && num <= 49) {
+          if (currentNumbers.length < 6) {
+            currentNumbers.push(num);
+          } else if (currentNumbers.length === 6 && currentAdditional === null) {
+            currentAdditional = num;
+          }
         }
       });
-      // Find numbers in result table
-      let found = false;
-      $('table').each((i, table) => {
-        let mainNumbers = [];
-        let additional = null;
-        let resultDrawDate = null;
-        let rows = $(table).find('tr');
-        for (let rowIdx = 0; rowIdx < rows.length; rowIdx++) {
-          const row = rows[rowIdx];
-          const cells = $(row).find('td');
-          const nums = [];
-          cells.each((cellIdx, td) => {
-            const num = parseInt($(td).text().trim());
-            if (!isNaN(num) && num >= 1 && num <= 49) {
-              nums.push(num);
-            }
-          });
-          // Try to extract draw date from the row or previous sibling or parent
-          const rowText = $(row).text();
-          const dateMatch = rowText.match(/(\d{1,2} [A-Za-z]{3} \d{4})/);
-          if (dateMatch) {
-            resultDrawDate = dateMatch[1];
-          } else if (!resultDrawDate && rowIdx > 0) {
-            const prevRowText = $(rows[rowIdx-1]).text();
-            const prevDateMatch = prevRowText.match(/(\d{1,2} [A-Za-z]{3} \d{4})/);
-            if (prevDateMatch) {
-              resultDrawDate = prevDateMatch[1];
-            }
-          } else if (!resultDrawDate) {
-            // Check parent or header elements
-            const parentText = $(table).parent().text();
-            const parentDateMatch = parentText.match(/(\d{1,2} [A-Za-z]{3} \d{4})/);
-            if (parentDateMatch) {
-              resultDrawDate = parentDateMatch[1];
-            }
-          }
-          if (nums.length === 6 && mainNumbers.length === 0) {
-            mainNumbers = nums;
-          } else if (nums.length === 1 && mainNumbers.length === 6 && additional === null) {
-            additional = nums[0];
-          }
-        }
-        if (mainNumbers.length === 6 && additional !== null && resultDrawDate) {
-          numbers = [...mainNumbers, additional];
-          drawDate = resultDrawDate;
-          found = true;
-        }
-      });
-      // If not found, try to extract from non-table elements
-      if (!found) {
-        // Look for draw date in headers or paragraphs
-        let drawDateText = null;
-        $('h2, h3, h4, p, div').each((i, el) => {
-          const text = $(el).text();
-          const dateMatch = text.match(/(\d{1,2} [A-Za-z]{3} \d{4})/);
-          if (dateMatch) {
-            drawDateText = dateMatch[1];
-          }
-        });
-        // Look for numbers in sequences of 6 followed by 1
-        let nums = [];
-        let addNum = null;
-        let foundSeq = false;
-        $('td').each((i, td) => {
-          const num = parseInt($(td).text().trim());
-          if (!isNaN(num) && num >= 1 && num <= 49) {
-            nums.push(num);
-            if (nums.length === 6) {
-              foundSeq = true;
-            } else if (foundSeq && nums.length === 7) {
-              addNum = nums[6];
-            }
-          }
-        });
-        if (drawDateText && nums.length >= 6 && addNum !== null) {
-          numbers = [...nums.slice(0, 6), addNum];
-          drawDate = drawDateText;
-        }
+      // Save last draw if complete
+      if (currentDate && currentNumbers.length === 6 && currentAdditional !== null) {
+        draws.push({ date: currentDate, numbers: [...currentNumbers], additional: currentAdditional });
       }
-      if (drawDate && numbers.length >= 6) {
+      // Find the most recent draw by date
+      if (draws.length > 0) {
+        // Sort draws by date descending
+        draws.sort((a, b) => {
+          const parseDate = d => {
+            const [day, month, year] = d.date.split(' ');
+            const months = { Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5, Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11 };
+            return new Date(2000 + parseInt(year.slice(-2)), months[month], parseInt(day));
+          };
+          return parseDate(b) - parseDate(a);
+        });
+        const latest = draws[0];
         // Format drawDate as DD-MMM-YY for consistency with CSV
         function formatDateDDMMMYY(dateStr) {
           let d = dateStr.replace(/-/g, ' ').replace(/\//g, ' ');
@@ -120,9 +74,9 @@ async function fetchLatestByDateAnalysis() {
           }
           return dateStr;
         }
-        const formattedDrawDate = formatDateDDMMMYY(drawDate);
-        console.log(`✅ Found latest completed draw: [${numbers.join(', ')}] for draw date: ${drawDate} (formatted: ${formattedDrawDate})`);
-        return { numbers, drawDate: formattedDrawDate };
+        const formattedDrawDate = formatDateDDMMMYY(latest.date);
+        console.log(`✅ Found latest completed draw: [${latest.numbers.join(', ')}] + Additional: ${latest.additional} for draw date: ${latest.date} (formatted: ${formattedDrawDate})`);
+        return { numbers: [...latest.numbers, latest.additional], drawDate: formattedDrawDate };
       }
     } catch (error) {
       console.log(`❌ Error with ${url}:`, error.message);
