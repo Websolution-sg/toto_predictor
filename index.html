@@ -151,10 +151,10 @@ function fetchCsvAndUpdate() {
       historical = text.trim().split('\n').map(line => {
         const parts = line.split(',');
         // If first column looks like a date, use it; else fallback to no date
-        // Accept both 'DD MMM YYYY' and 'DD-MMM-YYYY' formats
-        const datePatternSpace = /\d{1,2} \w{3} \d{4}/;
-        const datePatternDash = /\d{1,2}-\w{3}-\d{4}/;
-        let hasDate = parts.length === 8 && (datePatternSpace.test(parts[0]) || datePatternDash.test(parts[0]));
+  // Accept 'DD MMM YYYY', 'DD-MMM-YYYY', and 'DD-MMM-YY' formats
+  const datePatternSpace = /\d{1,2} \w{3} \d{2,4}/;
+  const datePatternDash = /\d{1,2}-\w{3}-\d{2,4}/;
+  let hasDate = parts.length === 8 && (datePatternSpace.test(parts[0]) || datePatternDash.test(parts[0]));
         if (hasDate) {
           return {
             date: parts[0],
