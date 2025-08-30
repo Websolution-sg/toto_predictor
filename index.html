@@ -151,8 +151,10 @@ function fetchCsvAndUpdate() {
       historical = text.trim().split('\n').map(line => {
         const parts = line.split(',');
         // If first column looks like a date, use it; else fallback to no date
-        const datePattern = /\d{1,2} \w{3} \d{4}/;
-        let hasDate = parts.length === 8 && datePattern.test(parts[0]);
+        // Accept both 'DD MMM YYYY' and 'DD-MMM-YYYY' formats
+        const datePatternSpace = /\d{1,2} \w{3} \d{4}/;
+        const datePatternDash = /\d{1,2}-\w{3}-\d{4}/;
+        let hasDate = parts.length === 8 && (datePatternSpace.test(parts[0]) || datePatternDash.test(parts[0]));
         if (hasDate) {
           return {
             date: parts[0],
@@ -222,10 +224,14 @@ function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
   const resultText = `${winningNumbers.join(',')}(${additionalNumber})`;
   const resultElement = document.getElementById('recentResult');
   let formattedDate = drawDate;
-  // Convert 'DD MMM YYYY' to 'DD-MMM-YYYY' if needed
-  if (drawDate && /^\d{2} \w{3} \d{4}$/.test(drawDate)) {
-    const [day, monthStr, year] = drawDate.split(' ');
-    formattedDate = `${day}-${monthStr}-${year}`;
+  // Convert 'DD MMM YYYY' or 'DD-MMM-YYYY' to display format
+  if (drawDate) {
+    if (/^\d{2} \w{3} \d{4}$/.test(drawDate)) {
+      const [day, monthStr, year] = drawDate.split(' ');
+      formattedDate = `${day}-${monthStr}-${year}`;
+    } else if (/^\d{2}-\w{3}-\d{4}$/.test(drawDate)) {
+      formattedDate = drawDate;
+    }
   }
   if (resultElement) {
     resultElement.textContent = `RECENT RESULT: ${resultText}${formattedDate ? ' - ' + formattedDate : ''}`;
