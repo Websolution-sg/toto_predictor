@@ -87,7 +87,7 @@ jobs:
           echo "🚀 Executing script..."
           
           # Run with error handling
-          if node updateTotoCSV.cjs; then
+          if node updateTotoCSV.mjs; then
             echo "✅ Script completed successfully"
           else
             SCRIPT_EXIT_CODE=$?
