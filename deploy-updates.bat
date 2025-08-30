@@ -2,7 +2,7 @@
 echo Testing GitHub Pages deployment...
 echo.
 echo Current local CSV status:
-type totoResult.csv | findstr /n "." | head -n 3
+powershell -Command "Get-Content totoResult.csv | Select-Object -First 3"
 echo.
 echo Checking git status...
 git status

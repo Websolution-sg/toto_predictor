@@ -4,7 +4,7 @@
 		{
 			"label": "Deploy TOTO Updates",
 			"type": "shell",
-			"command": "deploy-updates.bat",
+			"command": "cmd /c deploy-updates.bat",
 			"group": "build"
 		},
 		{
@@ -22,13 +22,13 @@
 		{
 			"label": "Commit CSV Update",
 			"type": "shell",
-			"command": "git commit -m \"🎯 Update TOTO results: Latest winning numbers 22,25,29,31,34,43,11 (Aug 16, 2025)\"",
+		"command": "git commit -m '🎯 Update TOTO results: Latest winning numbers 22,25,29,31,34,43,11 (Aug 16, 2025)'",
 			"group": "build"
 		},
 		{
 			"label": "Commit Changes",
 			"type": "shell",
-			"command": "git commit -m \"Update TOTO results with latest winning numbers\"",
+			"command": "git commit -m 'Update TOTO results with latest winning numbers'",
 			"group": "build"
 		},
 		{
