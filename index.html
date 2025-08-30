@@ -417,12 +417,12 @@ function runHotColdPrediction() {
   const olderFreq = Array(50).fill(0);
   
   recentDraws.forEach(draw => {
-    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
     pool.forEach(n => recentFreq[n]++);
   });
   
   olderDraws.forEach(draw => {
-    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
     pool.forEach(n => olderFreq[n]++);
   });
   
@@ -458,7 +458,7 @@ function runEnhancedPrediction() {
   draws.forEach((draw, index) => {
     const weight = Math.exp(-index * 0.05); // Recent draws weighted higher
     const recentBonus = index < range * 0.3 ? 2 : 1; // Extra bonus for very recent
-    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
     
     pool.forEach(n => {
       freq[n]++;
@@ -506,7 +506,7 @@ function runWeightedPrediction() {
   
   draws.forEach((draw, index) => {
     const weight = Math.exp(-index * 0.1); // Exponential decay for older draws
-    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
     
     pool.forEach(n => weighted[n] += weight);
     
@@ -548,7 +548,7 @@ function runHotColdPrediction() {
   const compat = Array(50).fill(0);
   
   recent.forEach(draw => {
-    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
     pool.forEach(n => recentFreq[n]++);
   });
   
