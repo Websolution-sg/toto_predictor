@@ -290,7 +290,7 @@ function calculateScoresAndDisplay(numbers, additional = null) {
   const freq = Array(50).fill(0);
   const compat = Array(50).fill(0);
   draws.forEach(draw => {
-    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
     pool.forEach(n => freq[n]++);
     numbers.forEach(b => {
       if (pool.includes(b)) {
@@ -310,7 +310,7 @@ function runFrequencyCompatibilityPrediction() {
   const freq = Array(50).fill(0);
   const compat = Array(50).fill(0);
   draws.forEach(draw => {
-    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
     pool.forEach(n => freq[n]++);
     bases.forEach(b => {
       if (pool.includes(b)) {
@@ -339,7 +339,7 @@ function runEnhancedPrediction() {
   
   draws.forEach((draw, index) => {
     const weight = Math.exp(-index * 0.03); // Recent draws weighted higher
-    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
     
     pool.forEach(n => {
       freq[n]++;
@@ -380,7 +380,7 @@ function runWeightedPrediction() {
   
   draws.forEach((draw, index) => {
     const weight = 1 / (index + 1); // Linear decay
-    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
     
     pool.forEach(n => weighted[n] += weight);
     
