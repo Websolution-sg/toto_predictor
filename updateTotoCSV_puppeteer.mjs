@@ -72,9 +72,15 @@ function updateCSV({ drawDate, numbers }) {
   }
   const newLine = `${drawDate},${numbers.slice(0, 6).join(',')},${numbers[6] || ''}`;
   const lines = csvContent.trim().split('\n').filter(line => line.trim());
-  if (lines[0] && lines[0].startsWith(drawDate)) {
-    console.log('No update needed, latest result already present.');
-    return;
+  // Check for duplicate (date and numbers)
+  if (lines.length > 0) {
+    const [firstDate, ...firstNums] = lines[0].split(',');
+    const isSameDate = firstDate.toUpperCase() === drawDate.toUpperCase();
+    const isSameNumbers = firstNums.map(n => n.trim()).join(',') === numbers.map(n => String(n)).join(',');
+    if (isSameDate && isSameNumbers) {
+      console.log('No update needed, latest result already present.');
+      return;
+    }
   }
   lines.unshift(newLine);
   fs.writeFileSync(CSV_FILE, lines.join('\n') + '\n');
