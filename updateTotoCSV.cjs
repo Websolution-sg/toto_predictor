@@ -1171,8 +1171,14 @@ async function updateCSV(numbers) {
       console.log('📝 CSV file not found, creating new one');
     }
     
-    // Add new result at the beginning
-    const newLine = numbers.slice(0, 6).join(',') + ',' + (numbers[6] || '');
+  // Add new result at the beginning with date
+  const today = new Date();
+  // Format date as 'DD MMM YYYY' (e.g., '25 Aug 2025')
+  const day = String(today.getDate()).padStart(2, '0');
+  const month = today.toLocaleString('en-SG', { month: 'short' });
+  const year = today.getFullYear();
+  const dateStr = `${day} ${month} ${year}`;
+  const newLine = `${dateStr},${numbers.slice(0, 6).join(',')},${numbers[6] || ''}`;
     const lines = csvContent.trim().split('\n').filter(line => line.trim());
     
     // Insert new result at the beginning

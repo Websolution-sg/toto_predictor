@@ -150,15 +150,24 @@ function fetchCsvAndUpdate() {
       }
       historical = text.trim().split('\n').map(line => {
         const parts = line.split(',');
-        if (parts.length !== 8) {
+        // If first column looks like a date, use it; else fallback to no date
+        const datePattern = /\d{1,2} \w{3} \d{4}/;
+        let hasDate = parts.length === 8 && datePattern.test(parts[0]);
+        if (hasDate) {
+          return {
+            date: parts[0],
+            numbers: parts.slice(1, 7).map(Number),
+            additional: Number(parts[7])
+          };
+        } else if (parts.length === 7) {
+          return {
+            date: null,
+            numbers: parts.slice(0, 6).map(Number),
+            additional: Number(parts[6])
+          };
+        } else {
           return null;
         }
-        // parts[0] is draw date, parts[1-6] are numbers, parts[7] is additional
-        return {
-          date: parts[0],
-          numbers: parts.slice(1, 7).map(Number),
-          additional: Number(parts[7])
-        };
       }).filter(line => line !== null);
       if (historical.length === 0) {
         throw new Error('No valid data found in CSV');
