@@ -1,6 +1,6 @@
-const fs = require('fs');
-const axios = require('axios');
-const cheerio = require('cheerio');
+import fs from 'fs';
+import axios from 'axios';
+import cheerio from 'cheerio';
 
 const CSV_FILE = 'totoResult.csv';
 
@@ -12,10 +12,11 @@ async function fetchLatestTotoResult() {
   
   // Strategy 1: Enhanced date-based dynamic parsing (primary method)
   const dynamicResult = await fetchLatestByDateAnalysis();
-  if (dynamicResult && dynamicResult.length === 7 && validateTotoNumbers(dynamicResult)) {
-    console.log(`✅ SUCCESS: Date-based parsing found latest result [${dynamicResult.join(', ')}]`);
+  if (dynamicResult && dynamicResult.numbers && dynamicResult.numbers.length === 7 && validateTotoNumbers(dynamicResult.numbers)) {
+    console.log(`✅ SUCCESS: Date-based parsing found latest result [${dynamicResult.numbers.join(', ')}] for draw date: ${dynamicResult.drawDate}`);
     return dynamicResult;
   }
+}
   
   // Strategy 2: Latest result pattern matching
   console.log('🔄 Date-based failed, trying latest result pattern matching...');
@@ -39,10 +40,7 @@ async function fetchLatestTotoResult() {
   if (contentResult && contentResult.length === 7 && validateTotoNumbers(contentResult)) {
     console.log(`✅ SUCCESS: Comprehensive analysis found latest result [${contentResult.join(', ')}]`);
     return contentResult;
-  }
-  
-  // If all dynamic methods fail, return null (no hardcoded fallback)
-  console.log('❌ All dynamic parsing strategies failed to find latest result');
+  // ...existing code...
   console.log('📋 Returning null - no hardcoded values used');
   return null;
 }
@@ -69,11 +67,10 @@ async function fetchLatestByDateAnalysis() {
       }
       
       const html = response.data;
-      const result = parseLatestResultByMostRecentDate(html);
-      
-      if (result) {
-        console.log(`✅ Found latest result by date analysis: [${result.join(', ')}]`);
-        return result;
+      const { numbers, drawDate } = parseLatestResultByMostRecentDate(html) || {};
+      if (numbers && drawDate) {
+        console.log(`✅ Found latest result by date analysis: [${numbers.join(', ')}] for draw date: ${drawDate}`);
+        return { numbers, drawDate };
       }
       
     } catch (error) {
@@ -84,12 +81,6 @@ async function fetchLatestByDateAnalysis() {
   return null;
 }
 
-// Parse HTML to find the most recent TOTO result by date
-function parseLatestResultByMostRecentDate(html) {
-  const $ = cheerio.load(html);
-  console.log('🔍 ENHANCED DYNAMIC PARSING - Latest TOTO results detection...');
-  
-  let bestResult = null;
   let highestConfidence = 0;
   const allCandidates = [];
   
@@ -335,9 +326,8 @@ function parseLatestResultByMostRecentDate(html) {
       }
     }
     
-    console.log(`\n✅ SELECTED RESULT: [${bestResult.join(',')}] with confidence ${highestConfidence}`);
-    return bestResult;
-  }
+  console.log(`\n✅ SELECTED RESULT: [${bestResult.join(',')}] with confidence ${highestConfidence}`);
+  return { numbers: bestResult, drawDate };
   
   console.log('❌ No valid TOTO results found in any parsing strategy');
   return null;
@@ -1158,33 +1148,21 @@ function arraysEqual(a, b) {
 }
 
 // Update CSV with new result
-async function updateCSV(numbers) {
+async function updateCSV({ drawDate, numbers }) {
   try {
-    console.log(`💾 Updating CSV with new result: [${numbers.join(', ')}]`);
-    
+    console.log(`💾 Updating CSV with new result: [${numbers.join(', ')}] for draw date: ${drawDate}`);
     let csvContent = '';
-    
-    // Read existing content
     try {
       csvContent = fs.readFileSync(CSV_FILE, 'utf8');
     } catch (error) {
       console.log('📝 CSV file not found, creating new one');
     }
-    
-  // Fetch and update with date in the first column
-  // drawDate should be passed in from the result parsing logic
-  const newLine = `${drawDate},${numbers.slice(0, 6).join(',')},${numbers[6] || ''}`;
+    const newLine = `${drawDate},${numbers.slice(0, 6).join(',')},${numbers[6] || ''}`;
     const lines = csvContent.trim().split('\n').filter(line => line.trim());
-    
-    // Insert new result at the beginning
     lines.unshift(newLine);
-    
-    // Write back to file
     fs.writeFileSync(CSV_FILE, lines.join('\n') + '\n');
-    
     console.log('✅ CSV updated successfully');
     console.log(`📊 Total entries: ${lines.length}`);
-    
   } catch (error) {
     console.log('❌ Error updating CSV:', error.message);
     throw error;
@@ -1197,19 +1175,16 @@ async function updateCSV(numbers) {
     console.log('🎯 Starting FULLY DYNAMIC TOTO result fetching...');
     console.log('📋 NO hardcoded values - purely dynamic parsing\n');
     
-    const latestNumbers = await fetchLatestTotoResult();
-    
-    if (!latestNumbers) {
+    const latestResult = await fetchLatestTotoResult();
+    if (!latestResult || !latestResult.numbers || !latestResult.drawDate) {
       console.log('❌ RESULT: No latest TOTO result found through dynamic parsing');
       console.log('📋 CSV will remain unchanged (no hardcoded fallback)');
       process.exit(0); // Exit successfully but without updates
     }
-    
-    console.log(`\n🎯 Latest TOTO result found: [${latestNumbers.join(', ')}]`);
-    
+    console.log(`\n🎯 Latest TOTO result found: [${latestResult.numbers.join(', ')}] for draw date: ${latestResult.drawDate}`);
     // Check if this is newer than current
-    if (isNewerThanCurrent(latestNumbers)) {
-      await updateCSV(latestNumbers);
+    if (isNewerThanCurrent(latestResult.numbers)) {
+      await updateCSV(latestResult);
       console.log('✅ SUCCESS: CSV updated with latest TOTO result');
     } else {
       console.log('📋 INFO: Result is same as current, no update needed');
