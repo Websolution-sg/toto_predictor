@@ -149,11 +149,16 @@ function fetchCsvAndUpdate() {
         throw new Error('CSV file is empty');
       }
       historical = text.trim().split('\n').map(line => {
-        const numbers = line.split(',').map(Number);
-        if (numbers.length !== 7) {
+        const parts = line.split(',');
+        if (parts.length !== 8) {
           return null;
         }
-        return numbers;
+        // parts[0] is draw date, parts[1-6] are numbers, parts[7] is additional
+        return {
+          date: parts[0],
+          numbers: parts.slice(1, 7).map(Number),
+          additional: Number(parts[7])
+        };
       }).filter(line => line !== null);
       if (historical.length === 0) {
         throw new Error('No valid data found in CSV');
@@ -171,13 +176,11 @@ function fetchCsvAndUpdate() {
       }
       const recent = historical[0];
       ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
-        document.getElementById(id).value = recent[idx];
+        document.getElementById(id).value = recent.numbers[idx];
       });
-      document.getElementById('additional').value = recent[6];
+      document.getElementById('additional').value = recent.additional;
       document.getElementById('includeAdd').checked = false;
-      const today = new Date();
-      const dateStr = today.toLocaleDateString('en-SG', { day: '2-digit', month: '2-digit', year: 'numeric' });
-      updateLatestResult(recent.slice(0, 6), recent[6], dateStr);
+      updateLatestResult(recent.numbers, recent.additional, recent.date);
       // Enable prediction button
       const predictBtn = document.querySelector('button[onclick="predict()"]');
       if (predictBtn) predictBtn.disabled = false;
