@@ -221,8 +221,14 @@ setInterval(fetchCsvAndUpdate, AUTO_REFRESH_INTERVAL);
 function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
   const resultText = `${winningNumbers.join(',')}(${additionalNumber})`;
   const resultElement = document.getElementById('recentResult');
+  let formattedDate = drawDate;
+  // Convert 'DD MMM YYYY' to 'DD-MMM-YYYY' if needed
+  if (drawDate && /^\d{2} \w{3} \d{4}$/.test(drawDate)) {
+    const [day, monthStr, year] = drawDate.split(' ');
+    formattedDate = `${day}-${monthStr}-${year}`;
+  }
   if (resultElement) {
-    resultElement.textContent = `RECENT RESULT: ${resultText}${drawDate ? ' - ' + drawDate : ''}`;
+    resultElement.textContent = `RECENT RESULT: ${resultText}${formattedDate ? ' - ' + formattedDate : ''}`;
   }
 }
 
