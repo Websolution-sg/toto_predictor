@@ -236,7 +236,8 @@ import fs from 'fs';
 import axios from 'axios';
 import cheerio from 'cheerio';
 
-const CSV_FILE = 'totoResult.csv';
+// Use absolute path for local CSV file
+const CSV_FILE = 'd:/Timothy/Toto Predictor/Repository/toto_predictor/totoResult.csv';
 
 // FULLY DYNAMIC TOTO result fetching - NO HARDCODED VALUES - DATE-BASED LATEST DETECTION
 async function fetchLatestTotoResult() {
