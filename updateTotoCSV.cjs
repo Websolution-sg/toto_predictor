@@ -1171,9 +1171,9 @@ async function updateCSV(numbers) {
       console.log('📝 CSV file not found, creating new one');
     }
     
-  // Only fetch and update numbers, do not write a new date
-  // If you want to update the date, do it manually in the CSV
-  const newLine = `${numbers.slice(0, 6).join(',')},${numbers[6] || ''}`;
+  // Fetch and update with date in the first column
+  // drawDate should be passed in from the result parsing logic
+  const newLine = `${drawDate},${numbers.slice(0, 6).join(',')},${numbers[6] || ''}`;
     const lines = csvContent.trim().split('\n').filter(line => line.trim());
     
     // Insert new result at the beginning
