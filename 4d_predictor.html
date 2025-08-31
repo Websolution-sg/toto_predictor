@@ -337,10 +337,24 @@
 
   <h2>Results</h2>
   <div id="results"></div>
+  <button id="showLatest4DBtn" style="margin-top:20px;">Show Latest 4D Result (Console)</button>
   <div id="analytics" style="margin-top: 20px;"></div>
   <canvas id="freqChart"></canvas>
 
 <script>
+// Button to show all details of the latest 4D result in the console
+document.addEventListener('DOMContentLoaded', function() {
+  const btn = document.getElementById('showLatest4DBtn');
+  if (btn) {
+    btn.onclick = function() {
+      if (window.historical4D && window.historical4D.length > 0) {
+        console.log('Latest 4D Result:', window.historical4D[0]);
+      } else {
+        console.warn('No 4D results loaded yet.');
+      }
+    };
+  }
+});
 // Fallback/guaranteed auto-refresh using Client4DFetcher (every 5 minutes)
 document.addEventListener('DOMContentLoaded', function() {
   if (window.Client4DFetcher) {
