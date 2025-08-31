@@ -350,6 +350,7 @@ function runFrequencyCompatibilityPrediction() {
   const range = parseInt(document.getElementById('drawRange').value);
   const includeAdd = document.getElementById('includeAdd').checked;
   const draws = historical.slice(0, range);
+  console.log('Debug: Draws used for Frequency+Compatibility Prediction:', draws.length);
   const freq = Array(50).fill(0);
   const compat = Array(50).fill(0);
   draws.forEach(draw => {
@@ -375,6 +376,7 @@ function runEnhancedPrediction() {
   const range = parseInt(document.getElementById('drawRange').value);
   const includeAdd = document.getElementById('includeAdd').checked;
   const draws = historical.slice(0, range);
+  console.log('Debug: Draws used for Enhanced Prediction:', draws.length);
   console.log('Draws used for Enhanced Prediction:', draws.length);
   
   const freq = Array(50).fill(0);
@@ -418,6 +420,7 @@ function runWeightedPrediction() {
   const range = parseInt(document.getElementById('drawRange').value);
   const includeAdd = document.getElementById('includeAdd').checked;
   const draws = historical.slice(0, range);
+  console.log('Debug: Draws used for Weighted Prediction:', draws.length);
   console.log('Draws used for Frequency+Compatibility Prediction:', draws.length);
   
   const weighted = Array(50).fill(0);
