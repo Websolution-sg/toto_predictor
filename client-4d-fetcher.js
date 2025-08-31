@@ -196,65 +196,51 @@ class Client4DFetcher {
     if (numbers.length >= 3) {
       result.first = numbers[0];
       result.second = numbers[1];
-      result.third = numbers[2];
-    }
-  }
-
-  /**
-   * Extract numbers from table (for starter/consolation)
-   */
-  extractNumbers(table, maxCount = 10) {
-    const numbers = [];
-    const cells = table.querySelectorAll('td, th');
-    
-    cells.forEach(cell => {
-      const text = (cell.textContent || '').trim();
-      if (/^\d{4}$/.test(text) && numbers.length < maxCount) {
-        numbers.push(text);
-      }
-    });
-    
-    // Ensure we have exactly the expected count
-    while (numbers.length < maxCount) {
-      numbers.push('0000');
-    }
-    
-    return numbers.slice(0, maxCount);
-  }
-
-  /**
-   * Update CSV file with new results
-   */
-  async updateCSV(newResults) {
-    try {
-      // Read existing CSV
-      const csvResponse = await fetch(this.csvPath + '?nocache=' + Date.now());
-      let csvContent = '';
-      
-      if (csvResponse.ok) {
-        csvContent = await csvResponse.text();
-      }
-      
-      const lines = csvContent.trim().split('\n');
-      const header = lines[0] || 'Draw,Date,1st,2nd,3rd,starter1,starter2,starter3,starter4,starter5,starter6,starter7,starter8,starter9,starter10,consolation1,consolation2,consolation3,consolation4,consolation5,consolation6,consolation7,consolation8,consolation9,consolation10';
-      
-      // Get existing data
-      const existingData = lines.slice(1).map(line => {
-        const values = line.split(',');
-        return parseInt(values[0]);
-      });
-      
-      // Add new results that don't exist
-      const newLines = [];
-      newResults.forEach(result => {
-        if (!existingData.includes(result.draw)) {
-          const line = [
-            result.draw,
-            result.date,
-            result.first || '0000',
-            result.second || '0000',
-            result.third || '0000',
-            ...result.starter,
+      const results = [];
+      try {
+        // Custom parsing for Singapore Pools 4D results page
+        // Find draw date and draw number
+        const mainContent = doc.body ? doc.body.innerHTML : '';
+        // Find date like "Sun, 31 Aug 2025" or "Sunday, 31 August 2025"
+        const dateRegex = /(Sun|Mon|Tue|Wed|Thu|Fri|Sat)[a-z]*,?\s*(\d{1,2})\s*(\w+)\s*(\d{4})/i;
+        const dateMatch = mainContent.match(dateRegex);
+        let drawDate = null;
+        if (dateMatch) {
+          const day = dateMatch[2].padStart(2, '0');
+          const monthStr = dateMatch[3].toLowerCase();
+          const year = dateMatch[4];
+          const monthNames = {
+            'january': '01', 'february': '02', 'march': '03', 'april': '04',
+            'may': '05', 'june': '06', 'july': '07', 'august': '08',
+            'september': '09', 'october': '10', 'november': '11', 'december': '12',
+            'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04', 'jun': '06', 'jul': '07', 'aug': '08', 'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
+          };
+          const month = monthNames[monthStr] || '01';
+          drawDate = `${year}-${month}-${day}`;
+        }
+        // Find draw number (4 digits)
+        const drawNoRegex = /Draw\s*No\.?\s*(\d{4})/i;
+        const drawNoMatch = mainContent.match(drawNoRegex);
+        let drawNo = drawNoMatch ? parseInt(drawNoMatch[1]) : null;
+        // Find all 4-digit numbers (prizes)
+        const numberRegex = /\b\d{4}\b/g;
+        const allNumbers = mainContent.match(numberRegex) || [];
+        // Assign prizes
+        const result = {
+          draw: drawNo,
+          date: drawDate,
+          first: allNumbers[0] || null,
+          second: allNumbers[1] || null,
+          third: allNumbers[2] || null,
+          starter: allNumbers.slice(3, 13),
+          consolation: allNumbers.slice(13, 23)
+        };
+        // Only push if draw number and date found
+        if (result.draw && result.date && result.first) {
+          results.push(result);
+        }
+        console.log(`Parsed ${results.length} complete results`, results);
+        return results;
             ...result.consolation
           ].join(',');
           newLines.push(line);
