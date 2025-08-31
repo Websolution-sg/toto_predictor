@@ -148,18 +148,16 @@ function fetchCsvAndUpdate() {
       if (!text.trim()) {
         throw new Error('CSV file is empty');
       }
+      let unrecognizedDates = [];
       historical = text.trim().split('\n').map(line => {
         const parts = line.split(',');
-        // If first column looks like a date, use it; else fallback to no date
-  // Accept 'DD MMM YYYY', 'DD-MMM-YYYY', 'DD-MMM-YY', and 'DD-MMM-YY' formats (case-insensitive)
-  const datePatternSpace = /\d{1,2} \w{3} \d{2,4}/i;
-  const datePatternDash = /\d{1,2}-\w{3}-\d{2,4}/i;
-  const datePatternShortDash = /\d{1,2}-\w{3}-\d{2}/i;
-  let hasDate = parts.length === 8 && (
-    datePatternSpace.test(parts[0]) ||
-    datePatternDash.test(parts[0]) ||
-    datePatternShortDash.test(parts[0])
-  );
+        // Accept 'DD MMM YYYY', 'DD-MMM-YYYY', 'DD-MMM-YY', 'DD-MMMM-YY', etc.
+        const datePatternSpace = /\d{1,2} \w{3,9} \d{2,4}/i;
+        const datePatternDash = /\d{1,2}-\w{3,9}-\d{2,4}/i;
+        let hasDate = parts.length === 8 && (
+          datePatternSpace.test(parts[0]) ||
+          datePatternDash.test(parts[0])
+        );
         if (hasDate) {
           return {
             date: parts[0],
@@ -173,9 +171,14 @@ function fetchCsvAndUpdate() {
             additional: Number(parts[6])
           };
         } else {
+          if (parts[0]) unrecognizedDates.push(parts[0]);
           return null;
         }
       }).filter(line => line !== null);
+      console.log('Debug: Parsed dates:', historical.map(d => d.date));
+      if (unrecognizedDates.length > 0) {
+        console.warn('Unrecognized date formats:', unrecognizedDates);
+      }
 
             // Normalize to newest-first if CSV is oldest-first
       function _parseDateForOrder(s) {
