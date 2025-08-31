@@ -151,10 +151,15 @@ function fetchCsvAndUpdate() {
       historical = text.trim().split('\n').map(line => {
         const parts = line.split(',');
         // If first column looks like a date, use it; else fallback to no date
-  // Accept 'DD MMM YYYY', 'DD-MMM-YYYY', and 'DD-MMM-YY' formats
-  const datePatternSpace = /\d{1,2} \w{3} \d{2,4}/;
-  const datePatternDash = /\d{1,2}-\w{3}-\d{2,4}/;
-  let hasDate = parts.length === 8 && (datePatternSpace.test(parts[0]) || datePatternDash.test(parts[0]));
+  // Accept 'DD MMM YYYY', 'DD-MMM-YYYY', 'DD-MMM-YY', and 'DD-MMM-YY' formats (case-insensitive)
+  const datePatternSpace = /\d{1,2} \w{3} \d{2,4}/i;
+  const datePatternDash = /\d{1,2}-\w{3}-\d{2,4}/i;
+  const datePatternShortDash = /\d{1,2}-\w{3}-\d{2}/i;
+  let hasDate = parts.length === 8 && (
+    datePatternSpace.test(parts[0]) ||
+    datePatternDash.test(parts[0]) ||
+    datePatternShortDash.test(parts[0])
+  );
         if (hasDate) {
           return {
             date: parts[0],
@@ -175,13 +180,34 @@ function fetchCsvAndUpdate() {
             // Normalize to newest-first if CSV is oldest-first
       function _parseDateForOrder(s) {
         if (!s) return null;
-        const m = s.match(/^(\d{1,2})(?:-| )(\w{3})(?:-| )(\d{2,4})$/);
+        // Accept 'DD-MMM-YY', 'DD-MMM-YYYY', 'DD MMM YYYY', 'DD MMM YY'
+        // Accept 'DD-MMM-YY', 'DD-MMMM-YY', 'DD MMM YYYY', 'DD MMMM YYYY', etc.
+        const m = s.match(/^(\d{1,2})(?:-| )([A-Za-z]{3,9})(?:-| )(\d{2,4})$/i);
         if (!m) return null;
         const day = +m[1];
-        const mon = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEPT",
-                     "OCT","NOV","DEC"].indexOf(m[2].toUpperCase());
-        const yr = +m[3];
-        const year = yr < 100 ? 2000 + yr : yr;
+        let monthStr = m[2].toUpperCase();
+        // Normalize common variants
+        const monthMap = {
+          'JAN':0, 'JANUARY':0,
+          'FEB':1, 'FEBRUARY':1,
+          'MAR':2, 'MARCH':2,
+          'APR':3, 'APRIL':3,
+          'MAY':4,
+          'JUN':5, 'JUNE':5,
+          'JUL':6, 'JULY':6,
+          'AUG':7, 'AUGUST':7,
+          'SEP':8, 'SEPT':8, 'SEPTEMBER':8,
+          'OCT':9, 'OCTOBER':9,
+          'NOV':10, 'NOVEMBER':10,
+          'DEC':11, 'DECEMBER':11
+        };
+        const mon = monthMap[monthStr] !== undefined ? monthMap[monthStr] : -1;
+        let yr = m[3];
+        let year = parseInt(yr, 10);
+        if (yr.length === 2) {
+          year = year < 50 ? 2000 + year : 1900 + year;
+        }
+        if (mon === -1) return null;
         return new Date(year, mon, day);
       }
       const _dates = historical.map(d => d.date ? _parseDateForOrder(d.date) : null).filter(Boolean);
