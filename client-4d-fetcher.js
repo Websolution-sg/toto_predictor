@@ -29,8 +29,9 @@ class Client4DFetcher {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      const html = await response.text();
-      console.log('📄 Page content retrieved, parsing results...');
+  const html = await response.text();
+  console.log('📄 Raw HTML fetched for 4D results:', html);
+  console.log('📄 Page content retrieved, parsing results...');
       
       // Parse the HTML to extract 4D results
       const parser = new DOMParser();
