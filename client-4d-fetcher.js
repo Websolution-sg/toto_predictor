@@ -241,11 +241,6 @@ class Client4DFetcher {
         }
         console.log(`Parsed ${results.length} complete results`, results);
         return results;
-            ...result.consolation
-          ].join(',');
-          newLines.push(line);
-        }
-      });
       
       if (newLines.length > 0) {
         const updatedCSV = [header, ...newLines, ...lines.slice(1)].join('\n');
@@ -294,8 +289,8 @@ class Client4DFetcher {
 }
 
 // Export for use
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = Client4DFetcher;
-} else {
+if (typeof window !== 'undefined') {
   window.Client4DFetcher = Client4DFetcher;
+} else if (typeof module !== 'undefined' && module.exports) {
+  module.exports = Client4DFetcher;
 }
