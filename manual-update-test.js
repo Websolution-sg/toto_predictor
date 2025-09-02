@@ -1,11 +1,10 @@
 // Minimal script to test and fix the TOTO fetching issue
 const fs = require('fs');
-
-console.log('🔧 MINIMAL TOTO UPDATE TEST');
-console.log('='.repeat(50));
-
-// Fetch latest TOTO results from Singapore Pools
 const https = require('https');
+const cheerio = require('cheerio');
+
+console.log('🔧 CHEERIO TOTO UPDATE TEST');
+console.log('='.repeat(50));
 
 function arraysEqual(a, b) {
   return a.length === b.length && a.every((val, i) => val === b[i]);
@@ -17,44 +16,32 @@ function fetchLatestTotoResults(callback) {
     let data = '';
     res.on('data', chunk => data += chunk);
     res.on('end', () => {
-      // Enhanced extraction: Find block of 6 two-digit numbers followed by a single two-digit number (additional)
-      let latestResult = [];
+      const $ = cheerio.load(data);
+      // Find draw date (look for text like '01 Sep 2025' or similar)
       let drawDate = null;
-      // Find all blocks of 6 two-digit numbers followed by a single two-digit number
-      const blockRegex = /((?:\b\d{2}\b[\s|\n|\r]+){6})(\b\d{2}\b)/g;
-      let blockMatch;
-      let foundBlock = null;
-      while ((blockMatch = blockRegex.exec(data)) !== null) {
-        // Get the 6 numbers and the additional
-        const sixNumbers = blockMatch[1].match(/\b\d{2}\b/g);
-        const additional = blockMatch[2];
-        if (sixNumbers && sixNumbers.length === 6 && additional) {
-          foundBlock = {numbers: sixNumbers.map(Number).concat(Number(additional)), index: blockMatch.index};
-          break;
-        }
+      let dateText = $('body').text().match(/\b\d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4}\b/i);
+      if (dateText) {
+        // Convert to CSV format: 01-Sep-25
+        const parts = dateText[0].split(' ');
+        drawDate = `${parts[0]}-${parts[1]}-${parts[2].slice(-2)}`;
       }
-      if (foundBlock) {
-        latestResult = foundBlock.numbers;
-        // Try to find the draw date near the block
-        const context = data.slice(Math.max(0, foundBlock.index - 200), foundBlock.index + 200);
-        // Dash format
-        const dashDateRegex = /(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{2})/i;
-        const dashDateMatch = context.match(dashDateRegex);
-        if (dashDateMatch) {
-          drawDate = `${dashDateMatch[1]}-${dashDateMatch[2]}-${dashDateMatch[3]}`;
-        } else {
-          // Space format
-          const spaceDateRegex = /(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(2025)/i;
-          const spaceDateMatch = context.match(spaceDateRegex);
-          if (spaceDateMatch) {
-            const monthMap = {
-              'January':'Jan','February':'Feb','March':'Mar','April':'Apr','May':'May','June':'Jun','July':'Jul','August':'Aug','September':'Sep','October':'Oct','November':'Nov','December':'Dec'
-            };
-            drawDate = `${spaceDateMatch[1]}-${monthMap[spaceDateMatch[2]]}-25`;
-          }
+      // Find all blocks of 6 numbers followed by 1 additional number
+      let numbers = [];
+      // Try to find the first block of 6 numbers and 1 additional
+      const numberBlocks = [];
+      $('body').find('*').each(function() {
+        const txt = $(this).text().trim();
+        // Match 6 numbers separated by spaces/tabs/newlines, then 1 more
+        const blockMatch = txt.match(/(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})\b/);
+        if (blockMatch) {
+          numberBlocks.push(blockMatch);
         }
+      });
+      if (numberBlocks.length > 0) {
+        // Use the first block found
+        numbers = numberBlocks[0].slice(1,8).map(Number);
       }
-      callback({numbers: latestResult, date: drawDate});
+      callback({numbers, date: drawDate});
     });
   }).on('error', (err) => {
     console.error('Error fetching TOTO results:', err);
