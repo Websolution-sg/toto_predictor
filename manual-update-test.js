@@ -17,6 +17,23 @@ function fetchLatestTotoResults(callback) {
     let data = '';
     res.on('data', chunk => data += chunk);
     res.on('end', () => {
+      // Extract draw date (e.g., 28-Aug-25 or similar)
+      const dateRegex = /(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\d{2}/i;
+      let drawDate = null;
+      const dateMatch = data.match(dateRegex);
+      if (dateMatch) {
+        drawDate = `${dateMatch[1]}-${dateMatch[2]}-25`;
+      } else {
+        // Try alternative format (e.g., 28 August 2025)
+        const altDateRegex = /(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(2025)/i;
+        const altDateMatch = data.match(altDateRegex);
+        if (altDateMatch) {
+          const monthMap = {
+            'January':'Jan','February':'Feb','March':'Mar','April':'Apr','May':'May','June':'Jun','July':'Jul','August':'Aug','September':'Sep','October':'Oct','November':'Nov','December':'Dec'
+          };
+          drawDate = `${altDateMatch[1]}-${monthMap[altDateMatch[2]]}-25`;
+        }
+      }
       // Extract 7 winning numbers from HTML
       const numberRegex = /\b\d{2}\b/g;
       const matches = data.match(numberRegex);
@@ -28,11 +45,11 @@ function fetchLatestTotoResults(callback) {
           if (!latestResult.includes(num)) latestResult.push(num);
         }
       }
-      callback(latestResult);
+      callback({numbers: latestResult, date: drawDate});
     });
   }).on('error', (err) => {
     console.error('Error fetching TOTO results:', err);
-    callback([]);
+    callback({numbers: [], date: null});
   });
 }
 
@@ -41,17 +58,20 @@ const csvContent = fs.readFileSync('totoResult.csv', 'utf8');
 const lines = csvContent.trim().split('\n');
 const currentTop = lines[0].split(',').map(n => parseInt(n.trim()));
 
-fetchLatestTotoResults((latestResult) => {
-  console.log(`🎯 Latest result from Singapore Pools: [${latestResult.join(', ')}]`);
+fetchLatestTotoResults((latest) => {
+  console.log(`🎯 Latest result from Singapore Pools: [${latest.numbers.join(', ')}]`);
+  console.log(`📅 Draw date: ${latest.date}`);
   console.log(`📊 Current CSV top entry: [${currentTop.join(', ')}]`);
-  if (latestResult.length === 7 && !arraysEqual(latestResult, currentTop)) {
+  // Compare only numbers for update
+  if (latest.numbers.length === 7 && !arraysEqual(latest.numbers, currentTop.slice(-7))) {
     console.log('🔄 Results differ - updating CSV...');
-    // Add new result to top
-    const newLines = [`${latestResult.join(',')}`, ...lines];
+    // Add new result to top, with date if available
+    let newLine = latest.date ? `${latest.date},${latest.numbers.join(',')}` : latest.numbers.join(',');
+    const newLines = [newLine, ...lines];
     fs.writeFileSync('totoResult.csv', newLines.join('\n'));
     console.log('✅ CSV updated successfully!');
-    console.log(`📈 New top entry: [${latestResult.join(', ')}]`);
-  } else if (latestResult.length === 7) {
+    console.log(`📈 New top entry: [${newLine}]`);
+  } else if (latest.numbers.length === 7) {
     console.log('ℹ️ Results are the same - no update needed');
   } else {
     console.log('❌ Could not fetch valid latest result');
