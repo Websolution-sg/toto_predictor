@@ -25,27 +25,38 @@ function fetchLatestTotoResults(callback) {
         const parts = dateText[0].split(' ');
         drawDate = `${parts[0]}-${parts[1]}-${parts[2].slice(-2)}`;
       }
-      // Find all blocks of 6 numbers followed by 1 additional number
+      // Target 'Winning Numbers' and 'Additional Number' blocks only
       let numbers = [];
-      // Try to find all blocks and print debug info
-      const numberBlocks = [];
+      let foundWinning = false;
+      let foundAdditional = false;
+      let winningNums = [];
+      let additionalNum = null;
       $('body').find('*').each(function() {
         const txt = $(this).text().trim();
-        // Match 6 numbers separated by spaces/tabs/newlines, then 1 more
-        const blockMatch = txt.match(/(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})\b/);
-        if (blockMatch) {
-          numberBlocks.push(blockMatch);
-          console.log('DEBUG: Found number block:', txt);
+        if (txt === 'Winning Numbers' || txt === '开奖号码') {
+          foundWinning = true;
+          winningNums = [];
+          return;
         }
-        // Also print any date candidates
-        const dateCandidate = txt.match(/\b\d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4}\b/i);
-        if (dateCandidate) {
-          console.log('DEBUG: Found date candidate:', dateCandidate[0], '| In block:', txt);
+        if (foundWinning && winningNums.length < 6 && /^\d{1,2}$/.test(txt)) {
+          winningNums.push(Number(txt));
+          if (winningNums.length === 6) {
+            foundWinning = false;
+            foundAdditional = true;
+          }
+          return;
+        }
+        if ((txt === 'Additional Number' || txt === '额外号码') && !additionalNum) {
+          foundAdditional = true;
+          return;
+        }
+        if (foundAdditional && additionalNum === null && /^\d{1,2}$/.test(txt)) {
+          additionalNum = Number(txt);
+          foundAdditional = false;
         }
       });
-      if (numberBlocks.length > 0) {
-        // Use the first block found
-        numbers = numberBlocks[0].slice(1,8).map(Number);
+      if (winningNums.length === 6 && additionalNum !== null) {
+        numbers = winningNums.concat(additionalNum);
       }
       callback({numbers, date: drawDate});
     });
