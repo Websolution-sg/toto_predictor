@@ -17,33 +17,41 @@ function fetchLatestTotoResults(callback) {
     let data = '';
     res.on('data', chunk => data += chunk);
     res.on('end', () => {
-      // Extract draw date (e.g., 28-Aug-25 or 28 August 2025)
+      // Enhanced extraction: Find block of 6 two-digit numbers followed by a single two-digit number (additional)
+      let latestResult = [];
       let drawDate = null;
-      // Try dash format first
-      const dashDateRegex = /(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{2})/i;
-      const dashDateMatch = data.match(dashDateRegex);
-      if (dashDateMatch) {
-        drawDate = `${dashDateMatch[1]}-${dashDateMatch[2]}-${dashDateMatch[3]}`;
-      } else {
-        // Try space format (e.g., 28 August 2025)
-        const spaceDateRegex = /(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(2025)/i;
-        const spaceDateMatch = data.match(spaceDateRegex);
-        if (spaceDateMatch) {
-          const monthMap = {
-            'January':'Jan','February':'Feb','March':'Mar','April':'Apr','May':'May','June':'Jun','July':'Jul','August':'Aug','September':'Sep','October':'Oct','November':'Nov','December':'Dec'
-          };
-          drawDate = `${spaceDateMatch[1]}-${monthMap[spaceDateMatch[2]]}-25`;
+      // Find all blocks of 6 two-digit numbers followed by a single two-digit number
+      const blockRegex = /((?:\b\d{2}\b[\s|\n|\r]+){6})(\b\d{2}\b)/g;
+      let blockMatch;
+      let foundBlock = null;
+      while ((blockMatch = blockRegex.exec(data)) !== null) {
+        // Get the 6 numbers and the additional
+        const sixNumbers = blockMatch[1].match(/\b\d{2}\b/g);
+        const additional = blockMatch[2];
+        if (sixNumbers && sixNumbers.length === 6 && additional) {
+          foundBlock = {numbers: sixNumbers.map(Number).concat(Number(additional)), index: blockMatch.index};
+          break;
         }
       }
-      // Extract 7 winning numbers from HTML
-      const numberRegex = /\b\d{2}\b/g;
-      const matches = data.match(numberRegex);
-      // Find the first 7 unique two-digit numbers
-      let latestResult = [];
-      if (matches) {
-        for (let i = 0; i < matches.length && latestResult.length < 7; i++) {
-          const num = parseInt(matches[i], 10);
-          if (!latestResult.includes(num)) latestResult.push(num);
+      if (foundBlock) {
+        latestResult = foundBlock.numbers;
+        // Try to find the draw date near the block
+        const context = data.slice(Math.max(0, foundBlock.index - 200), foundBlock.index + 200);
+        // Dash format
+        const dashDateRegex = /(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{2})/i;
+        const dashDateMatch = context.match(dashDateRegex);
+        if (dashDateMatch) {
+          drawDate = `${dashDateMatch[1]}-${dashDateMatch[2]}-${dashDateMatch[3]}`;
+        } else {
+          // Space format
+          const spaceDateRegex = /(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(2025)/i;
+          const spaceDateMatch = context.match(spaceDateRegex);
+          if (spaceDateMatch) {
+            const monthMap = {
+              'January':'Jan','February':'Feb','March':'Mar','April':'Apr','May':'May','June':'Jun','July':'Jul','August':'Aug','September':'Sep','October':'Oct','November':'Nov','December':'Dec'
+            };
+            drawDate = `${spaceDateMatch[1]}-${monthMap[spaceDateMatch[2]]}-25`;
+          }
         }
       }
       callback({numbers: latestResult, date: drawDate});
