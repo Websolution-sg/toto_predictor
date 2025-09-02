@@ -17,21 +17,22 @@ function fetchLatestTotoResults(callback) {
     let data = '';
     res.on('data', chunk => data += chunk);
     res.on('end', () => {
-      // Extract draw date (e.g., 28-Aug-25 or similar)
-      const dateRegex = /(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-\d{2}/i;
+      // Extract draw date (e.g., 28-Aug-25 or 28 August 2025)
       let drawDate = null;
-      const dateMatch = data.match(dateRegex);
-      if (dateMatch) {
-        drawDate = `${dateMatch[1]}-${dateMatch[2]}-25`;
+      // Try dash format first
+      const dashDateRegex = /(\d{1,2})-(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)-(\d{2})/i;
+      const dashDateMatch = data.match(dashDateRegex);
+      if (dashDateMatch) {
+        drawDate = `${dashDateMatch[1]}-${dashDateMatch[2]}-${dashDateMatch[3]}`;
       } else {
-        // Try alternative format (e.g., 28 August 2025)
-        const altDateRegex = /(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(2025)/i;
-        const altDateMatch = data.match(altDateRegex);
-        if (altDateMatch) {
+        // Try space format (e.g., 28 August 2025)
+        const spaceDateRegex = /(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(2025)/i;
+        const spaceDateMatch = data.match(spaceDateRegex);
+        if (spaceDateMatch) {
           const monthMap = {
             'January':'Jan','February':'Feb','March':'Mar','April':'Apr','May':'May','June':'Jun','July':'Jul','August':'Aug','September':'Sep','October':'Oct','November':'Nov','December':'Dec'
           };
-          drawDate = `${altDateMatch[1]}-${monthMap[altDateMatch[2]]}-25`;
+          drawDate = `${spaceDateMatch[1]}-${monthMap[spaceDateMatch[2]]}-25`;
         }
       }
       // Extract 7 winning numbers from HTML
