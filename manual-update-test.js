@@ -27,7 +27,7 @@ function fetchLatestTotoResults(callback) {
       }
       // Find all blocks of 6 numbers followed by 1 additional number
       let numbers = [];
-      // Try to find the first block of 6 numbers and 1 additional
+      // Try to find all blocks and print debug info
       const numberBlocks = [];
       $('body').find('*').each(function() {
         const txt = $(this).text().trim();
@@ -35,6 +35,12 @@ function fetchLatestTotoResults(callback) {
         const blockMatch = txt.match(/(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})[\s\t]+(\d{1,2})\b/);
         if (blockMatch) {
           numberBlocks.push(blockMatch);
+          console.log('DEBUG: Found number block:', txt);
+        }
+        // Also print any date candidates
+        const dateCandidate = txt.match(/\b\d{2} (Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) \d{4}\b/i);
+        if (dateCandidate) {
+          console.log('DEBUG: Found date candidate:', dateCandidate[0], '| In block:', txt);
         }
       });
       if (numberBlocks.length > 0) {
