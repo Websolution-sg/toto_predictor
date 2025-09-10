@@ -6,6 +6,7 @@
   <title>Singapore 4D Predictor</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="client-4d-fetcher.js"></script>
+  <script src="js/analysis.js"></script>
   <style>
     body { font: 16px/1.5 Arial; padding: 20px; max-width: 600px; margin: auto; }
     select, button, input { font-size: 1em; margin: 0.5em 0; }
@@ -320,9 +321,153 @@
   <div>
     <label>Prediction Method:</label><br/>
     <select id="predictionMethod" onchange="showMethodExplanation()">
-      <option value="comprehensive">🔢 Smart Analysis (Frequency + Position)</option>
+      <option value="enhanced">🎯 Enhanced Smart Analysis</option>
+      <option value="comprehensive">🔢 Basic Analysis (Frequency + Position)</option>
       <option value="hybrid">🧠 Hybrid Intelligence Model</option>
     </select>
+  </div>
+
+  <!-- Advanced Prediction Options -->
+  <div id="advancedOptions" style="margin: 20px 0; padding: 20px; border: 2px solid #e2e8f0; border-radius: 8px;">
+    <h3 style="margin: 0 0 15px 0; color: #2d3748;">Advanced Prediction Options</h3>
+    
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <!-- Basic Settings -->
+      <div class="settings-group">
+        <h4 style="color: #4a5568; margin-bottom: 10px;">Basic Settings</h4>
+        
+        <div style="margin-bottom: 15px;">
+          <label>Number of Predictions:</label><br/>
+          <input type="number" id="predictionCount" value="5" min="1" max="10" style="width: 60px;">
+        </div>
+
+        <div style="margin-bottom: 15px;">
+          <label>Analysis Period:</label><br/>
+          <select id="analysisPeriod">
+            <option value="all">All Historical Data</option>
+            <option value="recent">Recent (Last 30 Days)</option>
+            <option value="yearly">Past Year Patterns</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Pattern Analysis -->
+      <div class="settings-group">
+        <h4 style="color: #4a5568; margin-bottom: 10px;">Pattern Analysis</h4>
+        
+        <div style="margin-bottom: 15px;">
+          <label>Sequence Pattern:</label><br/>
+          <select id="sequencePattern">
+            <option value="any">Any Pattern</option>
+            <option value="ascending">Ascending</option>
+            <option value="descending">Descending</option>
+            <option value="mixed">Mixed</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+          <label>Number Type:</label><br/>
+          <select id="numberType">
+            <option value="any">Any Type</option>
+            <option value="arithmetic">Arithmetic Sequence</option>
+            <option value="geometric">Geometric Pattern</option>
+            <option value="palindrome">Palindrome</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Digit Constraints -->
+      <div class="settings-group">
+        <h4 style="color: #4a5568; margin-bottom: 10px;">Digit Constraints</h4>
+        
+        <div style="margin-bottom: 15px;">
+          <label>Digit Sum Range:</label><br/>
+          <input type="number" id="minDigitSum" placeholder="Min" min="0" max="36" style="width: 60px;">
+          <span> to </span>
+          <input type="number" id="maxDigitSum" placeholder="Max" min="0" max="36" style="width: 60px;">
+        </div>
+
+        <div style="margin-bottom: 15px;">
+          <label>Even/Odd Ratio:</label><br/>
+          <select id="evenOddRatio">
+            <option value="any">Any Ratio</option>
+            <option value="balanced">Balanced (2:2)</option>
+            <option value="moreEven">More Even (3:1)</option>
+            <option value="moreOdd">More Odd (1:3)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Advanced Filters -->
+      <div class="settings-group">
+        <h4 style="color: #4a5568; margin-bottom: 10px;">Advanced Filters</h4>
+        
+        <div style="margin-bottom: 15px;">
+          <label>Exclude Digits:</label><br/>
+          <div id="excludeDigits" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px;">
+          </div>
+        </div>
+
+        <div style="margin-bottom: 15px;">
+          <label>Required Digits:</label><br/>
+          <div id="requireDigits" style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px;">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scoring Weights -->
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+      <h4 style="color: #4a5568; margin-bottom: 10px;">Analysis Weights</h4>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+        <div>
+          <label>Historical Weight:</label><br/>
+          <input type="range" id="historicalWeight" min="0" max="100" value="30" style="width: 100%;">
+          <span id="historicalValue">0.30</span>
+        </div>
+        <div>
+          <label>Trend Weight:</label><br/>
+          <input type="range" id="trendWeight" min="0" max="100" value="40" style="width: 100%;">
+          <span id="trendValue">0.40</span>
+        </div>
+        <div>
+          <label>Pattern Weight:</label><br/>
+          <input type="range" id="patternWeight" min="0" max="100" value="30" style="width: 100%;">
+          <span id="patternValue">0.30</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Analysis Dashboard -->
+  <div id="analysisDashboard" style="margin: 20px 0; padding: 20px; border: 2px solid #e2e8f0; border-radius: 8px; display: none;">
+    <h3 style="margin: 0 0 15px 0; color: #2d3748;">Analysis Dashboard</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;">
+      <!-- Trend Analysis -->
+      <div class="dashboard-card" style="padding: 15px; background: #f7fafc; border-radius: 8px;">
+        <h4 style="color: #2d3748; margin: 0 0 10px 0;">Trend Analysis</h4>
+        <div id="trendChart" style="height: 200px;"></div>
+      </div>
+
+      <!-- Pattern Distribution -->
+      <div class="dashboard-card" style="padding: 15px; background: #f7fafc; border-radius: 8px;">
+        <h4 style="color: #2d3748; margin: 0 0 10px 0;">Pattern Distribution</h4>
+        <div id="patternChart" style="height: 200px;"></div>
+      </div>
+
+      <!-- Hot/Cold Numbers -->
+      <div class="dashboard-card" style="padding: 15px; background: #f7fafc; border-radius: 8px;">
+        <h4 style="color: #2d3748; margin: 0 0 10px 0;">Hot/Cold Numbers</h4>
+        <div id="hotColdList"></div>
+      </div>
+
+      <!-- Gap Analysis -->
+      <div class="dashboard-card" style="padding: 15px; background: #f7fafc; border-radius: 8px;">
+        <h4 style="color: #2d3748; margin: 0 0 10px 0;">Gap Analysis</h4>
+        <div id="gapAnalysis"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Method Explanation Section -->
