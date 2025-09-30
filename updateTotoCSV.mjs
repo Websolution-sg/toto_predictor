@@ -1,3 +1,10 @@
+import fs from 'fs';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
+
+// Use absolute path for local CSV file
+const CSV_FILE = 'd:/Timothy/Toto Predictor/Repository/toto_predictor/totoResult.csv';
+
 // --- All function definitions copied from updateTotoCSV.cjs ---
 async function fetchLatestByDateAnalysis() {
   const urls = [
@@ -186,12 +193,6 @@ async function updateCSV({ drawDate, numbers }) {
     throw error;
   }
 }
-import fs from 'fs';
-import axios from 'axios';
-import cheerio from 'cheerio';
-
-// Use absolute path for local CSV file
-const CSV_FILE = 'd:/Timothy/Toto Predictor/Repository/toto_predictor/totoResult.csv';
 
 // FULLY DYNAMIC TOTO result fetching - NO HARDCODED VALUES - DATE-BASED LATEST DETECTION
 async function fetchLatestTotoResult() {
