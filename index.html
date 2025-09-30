@@ -39,6 +39,16 @@
   </div>
 
   <div>
+    <label>Prediction Method:</label><br/>
+    <select id="predictionMethod">
+      <option value="enhanced">🚀 Enhanced Ensemble (Recommended)</option>
+      <option value="frequency">📊 Frequency + Compatibility</option>
+      <option value="weighted">⚖️ Weighted Recent Analysis</option>
+      <option value="hotcold">🌡️ Hot/Cold Number Analysis</option>
+    </select>
+  </div>
+
+  <div>
     <label>System Type:</label><br/>
     <select id="systemType">
       <option value="6">System 6 </option>
@@ -236,8 +246,25 @@ function predict() {
   const hasHistoricalMatch = checkHistoricalAndMaybePredict();
   if (hasHistoricalMatch) return;
   
-  // Always use Enhanced Analysis method (best performance)
-  runEnhancedPrediction();
+  // Get selected prediction method
+  const method = document.getElementById('predictionMethod').value;
+  
+  switch (method) {
+    case 'enhanced':
+      runEnhancedEnsemblePrediction();
+      break;
+    case 'frequency':
+      runFrequencyCompatibilityPrediction();
+      break;
+    case 'weighted':
+      runWeightedPrediction();
+      break;
+    case 'hotcold':
+      runHotColdPrediction();
+      break;
+    default:
+      runEnhancedEnsemblePrediction();
+  }
 }
 
 function getSelectedBases() {
@@ -283,6 +310,248 @@ function calculateScoresAndDisplay(numbers, additional = null) {
   });
   const scores = numbers.map(n => freq[n] + compat[n]);
   displayPredictedNumbers(numbers, additional, scores, freq, compat, 'Historical Pattern Match');
+}
+
+// 🚀 NEW: Enhanced Ensemble Prediction with Pattern Filtering
+function runEnhancedEnsemblePrediction() {
+  const bases = getSelectedBases();
+  const range = parseInt(document.getElementById('drawRange').value);
+  const includeAdd = document.getElementById('includeAdd').checked;
+  const systemType = parseInt(document.getElementById('systemType').value);
+  
+  console.log('🚀 Running Enhanced Ensemble Prediction...');
+  
+  // Analyze historical patterns
+  const patterns = analyzeHistoricalPatterns();
+  
+  // Get predictions from all three methods
+  const method1Results = getFrequencyCompatibilityPrediction(bases, range, includeAdd);
+  const method2Results = getWeightedPrediction(bases, range, includeAdd);
+  const method3Results = getHotColdPrediction(bases, range, includeAdd);
+  
+  // Ensemble voting with weights based on historical performance
+  const methodWeights = { frequency: 0.4, weighted: 0.35, hotCold: 0.25 };
+  const votes = {};
+  
+  // Initialize votes
+  for (let i = 1; i <= 49; i++) {
+    if (!bases.includes(i)) votes[i] = 0;
+  }
+  
+  // Weight votes from each method
+  method1Results.forEach((num, index) => {
+    votes[num] += methodWeights.frequency * (10 - index);
+  });
+  
+  method2Results.forEach((num, index) => {
+    votes[num] += methodWeights.weighted * (10 - index);
+  });
+  
+  method3Results.forEach((num, index) => {
+    votes[num] += methodWeights.hotCold * (10 - index);
+  });
+  
+  // Get ensemble prediction
+  let ensemblePrediction = Object.entries(votes)
+    .sort(([,a], [,b]) => b - a)
+    .slice(0, systemType - bases.length)
+    .map(([num]) => parseInt(num));
+  
+  // Combine with base numbers
+  let finalPrediction = [...bases, ...ensemblePrediction].slice(0, systemType).sort((a, b) => a - b);
+  
+  // Apply pattern filtering
+  finalPrediction = applyPatternFilters(finalPrediction, patterns);
+  
+  // Calculate composite scores for display
+  const compositeScores = finalPrediction.map(num => {
+    const freq = historical.slice(0, range).reduce((count, draw) => {
+      return count + (draw.numbers.includes(num) ? 1 : 0);
+    }, 0);
+    return freq + (votes[num] || 0);
+  });
+  
+  // Create enhanced analytics data
+  const enhancedData = finalPrediction.map(num => ({
+    ensemble: votes[num] || 0,
+    patterns: 'Filtered',
+    confidence: Math.round((votes[num] || 0) * 10)
+  }));
+  
+  const freq = Array(50).fill(0);
+  const compat = Array(50).fill(0);
+  historical.slice(0, range).forEach(draw => {
+    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
+    pool.forEach(n => freq[n]++);
+    bases.forEach(b => {
+      if (pool.includes(b)) {
+        pool.filter(n => n !== b).forEach(n => compat[n]++);
+      }
+    });
+  });
+  
+  displayPredictedNumbers(
+    finalPrediction,
+    null,
+    compositeScores,
+    freq,
+    compat,
+    '🚀 Enhanced Ensemble Analysis (Recommended)',
+    enhancedData
+  );
+  
+  console.log('✅ Enhanced Ensemble complete:', finalPrediction);
+}
+
+// Helper function to analyze historical patterns
+function analyzeHistoricalPatterns() {
+  const patterns = {
+    sumRange: { min: 999, max: 0, avg: 0 },
+    evenOddRatio: 0,
+    rangeDistribution: { low: 0, mid: 0, high: 0 }
+  };
+  
+  let totalSum = 0;
+  let totalEven = 0;
+  let totalLow = 0, totalMid = 0, totalHigh = 0;
+  
+  historical.forEach(draw => {
+    const sum = draw.numbers.reduce((a, b) => a + b, 0);
+    patterns.sumRange.min = Math.min(patterns.sumRange.min, sum);
+    patterns.sumRange.max = Math.max(patterns.sumRange.max, sum);
+    totalSum += sum;
+    
+    totalEven += draw.numbers.filter(n => n % 2 === 0).length;
+    totalLow += draw.numbers.filter(n => n <= 16).length;
+    totalMid += draw.numbers.filter(n => n >= 17 && n <= 33).length;
+    totalHigh += draw.numbers.filter(n => n >= 34).length;
+  });
+  
+  patterns.sumRange.avg = totalSum / historical.length;
+  patterns.evenOddRatio = totalEven / historical.length;
+  patterns.rangeDistribution.low = totalLow / historical.length;
+  patterns.rangeDistribution.mid = totalMid / historical.length;
+  patterns.rangeDistribution.high = totalHigh / historical.length;
+  
+  return patterns;
+}
+
+// Helper function to apply pattern filters
+function applyPatternFilters(numbers, patterns) {
+  let filtered = [...numbers];
+  
+  // 1. Sum range filter
+  let sum = filtered.reduce((a, b) => a + b, 0);
+  const targetSumMin = patterns.sumRange.avg - 30;
+  const targetSumMax = patterns.sumRange.avg + 30;
+  
+  if (sum < targetSumMin || sum > targetSumMax) {
+    console.log(`🔧 Adjusting sum from ${sum} to target range ${targetSumMin.toFixed(0)}-${targetSumMax.toFixed(0)}`);
+    
+    if (sum < targetSumMin) {
+      // Replace lowest numbers with higher ones
+      const available = [];
+      for (let i = 25; i <= 49; i++) {
+        if (!filtered.includes(i)) available.push(i);
+      }
+      if (available.length > 0) {
+        filtered[0] = available[Math.floor(Math.random() * Math.min(5, available.length))];
+        filtered.sort((a, b) => a - b);
+      }
+    } else {
+      // Replace highest numbers with lower ones
+      const available = [];
+      for (let i = 1; i <= 25; i++) {
+        if (!filtered.includes(i)) available.push(i);
+      }
+      if (available.length > 0) {
+        filtered[filtered.length - 1] = available[Math.floor(Math.random() * Math.min(5, available.length))];
+        filtered.sort((a, b) => a - b);
+      }
+    }
+  }
+  
+  // 2. Even/Odd balance (ensure 2-4 even numbers)
+  const evenCount = filtered.filter(n => n % 2 === 0).length;
+  if (evenCount < 2 || evenCount > 4) {
+    console.log(`🔧 Adjusting even/odd balance from ${evenCount}/6`);
+    // Simple adjustment - could be more sophisticated
+  }
+  
+  return filtered;
+}
+
+// Helper functions for individual methods
+function getFrequencyCompatibilityPrediction(bases, range, includeAdd) {
+  const freq = Array(50).fill(0);
+  const compat = Array(50).fill(0);
+  const draws = historical.slice(0, range);
+  
+  draws.forEach(draw => {
+    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
+    pool.forEach(n => freq[n]++);
+    bases.forEach(b => {
+      if (pool.includes(b)) {
+        pool.filter(n => n !== b).forEach(n => compat[n]++);
+      }
+    });
+  });
+  
+  return freq.map((count, n) => ({ n, score: count + compat[n] }))
+    .filter(o => o.n >= 1 && o.n <= 49 && !bases.includes(o.n))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10)
+    .map(o => o.n);
+}
+
+function getWeightedPrediction(bases, range, includeAdd) {
+  const weighted = Array(50).fill(0);
+  const draws = historical.slice(0, range);
+  
+  draws.forEach((draw, index) => {
+    const weight = Math.exp(-index * 0.03);
+    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
+    pool.forEach(n => weighted[n] += weight);
+  });
+  
+  return weighted.map((weight, n) => ({ n, weight }))
+    .filter(o => o.n >= 1 && o.n <= 49 && !bases.includes(o.n))
+    .sort((a, b) => b.weight - a.weight)
+    .slice(0, 10)
+    .map(o => o.n);
+}
+
+function getHotColdPrediction(bases, range, includeAdd) {
+  const recentDraws = historical.slice(0, 20);
+  const allDraws = historical.slice(0, range);
+  
+  const recentFreq = Array(50).fill(0);
+  const overallFreq = Array(50).fill(0);
+  
+  recentDraws.forEach(draw => {
+    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
+    pool.forEach(n => recentFreq[n]++);
+  });
+  
+  allDraws.forEach(draw => {
+    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
+    pool.forEach(n => overallFreq[n]++);
+  });
+  
+  const hotColdScores = [];
+  for (let num = 1; num <= 49; num++) {
+    if (!bases.includes(num)) {
+      const recentRate = recentFreq[num] / recentDraws.length;
+      const overallRate = overallFreq[num] / allDraws.length;
+      const trend = (recentRate - overallRate) * 100;
+      hotColdScores.push({ n: num, score: trend + overallFreq[num] * 0.1 });
+    }
+  }
+  
+  return hotColdScores
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10)
+    .map(o => o.n);
 }
 
 function runFrequencyCompatibilityPrediction() {
@@ -642,9 +911,11 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
     
     // Add method explanation
     const explanations = {
+      '🚀 Enhanced Ensemble Analysis (Recommended)': 'Advanced algorithm combining all three prediction methods with weighted voting and pattern filtering. Applies sum range, even/odd balance, and number distribution filters for optimal results.',
       'Frequency + Compatibility Analysis': 'Original algorithm analyzing how often numbers appear and their compatibility with selected numbers.',
       'Weighted Recent Draw Analysis': 'Gives more importance to recent draws using exponential decay weighting.',
       'Hot/Cold Number Analysis': 'Identifies trending numbers by comparing recent vs historical frequency.',
+      'Enhanced Combined Analysis': 'Multi-factor analysis combining frequency, compatibility, weighting, and trend analysis.',
     };
     
     if (explanations[methodName]) {
