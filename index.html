@@ -329,6 +329,12 @@ function runEnhancedEnsemblePrediction() {
   const method2Results = getWeightedPrediction(bases, range, includeAdd);
   const method3Results = getHotColdPrediction(bases, range, includeAdd);
   
+  console.log('Debug: Enhanced Ensemble - Method results received:', {
+    method1: method1Results.length,
+    method2: method2Results.length, 
+    method3: method3Results.length
+  });
+  
   // Ensemble voting with weights based on historical performance
   const methodWeights = { frequency: 0.4, weighted: 0.35, hotCold: 0.25 };
   const votes = {};
@@ -379,21 +385,24 @@ function runEnhancedEnsemblePrediction() {
     }
   }
   
-  // Select from tier 2 (30% of picks) - add randomization for variety
+  // Select from tier 2 (30% of picks) - controlled selection for consistency
   const tier2Count = Math.min(Math.ceil(neededNumbers * 0.3), neededNumbers - ensemblePrediction.length);
-  const tier2Shuffled = [...tier2].sort(() => Math.random() - 0.5);
-  for (let i = 0; i < tier2Count && i < tier2Shuffled.length; i++) {
-    ensemblePrediction.push(parseInt(tier2Shuffled[i][0]));
+  // Use deterministic selection with slight offset for variety
+  const startOffset = Math.floor(tier2.length * 0.1); // Start from 10% into tier2 for variety
+  for (let i = startOffset; i < tier2Count + startOffset && i < tier2.length; i++) {
+    if (tier2[i]) {
+      ensemblePrediction.push(parseInt(tier2[i][0]));
+    }
   }
   
-  // Fill remaining from tier 3 (10% of picks) - high randomization
-  while (ensemblePrediction.length < neededNumbers && tier3.length > 0) {
-    const randomIndex = Math.floor(Math.random() * tier3.length);
-    const candidate = parseInt(tier3[randomIndex][0]);
+  // Fill remaining from tier 3 (10% of picks) - controlled selection
+  let tier3Index = 0;
+  while (ensemblePrediction.length < neededNumbers && tier3Index < tier3.length) {
+    const candidate = parseInt(tier3[tier3Index][0]);
     if (!ensemblePrediction.includes(candidate)) {
       ensemblePrediction.push(candidate);
     }
-    tier3.splice(randomIndex, 1);
+    tier3Index++;
   }
   
   // COLD NUMBER AVOIDANCE: Filter out too many cold numbers before combining
@@ -443,7 +452,7 @@ function runEnhancedEnsemblePrediction() {
     compositeScores,
     freq,
     compat,
-    '🚀 Enhanced Ensemble Analysis (Recommended)',
+    '🚀 Enhanced Ensemble Analysis (Consistent Results)',
     enhancedData
   );
   
@@ -503,7 +512,8 @@ function applyEnhancedPatternFilters(numbers, patterns, candidatePool) {
         .map(([num]) => parseInt(num));
       
       if (availableHigh.length > 0) {
-        const replacement = availableHigh[Math.floor(Math.random() * Math.min(3, availableHigh.length))];
+        // Use first available high number for consistency (was random)
+        const replacement = availableHigh[0];
         filtered[filtered.indexOf(Math.min(...filtered))] = replacement;
         filtered.sort((a, b) => a - b);
       }
@@ -515,7 +525,8 @@ function applyEnhancedPatternFilters(numbers, patterns, candidatePool) {
         .map(([num]) => parseInt(num));
       
       if (availableLow.length > 0) {
-        const replacement = availableLow[Math.floor(Math.random() * Math.min(3, availableLow.length))];
+        // Use last available low number for consistency (was random)
+        const replacement = availableLow[availableLow.length - 1];
         filtered[filtered.indexOf(Math.max(...filtered))] = replacement;
         filtered.sort((a, b) => a - b);
       }
@@ -543,7 +554,8 @@ function applyEnhancedPatternFilters(numbers, patterns, candidatePool) {
         // Replace an odd number with an even one
         const oddIndices = filtered.map((n, idx) => n % 2 === 1 ? idx : -1).filter(idx => idx >= 0);
         if (oddIndices.length > 0) {
-          const replaceIdx = oddIndices[Math.floor(Math.random() * oddIndices.length)];
+          // Use first available odd index for consistency (was random) 
+          const replaceIdx = oddIndices[0];
           filtered[replaceIdx] = availableEven[i];
         }
       }
@@ -554,7 +566,8 @@ function applyEnhancedPatternFilters(numbers, patterns, candidatePool) {
         // Replace an even number with an odd one
         const evenIndices = filtered.map((n, idx) => n % 2 === 0 ? idx : -1).filter(idx => idx >= 0);
         if (evenIndices.length > 0) {
-          const replaceIdx = evenIndices[Math.floor(Math.random() * evenIndices.length)];
+          // Use first available even index for consistency (was random)
+          const replaceIdx = evenIndices[0];
           filtered[replaceIdx] = availableOdd[i];
         }
       }
