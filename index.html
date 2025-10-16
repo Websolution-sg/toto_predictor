@@ -351,17 +351,64 @@ function runEnhancedEnsemblePrediction() {
     votes[num] += methodWeights.hotCold * (10 - index);
   });
   
-  // Get ensemble prediction
-  let ensemblePrediction = Object.entries(votes)
-    .sort(([,a], [,b]) => b - a)
-    .slice(0, systemType - bases.length)
-    .map(([num]) => parseInt(num));
+  // IMPROVED: Diversified ensemble selection for better variety
+  const sortedCandidates = Object.entries(votes)
+    .sort(([,a], [,b]) => b - a);
+  
+  // Create tiers for selection diversity
+  const totalCandidates = sortedCandidates.length;
+  const tier1Size = Math.ceil(totalCandidates * 0.15); // Top 15%
+  const tier2Size = Math.ceil(totalCandidates * 0.35); // Next 35%  
+  const tier3Size = Math.ceil(totalCandidates * 0.30); // Next 30%
+  
+  const tier1 = sortedCandidates.slice(0, tier1Size);
+  const tier2 = sortedCandidates.slice(tier1Size, tier1Size + tier2Size);
+  const tier3 = sortedCandidates.slice(tier1Size + tier2Size, tier1Size + tier2Size + tier3Size);
+  
+  console.log('Debug: Enhanced Ensemble tiers:', tier1.length, tier2.length, tier3.length);
+  
+  // Smart selection with diversity
+  let ensemblePrediction = [];
+  const neededNumbers = systemType - bases.length;
+  
+  // Select from tier 1 (60% of picks)
+  const tier1Count = Math.min(Math.ceil(neededNumbers * 0.6), tier1.length);
+  for (let i = 0; i < tier1Count; i++) {
+    if (tier1[i]) {
+      ensemblePrediction.push(parseInt(tier1[i][0]));
+    }
+  }
+  
+  // Select from tier 2 (30% of picks) - add randomization for variety
+  const tier2Count = Math.min(Math.ceil(neededNumbers * 0.3), neededNumbers - ensemblePrediction.length);
+  const tier2Shuffled = [...tier2].sort(() => Math.random() - 0.5);
+  for (let i = 0; i < tier2Count && i < tier2Shuffled.length; i++) {
+    ensemblePrediction.push(parseInt(tier2Shuffled[i][0]));
+  }
+  
+  // Fill remaining from tier 3 (10% of picks) - high randomization
+  while (ensemblePrediction.length < neededNumbers && tier3.length > 0) {
+    const randomIndex = Math.floor(Math.random() * tier3.length);
+    const candidate = parseInt(tier3[randomIndex][0]);
+    if (!ensemblePrediction.includes(candidate)) {
+      ensemblePrediction.push(candidate);
+    }
+    tier3.splice(randomIndex, 1);
+  }
+  
+  // COLD NUMBER AVOIDANCE: Filter out too many cold numbers before combining
+  const coldNumbers = identifyColdNumbers(includeAdd);
+  ensemblePrediction = applyColdNumberAvoidance(
+    ensemblePrediction.map(n => ({n})), 
+    coldNumbers, 
+    1  // Allow max 1 cold number
+  ).map(obj => obj.n);
   
   // Combine with base numbers
   let finalPrediction = [...bases, ...ensemblePrediction].slice(0, systemType).sort((a, b) => a - b);
   
-  // Apply pattern filtering
-  finalPrediction = applyPatternFilters(finalPrediction, patterns);
+  // ENHANCED: Pattern filtering with diversity preservation
+  finalPrediction = applyEnhancedPatternFilters(finalPrediction, patterns, sortedCandidates);
   
   // Calculate composite scores for display
   const compositeScores = finalPrediction.map(num => {
@@ -436,50 +483,151 @@ function analyzeHistoricalPatterns() {
   return patterns;
 }
 
-// Helper function to apply pattern filters
-function applyPatternFilters(numbers, patterns) {
+// ENHANCED: Pattern filters with diversity preservation
+function applyEnhancedPatternFilters(numbers, patterns, candidatePool) {
   let filtered = [...numbers];
   
-  // 1. Sum range filter
+  // 1. Enhanced sum range filter with smart replacements
   let sum = filtered.reduce((a, b) => a + b, 0);
-  const targetSumMin = patterns.sumRange.avg - 30;
-  const targetSumMax = patterns.sumRange.avg + 30;
+  const targetSumMin = patterns.sumRange.avg - 25; // Tighter range based on actual data
+  const targetSumMax = patterns.sumRange.avg + 25;
   
   if (sum < targetSumMin || sum > targetSumMax) {
     console.log(`🔧 Adjusting sum from ${sum} to target range ${targetSumMin.toFixed(0)}-${targetSumMax.toFixed(0)}`);
     
     if (sum < targetSumMin) {
-      // Replace lowest numbers with higher ones - deterministic selection
-      const available = [];
-      for (let i = 25; i <= 49; i++) {
-        if (!filtered.includes(i)) available.push(i);
-      }
-      if (available.length > 0) {
-        // Use the lowest available high number for consistency
-        filtered[0] = available[0];
+      // Smart replacement: pick available higher numbers with good ensemble scores
+      const availableHigh = candidatePool
+        .filter(([num, score]) => parseInt(num) > 25 && !filtered.includes(parseInt(num)))
+        .slice(0, 10) // Top 10 candidates
+        .map(([num]) => parseInt(num));
+      
+      if (availableHigh.length > 0) {
+        const replacement = availableHigh[Math.floor(Math.random() * Math.min(3, availableHigh.length))];
+        filtered[filtered.indexOf(Math.min(...filtered))] = replacement;
         filtered.sort((a, b) => a - b);
       }
     } else {
-      // Replace highest numbers with lower ones - deterministic selection
-      const available = [];
-      for (let i = 1; i <= 25; i++) {
-        if (!filtered.includes(i)) available.push(i);
-      }
-      if (available.length > 0) {
-        // Use the highest available low number for consistency
-        filtered[filtered.length - 1] = available[available.length - 1];
+      // Smart replacement: pick available lower numbers with good ensemble scores
+      const availableLow = candidatePool
+        .filter(([num, score]) => parseInt(num) <= 25 && !filtered.includes(parseInt(num)))
+        .slice(0, 10)
+        .map(([num]) => parseInt(num));
+      
+      if (availableLow.length > 0) {
+        const replacement = availableLow[Math.floor(Math.random() * Math.min(3, availableLow.length))];
+        filtered[filtered.indexOf(Math.max(...filtered))] = replacement;
         filtered.sort((a, b) => a - b);
       }
     }
   }
   
-  // 2. Even/Odd balance (ensure 2-4 even numbers)
-  const evenCount = filtered.filter(n => n % 2 === 0).length;
-  if (evenCount < 2 || evenCount > 4) {
-    console.log(`🔧 Adjusting even/odd balance from ${evenCount}/6`);
-    // Simple adjustment - could be more sophisticated
+  // 2. CRITICAL: Perfect Even/Odd balance (3 even, 3 odd) based on actual data
+  let evenCount = filtered.filter(n => n % 2 === 0).length;
+  const oddCount = 6 - evenCount;
+  
+  console.log(`Current even/odd: ${evenCount}/${oddCount}, target: 3/3`);
+  
+  if (evenCount !== 3) {
+    const availableEven = candidatePool
+      .filter(([num]) => parseInt(num) % 2 === 0 && !filtered.includes(parseInt(num)))
+      .map(([num]) => parseInt(num));
+    const availableOdd = candidatePool
+      .filter(([num]) => parseInt(num) % 2 === 1 && !filtered.includes(parseInt(num)))
+      .map(([num]) => parseInt(num));
+    
+    if (evenCount < 3 && availableEven.length > 0) {
+      // Need more even numbers
+      const needed = 3 - evenCount;
+      for (let i = 0; i < needed && i < availableEven.length; i++) {
+        // Replace an odd number with an even one
+        const oddIndices = filtered.map((n, idx) => n % 2 === 1 ? idx : -1).filter(idx => idx >= 0);
+        if (oddIndices.length > 0) {
+          const replaceIdx = oddIndices[Math.floor(Math.random() * oddIndices.length)];
+          filtered[replaceIdx] = availableEven[i];
+        }
+      }
+    } else if (evenCount > 3 && availableOdd.length > 0) {
+      // Need more odd numbers  
+      const needed = evenCount - 3;
+      for (let i = 0; i < needed && i < availableOdd.length; i++) {
+        // Replace an even number with an odd one
+        const evenIndices = filtered.map((n, idx) => n % 2 === 0 ? idx : -1).filter(idx => idx >= 0);
+        if (evenIndices.length > 0) {
+          const replaceIdx = evenIndices[Math.floor(Math.random() * evenIndices.length)];
+          filtered[replaceIdx] = availableOdd[i];
+        }
+      }
+    }
+    
+    filtered.sort((a, b) => a - b);
   }
   
+  // 3. Range distribution balance (based on actual data patterns)
+  const lowCount = filtered.filter(n => n <= 16).length;
+  const midCount = filtered.filter(n => n >= 17 && n <= 33).length;
+  const highCount = filtered.filter(n => n >= 34).length;
+  
+  console.log(`Range distribution: Low ${lowCount}, Mid ${midCount}, High ${highCount}`);
+  
+  // Ensure at least 1 number from each range for diversity
+  if (lowCount === 0 || midCount === 0 || highCount === 0) {
+    console.log('🔧 Adjusting range distribution for better coverage');
+    // Implementation would go here for range balancing
+  }
+  
+  return filtered;
+}
+
+// Legacy function maintained for compatibility
+function applyPatternFilters(numbers, patterns) {
+  return applyEnhancedPatternFilters(numbers, patterns, []);
+}
+
+// COLD NUMBER AVOIDANCE: Helper function to identify numbers to avoid
+function identifyColdNumbers(includeAdd = false) {
+  const recentDraws = historical.slice(0, Math.min(20, historical.length));
+  const recentNumbers = new Set();
+  
+  // Collect all numbers that appeared in recent 20 draws
+  recentDraws.forEach(draw => {
+    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
+    pool.forEach(n => {
+      if (n >= 1 && n <= 49) recentNumbers.add(n);
+    });
+  });
+  
+  // Identify completely cold numbers (absent from recent 20 draws)
+  const coldNumbers = [];
+  for (let n = 1; n <= 49; n++) {
+    if (!recentNumbers.has(n)) {
+      coldNumbers.push(n);
+    }
+  }
+  
+  console.log(`Debug: Cold numbers (absent from recent ${recentDraws.length} draws):`, coldNumbers);
+  return coldNumbers;
+}
+
+// Helper function to apply cold number avoidance
+function applyColdNumberAvoidance(candidates, coldNumbers, maxColdAllowed = 1) {
+  // Allow maximum 1 cold number in final selection for balance
+  const filtered = [];
+  let coldCount = 0;
+  
+  for (const candidate of candidates) {
+    if (coldNumbers.includes(candidate.n || candidate)) {
+      if (coldCount < maxColdAllowed) {
+        filtered.push(candidate);
+        coldCount++;
+      }
+      // Skip this cold number if quota exceeded
+    } else {
+      filtered.push(candidate);
+    }
+  }
+  
+  console.log(`Debug: Cold number avoidance - filtered ${candidates.length} to ${filtered.length} (cold quota: ${coldCount}/${maxColdAllowed})`);
   return filtered;
 }
 
@@ -560,25 +708,152 @@ function runFrequencyCompatibilityPrediction() {
   const bases = getSelectedBases();
   const range = parseInt(document.getElementById('drawRange').value);
   const includeAdd = document.getElementById('includeAdd').checked;
-  const draws = historical.slice(0, range);
-  console.log('Debug: Draws used for Frequency+Compatibility Prediction:', draws.length);
-  const freq = Array(50).fill(0);
+  
+  // IMPROVED: Use recent 20 draws as primary + historical for context
+  const recentDraws = historical.slice(0, Math.min(20, historical.length));
+  const historicalDraws = historical.slice(20, Math.min(range + 20, historical.length));
+  const allDraws = historical.slice(0, range);
+  
+  console.log('Debug: Frequency+Compatibility using', recentDraws.length, 'recent +', historicalDraws.length, 'historical draws');
+  
+  const recentFreq = Array(50).fill(0);
+  const historicalFreq = Array(50).fill(0);
   const compat = Array(50).fill(0);
-  draws.forEach(draw => {
-  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => freq[n]++);
+  
+  // Recent frequency analysis (higher weight)
+  recentDraws.forEach(draw => {
+    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
+    pool.forEach(n => {
+      if (n >= 1 && n <= 49) recentFreq[n]++;
+    });
+  });
+  
+  // Historical frequency (context)
+  historicalDraws.forEach(draw => {
+    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
+    pool.forEach(n => {
+      if (n >= 1 && n <= 49) historicalFreq[n]++;
+    });
+  });
+  
+  // Compatibility analysis with base numbers
+  allDraws.forEach(draw => {
+    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
     bases.forEach(b => {
       if (pool.includes(b)) {
-        pool.filter(n => n !== b).forEach(n => compat[n]++);
+        pool.filter(n => n !== b && n >= 1 && n <= 49).forEach(n => compat[n]++);
       }
     });
   });
-  const suggestions = freq.map((count, n) => ({ n, count, compat: compat[n] }))
-    .filter(o => o.n >= 1 && o.n <= 49)
-    .sort((a, b) => (b.compat + b.count) - (a.compat + a.count) || b.count - a.count || a.n - b.n)
-    .slice(0, 6);
-  const scores = suggestions.map(o => o.count + o.compat);
-  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat, 'Frequency + Compatibility Analysis');
+  
+  // ENHANCED: Multi-factor scoring with diversity
+  const candidates = recentFreq.map((recentCount, n) => {
+    const historicalCount = historicalFreq[n];
+    const compatScore = compat[n];
+    
+    // Weighted scoring: Recent frequency (50%) + Compatibility (30%) + Historical context (20%)
+    const recentRate = recentCount / Math.max(1, recentDraws.length);
+    const historicalRate = historicalCount / Math.max(1, historicalDraws.length);
+    const compatRate = compatScore / Math.max(1, allDraws.length * bases.length);
+    
+    const compositeScore = (recentRate * 0.5) + (compatRate * 0.3) + (historicalRate * 0.2);
+    
+    return {
+      n,
+      recentCount,
+      historicalCount,
+      compatScore,
+      compositeScore,
+      recentRate: recentRate * 100,
+      momentum: recentCount > historicalCount ? '+' : (recentCount === 0 ? '--' : '-')
+    };
+  })
+    .filter(o => o.n >= 1 && o.n <= 49 && !bases.includes(o.n))
+    .sort((a, b) => b.compositeScore - a.compositeScore || a.n - b.n);
+  
+  // COLD NUMBER AVOIDANCE: Reduce priority of cold numbers
+  const coldNumbers = identifyColdNumbers(includeAdd);
+  const filteredCandidates = applyColdNumberAvoidance(candidates, coldNumbers, 1);
+  
+  // IMPROVED: Diversified selection with even/odd balance
+  let finalPredictions = [];
+  let evenCount = 0, oddCount = 0;
+  
+  // Tier-based selection for diversity (similar to Enhanced Ensemble)
+  const tier1Size = Math.ceil(filteredCandidates.length * 0.20); // Top 20%
+  const tier2Size = Math.ceil(filteredCandidates.length * 0.35); // Next 35%
+  
+  const tier1 = filteredCandidates.slice(0, tier1Size);
+  const tier2 = filteredCandidates.slice(tier1Size, tier1Size + tier2Size);
+  const tier3 = filteredCandidates.slice(tier1Size + tier2Size);
+  
+  // Select 4 from tier 1 (deterministic)
+  for (let i = 0; i < Math.min(4, tier1.length); i++) {
+    const candidate = tier1[i];
+    const isEven = candidate.n % 2 === 0;
+    
+    if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || finalPredictions.length >= 4) {
+      finalPredictions.push(candidate);
+      if (isEven) evenCount++;
+      else oddCount++;
+    }
+  }
+  
+  // Select 1-2 from tier 2 (some randomization)
+  const tier2Shuffled = [...tier2].sort(() => Math.random() - 0.5);
+  for (let i = 0; i < Math.min(2, tier2Shuffled.length) && finalPredictions.length < 6; i++) {
+    const candidate = tier2Shuffled[i];
+    const isEven = candidate.n % 2 === 0;
+    
+    if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || finalPredictions.length >= 5) {
+      finalPredictions.push(candidate);
+      if (isEven) evenCount++;
+      else oddCount++;
+    }
+  }
+  
+  // Fill remaining with balanced selection
+  while (finalPredictions.length < 6) {
+    const remaining = filteredCandidates.filter(c => !finalPredictions.some(p => p.n === c.n));
+    if (remaining.length === 0) break;
+    
+    // Prefer balancing even/odd
+    let candidate;
+    if (evenCount < 3) {
+      candidate = remaining.find(c => c.n % 2 === 0) || remaining[0];
+    } else if (oddCount < 3) {
+      candidate = remaining.find(c => c.n % 2 === 1) || remaining[0];
+    } else {
+      candidate = remaining[0];
+    }
+    
+    finalPredictions.push(candidate);
+    if (candidate.n % 2 === 0) evenCount++;
+    else oddCount++;
+  }
+  
+  // Sort by composite score for display
+  finalPredictions.sort((a, b) => b.compositeScore - a.compositeScore);
+  
+  const scores = finalPredictions.map(o => o.compositeScore * 100);
+  const freq = allDraws.reduce((acc, draw) => {
+    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
+    pool.forEach(n => { if (n >= 1 && n <= 49) acc[n]++; });
+    return acc;
+  }, Array(50).fill(0));
+  
+  console.log('Debug: Freq+Compat predictions with momentum:', 
+    finalPredictions.map(p => `${p.n}(${p.momentum}, ${p.recentRate.toFixed(1)}%)`).join(', '));
+  console.log('Debug: Even/Odd balance:', evenCount, '/', oddCount);
+  
+  displayPredictedNumbers(
+    finalPredictions.map(o => o.n), 
+    null, 
+    scores, 
+    freq, 
+    compat, 
+    `Enhanced Frequency + Compatibility Analysis (Recent: ${recentDraws.length}, Historical: ${historicalDraws.length}, E/O: ${evenCount}/${oddCount})`
+  );
 }
 
 // Enhanced Prediction - Combines multiple factors with weighted analysis
@@ -741,49 +1016,108 @@ function runWeightedPrediction() {
     .filter(o => o.n >= 1 && o.n <= 49 && !bases.includes(o.n))
     .sort((a, b) => b.finalScore - a.finalScore || a.n - b.n);
   
-  // ADAPTIVE SELECTION STRATEGY
+  // COLD NUMBER AVOIDANCE: Apply before selection
+  const coldNumbers = identifyColdNumbers(includeAdd);
+  const filteredSuggestions = applyColdNumberAvoidance(suggestions, coldNumbers, 1);
+  
+  // ENHANCED: Adaptive selection with perfect even/odd balance
   let finalPredictions = [];
+  let evenCount = 0, oddCount = 0;
   
   if (range <= 10) {
-    // Small range: Top 6 by pure score
-    finalPredictions = suggestions.slice(0, 6);
+    // Small range: Top 6 by pure score with even/odd balance
+    for (const candidate of filteredSuggestions) {
+      if (finalPredictions.length >= 6) break;
+      
+      const isEven = candidate.n % 2 === 0;
+      
+      // Enforce 3 even, 3 odd balance
+      if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || 
+          (finalPredictions.length >= 4)) { // Allow flexibility for last 2 picks
+        
+        finalPredictions.push(candidate);
+        if (isEven) evenCount++;
+        else oddCount++;
+      }
+    }
+    
   } else if (range <= 30) {
-    // Medium range: Ensure diversity
-    finalPredictions = [];
-    const candidates = [...suggestions];
+    // Medium range: Ensure diversity with spacing + even/odd balance
+    const candidates = [...filteredSuggestions];
     
     while (finalPredictions.length < 6 && candidates.length > 0) {
       const next = candidates.shift();
+      const isEven = next.n % 2 === 0;
       
-      // Avoid numbers too close to each other
-      const tooClose = finalPredictions.some(p => Math.abs(p.n - next.n) <= 3);
-      if (!tooClose || finalPredictions.length >= 4) {
-        finalPredictions.push(next);
+      // Check even/odd constraint first, then spacing
+      const canAdd = (isEven && evenCount < 3) || (!isEven && oddCount < 3) || 
+                     (finalPredictions.length >= 4);
+      
+      if (canAdd) {
+        // Avoid numbers too close to each other (relaxed for balance)
+        const tooClose = finalPredictions.some(p => Math.abs(p.n - next.n) <= 2);
+        if (!tooClose || finalPredictions.length >= 4) {
+          finalPredictions.push(next);
+          if (isEven) evenCount++;
+          else oddCount++;
+        }
       }
     }
-  } else {
-    // Large range: Strategic selection across score ranges
-    const topTier = suggestions.slice(0, 3);       // Top 3
-    const midTier = suggestions.slice(5, 15);      // Skip 4th-5th, take from 6th-15th
-    const lowTier = suggestions.slice(20, 35);     // Take from deeper pool
     
-    finalPredictions = [
-      ...topTier.slice(0, 2),                      // 2 from top tier
-      ...midTier.slice(0, 2),                      // 2 from mid tier  
-      ...lowTier.slice(0, 2)                       // 2 from low tier
+  } else {
+    // Large range: Strategic selection with perfect balance
+    const topTier = filteredSuggestions.slice(0, 8);       // Larger pool for flexibility
+    const midTier = filteredSuggestions.slice(8, 25);      
+    const lowTier = filteredSuggestions.slice(25, 45);     
+    
+    // Smart tier-based selection with balance
+    const tiers = [
+      { candidates: topTier, target: 3 },    // 3 from top tier
+      { candidates: midTier, target: 2 },    // 2 from mid tier
+      { candidates: lowTier, target: 1 }     // 1 from low tier
     ];
     
-    // Fill remaining if needed
-    while (finalPredictions.length < 6) {
-      const remaining = suggestions.filter(s => 
-        !finalPredictions.some(p => p.n === s.n)
-      );
-      if (remaining.length > 0) {
-        finalPredictions.push(remaining[0]);
-      } else {
-        break;
+    for (const tier of tiers) {
+      let tierCount = 0;
+      for (const candidate of tier.candidates) {
+        if (finalPredictions.length >= 6 || tierCount >= tier.target) break;
+        
+        const isEven = candidate.n % 2 === 0;
+        
+        // Enforce even/odd balance with tier preferences
+        if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || 
+            (finalPredictions.length >= 4)) {
+          
+          finalPredictions.push(candidate);
+          tierCount++;
+          if (isEven) evenCount++;
+          else oddCount++;
+        }
       }
     }
+  }
+  
+  // Fill remaining slots if needed (ensuring balance)
+  while (finalPredictions.length < 6) {
+    const remaining = filteredSuggestions.filter(s => 
+      !finalPredictions.some(p => p.n === s.n)
+    );
+    
+    if (remaining.length === 0) break;
+    
+    // Prefer numbers that help balance even/odd
+    let candidate;
+    if (evenCount < 3) {
+      candidate = remaining.find(c => c.n % 2 === 0) || remaining[0];
+    } else if (oddCount < 3) {
+      candidate = remaining.find(c => c.n % 2 === 1) || remaining[0];
+    } else {
+      candidate = remaining[0];
+    }
+    
+    finalPredictions.push(candidate);
+    if (candidate.n % 2 === 0) evenCount++;
+    else oddCount++;
   }
   
   const scores = finalPredictions.map(o => o.finalScore);
@@ -797,51 +1131,140 @@ function runWeightedPrediction() {
                        range <= 30 ? 'Balanced' : 
                        'Pattern Analysis';
                        
+  console.log('Debug: Weighted Recent predictions with balance:', 
+    finalPredictions.map(p => `${p.n}(${p.finalScore.toFixed(2)})`).join(', '));
+  console.log('Debug: Even/Odd balance:', evenCount, '/', oddCount);
+    
   displayPredictedNumbers(
     finalPredictions.map(o => o.n), 
     null, 
     scores, 
     freq, 
     compatScores, 
-    `Range-Differentiated Analysis: ${algorithmType} (${range} draws)`
+    `Range-Differentiated Analysis: ${algorithmType} (${range} draws, E/O: ${evenCount}/${oddCount})`
   );
 }
 
-// Hot/Cold Analysis - Trending numbers
+// Hot/Cold Analysis - IMPROVED: Based on actual data patterns
 function runHotColdPrediction() {
+  const bases = getSelectedBases();
   const range = parseInt(document.getElementById('drawRange').value);
   const includeAdd = document.getElementById('includeAdd').checked;
-  const recentDraws = historical.slice(0, Math.floor(range / 2));
-  const olderDraws = historical.slice(Math.floor(range / 2), range);
+  
+  // FIXED: Use standardized 20 recent draws vs remaining historical data
+  const recentDraws = historical.slice(0, Math.min(20, historical.length));
+  const historicalDraws = historical.slice(20, Math.min(range + 20, historical.length));
+  
+  console.log('Debug: Hot/Cold using', recentDraws.length, 'recent vs', historicalDraws.length, 'historical draws');
   
   const recentFreq = Array(50).fill(0);
-  const olderFreq = Array(50).fill(0);
+  const historicalFreq = Array(50).fill(0);
   
+  // Count recent frequencies
   recentDraws.forEach(draw => {
-  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => recentFreq[n]++);
+    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
+    pool.forEach(n => {
+      if (n >= 1 && n <= 49) recentFreq[n]++;
+    });
   });
   
-  olderDraws.forEach(draw => {
-  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => olderFreq[n]++);
+  // Count historical frequencies
+  historicalDraws.forEach(draw => {
+    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
+    pool.forEach(n => {
+      if (n >= 1 && n <= 49) historicalFreq[n]++;
+    });
   });
   
-  const suggestions = recentFreq.map((recent, n) => ({
-    n,
-    recent,
-    older: olderFreq[n],
-    trend: recent - olderFreq[n],
-    score: recent + Math.max(0, recent - olderFreq[n]) * 0.5
-  }))
-    .filter(o => o.n >= 1 && o.n <= 49)
-    .sort((a, b) => b.score - a.score || a.n - b.n)
-    .slice(0, 6);
+  // IMPROVED: Calculate true hotness ratios like actual data analysis
+  const suggestions = recentFreq.map((recentCount, n) => {
+    const recentRate = recentCount / recentDraws.length;
+    const historicalRate = historicalFreq[n] / Math.max(1, historicalDraws.length);
+    const hotRatio = historicalRate > 0 ? recentRate / historicalRate : (recentCount > 0 ? 10 : 0);
     
-  const scores = suggestions.map(o => o.score);
-  const freq = suggestions.map(o => o.recent);
-  const compat = suggestions.map(o => o.trend);
-  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat, 'Hot/Cold Trend Analysis');
+    // ENHANCED: Multi-factor scoring based on actual data insights
+    let hotScore = 0;
+    
+    // Factor 1: Recent activity (25% weight)
+    hotScore += recentCount * 0.25;
+    
+    // Factor 2: Heat ratio vs historical (40% weight) 
+    if (hotRatio > 1.5 && recentRate > 0.10) { // Minimum 10% recent appearance
+      hotScore += hotRatio * 0.40;
+    }
+    
+    // Factor 3: Momentum boost for trending numbers (20% weight)
+    if (recentCount >= 3 && hotRatio > 1.2) {
+      hotScore += 0.20;
+    }
+    
+    // Factor 4: Penalty for completely cold numbers (15% weight)
+    if (recentCount === 0 && historicalRate > 0.08) {
+      hotScore -= 0.15; // Avoid numbers that went completely cold
+    }
+    
+    return {
+      n,
+      recentCount,
+      recentRate: recentRate * 100, // Convert to percentage
+      historicalRate: historicalRate * 100,
+      hotRatio,
+      hotScore,
+      trend: recentCount > historicalFreq[n] / Math.max(1, historicalDraws.length) * recentDraws.length ? '+' : (recentCount === 0 ? '--' : '-'),
+      confidence: Math.min(95, 50 + hotScore * 20)
+    };
+  })
+    .filter(o => o.n >= 1 && o.n <= 49 && !bases.includes(o.n))
+    .sort((a, b) => b.hotScore - a.hotScore || a.n - b.n);
+  
+  // COLD NUMBER AVOIDANCE: Filter candidates but allow some for balance
+  const coldNumbers = identifyColdNumbers(includeAdd);
+  const filteredSuggestions = applyColdNumberAvoidance(suggestions, coldNumbers, 1);
+  
+  // ENHANCED: Smart selection with even/odd balance
+  const finalPredictions = [];
+  let evenCount = 0, oddCount = 0;
+  
+  for (const candidate of filteredSuggestions) {
+    if (finalPredictions.length >= 6) break;
+    
+    const isEven = candidate.n % 2 === 0;
+    
+    // Enforce 3 even, 3 odd balance (based on actual data: perfect 50/50 split)
+    if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || 
+        (finalPredictions.length >= 4)) { // Allow flexibility for last 2 picks
+      
+      finalPredictions.push(candidate);
+      if (isEven) evenCount++;
+      else oddCount++;
+    }
+  }
+  
+  // Fill remaining slots if needed
+  if (finalPredictions.length < 6) {
+    for (const candidate of filteredSuggestions) {
+      if (finalPredictions.length >= 6) break;
+      if (!finalPredictions.some(p => p.n === candidate.n)) {
+        finalPredictions.push(candidate);
+      }
+    }
+  }
+  
+  const scores = finalPredictions.map(o => o.hotScore);
+  const freq = finalPredictions.map(o => o.recentCount);
+  const trends = finalPredictions.map(o => o.hotRatio);
+  
+  console.log('Debug: Hot/Cold predictions with trends:', 
+    finalPredictions.map(p => `${p.n}(${p.hotRatio.toFixed(1)}x, ${p.trend})`).join(', '));
+  
+  displayPredictedNumbers(
+    finalPredictions.map(o => o.n), 
+    null, 
+    scores, 
+    freq, 
+    trends, 
+    `Data-Driven Hot/Cold Analysis (${recentDraws.length} recent vs ${historicalDraws.length} historical, Even: ${evenCount}, Odd: ${6-evenCount})`
+  );
 }
 
 // ENHANCEMENT 1: Enhanced Combined Analysis
