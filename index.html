@@ -782,7 +782,19 @@ function runFrequencyCompatibilityPrediction() {
     };
   })
     .filter(o => o.n >= 1 && o.n <= 49 && !bases.includes(o.n))
-    .sort((a, b) => b.compositeScore - a.compositeScore || a.n - b.n);
+    .sort((a, b) => {
+      // More stable sorting with multiple tie-breakers
+      if (Math.abs(b.compositeScore - a.compositeScore) > 0.000001) {
+        return b.compositeScore - a.compositeScore;
+      }
+      if (a.recentCount !== b.recentCount) {
+        return b.recentCount - a.recentCount;
+      }
+      if (a.compatScore !== b.compatScore) {
+        return b.compatScore - a.compatScore;
+      }
+      return a.n - b.n; // Final tie-breaker by number
+    });
   
   // COLD NUMBER AVOIDANCE: Reduce priority of cold numbers
   const coldNumbers = identifyColdNumbers(includeAdd);
@@ -812,9 +824,8 @@ function runFrequencyCompatibilityPrediction() {
     }
   }
   
-  // Select 1-2 from tier 2 (deterministic for consistency)
-  const tier2StartOffset = Math.floor(tier2.length * 0.1); // Start from 10% into tier2 for controlled variety
-  for (let i = tier2StartOffset; i < Math.min(2 + tier2StartOffset, tier2.length) && finalPredictions.length < 6; i++) {
+  // Select 1-2 from tier 2 (fully deterministic)
+  for (let i = 0; i < Math.min(2, tier2.length) && finalPredictions.length < 6; i++) {
     const candidate = tier2[i];
     const isEven = candidate.n % 2 === 0;
     
@@ -825,17 +836,21 @@ function runFrequencyCompatibilityPrediction() {
     }
   }
   
-  // Fill remaining with balanced selection
+  // Fill remaining with deterministic balanced selection
   while (finalPredictions.length < 6) {
     const remaining = filteredCandidates.filter(c => !finalPredictions.some(p => p.n === c.n));
     if (remaining.length === 0) break;
     
-    // Prefer balancing even/odd
+    // Deterministic selection with even/odd preference
     let candidate;
     if (evenCount < 3) {
-      candidate = remaining.find(c => c.n % 2 === 0) || remaining[0];
+      // Sort evens by score first, then by number for consistency
+      const evenCandidates = remaining.filter(c => c.n % 2 === 0);
+      candidate = evenCandidates.length > 0 ? evenCandidates[0] : remaining[0];
     } else if (oddCount < 3) {
-      candidate = remaining.find(c => c.n % 2 === 1) || remaining[0];
+      // Sort odds by score first, then by number for consistency
+      const oddCandidates = remaining.filter(c => c.n % 2 === 1);
+      candidate = oddCandidates.length > 0 ? oddCandidates[0] : remaining[0];
     } else {
       candidate = remaining[0];
     }
@@ -845,8 +860,13 @@ function runFrequencyCompatibilityPrediction() {
     else oddCount++;
   }
   
-  // Sort by composite score for display
-  finalPredictions.sort((a, b) => b.compositeScore - a.compositeScore);
+  // Sort by composite score for display (stable sort)
+  finalPredictions.sort((a, b) => {
+    if (Math.abs(b.compositeScore - a.compositeScore) > 0.000001) {
+      return b.compositeScore - a.compositeScore;
+    }
+    return a.n - b.n; // Stable tie-breaker
+  });
   
   const scores = finalPredictions.map(o => o.compositeScore * 100);
   const freq = allDraws.reduce((acc, draw) => {
