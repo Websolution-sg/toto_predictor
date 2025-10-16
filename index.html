@@ -911,9 +911,9 @@ function runWeightedPrediction() {
   const weighted = Array(50).fill(0);
   const compat = Array(50).fill(0);
   
-  // REVOLUTIONARY: Completely different algorithms based on range
-  if (range <= 10) {
-    // SMALL RANGE: Focus on immediate recent patterns
+  // REVOLUTIONARY: Completely different algorithms based on range with clear boundaries
+  if (range <= 8) {
+    // SMALL RANGE: Focus on immediate recent patterns (reduced boundary for clearer separation)
     console.log('Debug: Using RECENT FOCUS algorithm for small range');
     draws.forEach((draw, index) => {
       const weight = Math.pow(0.98, index); // Very gentle decay
@@ -928,20 +928,30 @@ function runWeightedPrediction() {
       });
     });
     
-  } else if (range <= 30) {
-    // MEDIUM RANGE: Balanced frequency + compatibility with randomization
+  } else if (range <= 35) {
+    // MEDIUM RANGE: Balanced frequency + compatibility with STRONG randomization
     console.log('Debug: Using BALANCED algorithm for medium range');
     draws.forEach((draw, index) => {
       // Sigmoid-like decay that emphasizes middle positions
       const normalizedPos = index / (range - 1);
       const sigmoidWeight = 1 / (1 + Math.exp((normalizedPos - 0.3) * 10));
       
-      // ADD RANDOMIZATION: Small random factor for diversity
-      const randomFactor = 0.9 + (Math.random() * 0.2); // 0.9 to 1.1 multiplier
+      // ENHANCED RANDOMIZATION: Stronger random factor for more diversity
+      const randomFactor = 0.7 + (Math.random() * 0.6); // 0.7 to 1.3 multiplier (wider range)
+      
+      // Additional range-specific bias for differentiation
+      const rangeBias = range <= 15 ? 1.2 : 0.8; // Small ranges get boost, larger get reduction
       
       const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
       
-      pool.forEach(n => weighted[n] += sigmoidWeight * randomFactor);
+      pool.forEach(n => {
+        weighted[n] += sigmoidWeight * randomFactor * rangeBias;
+        
+        // Range-specific number preferences for differentiation
+        if (range <= 15 && n <= 20) weighted[n] += 0.3; // Small-medium ranges prefer low numbers
+        if (range > 15 && range <= 25 && n >= 25 && n <= 35) weighted[n] += 0.3; // Mid ranges prefer middle numbers  
+        if (range > 25 && n >= 35) weighted[n] += 0.3; // Larger medium ranges prefer high numbers
+      });
       
       bases.forEach(b => {
         if (pool.includes(b)) {
@@ -992,20 +1002,21 @@ function runWeightedPrediction() {
     }
   }
   
-  // RANGE-SPECIFIC SCORING ALGORITHMS
+  // RANGE-SPECIFIC SCORING ALGORITHMS with enhanced differentiation
   const suggestions = weighted.map((weight, n) => {
     let finalScore;
     
-    if (range <= 10) {
+    if (range <= 8) {
       // Small range: Pure frequency focus with recency boost
-      finalScore = weight * 1.5 + compat[n] * 0.3;
-    } else if (range <= 30) {
-      // Medium range: Balanced approach with compatibility emphasis
-      finalScore = weight * 0.8 + compat[n] * 1.2;
+      finalScore = weight * 1.5 + compat[n] * 0.3 + (Math.random() * 0.2); // Add randomization
+    } else if (range <= 35) {
+      // Medium range: Balanced approach with compatibility emphasis + strong randomization
+      const rangeMultiplier = range <= 15 ? 1.1 : (range <= 20 ? 1.0 : 0.9); // Differentiate sub-ranges
+      finalScore = weight * 0.8 * rangeMultiplier + compat[n] * 1.2 + (Math.random() * 0.5); // Strong randomization
     } else {
       // Large range: Complex pattern-based scoring with enhanced randomization
       const patternBonus = (weight > 2.0 ? 0.5 : 0) + (compat[n] > 1.5 ? 0.3 : 0);
-      finalScore = weight + compat[n] + patternBonus + (Math.random() * 0.3); // Increased randomization
+      finalScore = weight + compat[n] + patternBonus + (Math.random() * 0.4); // Increased randomization
     }
     
     return { 
@@ -1027,12 +1038,17 @@ function runWeightedPrediction() {
   let finalPredictions = [];
   let evenCount = 0, oddCount = 0;
   
-  if (range <= 10) {
-    // Small range: Top 6 by pure score with even/odd balance
-    for (const candidate of filteredSuggestions) {
+  if (range <= 8) {
+    // Small range: Top 6 by pure score with even/odd balance + slight randomization
+    const topCandidates = filteredSuggestions.slice(0, 10); // Get top 10 for selection flexibility
+    for (const candidate of topCandidates) {
       if (finalPredictions.length >= 6) break;
       
       const isEven = candidate.n % 2 === 0;
+      
+      // Add small chance to skip top candidates for diversity
+      const skipChance = finalPredictions.length > 0 ? 0.15 : 0; // 15% chance to skip after first pick
+      if (Math.random() < skipChance) continue;
       
       // Enforce 3 even, 3 odd balance
       if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || 
@@ -1044,12 +1060,31 @@ function runWeightedPrediction() {
       }
     }
     
-  } else if (range <= 30) {
-    // Medium range: Ensure diversity with spacing + even/odd balance
+  } else if (range <= 35) {
+    // Medium range: Enhanced diversity with range-specific spacing + even/odd balance
     const candidates = [...filteredSuggestions];
     
+    // Range-specific selection pattern
+    const selectionPattern = range <= 15 ? 'conservative' : (range <= 20 ? 'balanced' : 'aggressive');
+    
     while (finalPredictions.length < 6 && candidates.length > 0) {
-      const next = candidates.shift();
+      let nextIndex = 0;
+      
+      // Different selection strategies based on range
+      if (selectionPattern === 'conservative') {
+        // Take mostly from top, occasional skip
+        nextIndex = Math.random() < 0.8 ? 0 : Math.min(2, candidates.length - 1);
+      } else if (selectionPattern === 'balanced') {
+        // Mix of top and middle selections
+        nextIndex = Math.random() < 0.6 ? 0 : Math.floor(Math.random() * Math.min(4, candidates.length));
+      } else {
+        // More aggressive mixing
+        nextIndex = Math.floor(Math.random() * Math.min(6, candidates.length));
+      }
+      
+      const next = candidates.splice(nextIndex, 1)[0];
+      if (!next) break;
+      
       const isEven = next.n % 2 === 0;
       
       // Check even/odd constraint first, then spacing
@@ -1057,8 +1092,8 @@ function runWeightedPrediction() {
                      (finalPredictions.length >= 4);
       
       if (canAdd) {
-        // Avoid numbers too close to each other (relaxed for balance)
-        const tooClose = finalPredictions.some(p => Math.abs(p.n - next.n) <= 2);
+        // Relaxed spacing for medium ranges
+        const tooClose = finalPredictions.some(p => Math.abs(p.n - next.n) <= 1);
         if (!tooClose || finalPredictions.length >= 4) {
           finalPredictions.push(next);
           if (isEven) evenCount++;
@@ -1147,8 +1182,8 @@ function runWeightedPrediction() {
   console.log('Debug: Range-differentiated predictions:', 
     finalPredictions.map(p => `${p.n}(${p.finalScore.toFixed(2)})`).join(', '));
     
-  const algorithmType = range <= 10 ? 'Recent Focus' : 
-                       range <= 30 ? 'Balanced' : 
+  const algorithmType = range <= 8 ? 'Recent Focus' : 
+                       range <= 35 ? 'Balanced' : 
                        'Pattern Analysis';
                        
   console.log('Debug: Weighted Recent predictions with balance:', 
