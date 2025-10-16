@@ -812,10 +812,10 @@ function runFrequencyCompatibilityPrediction() {
     }
   }
   
-  // Select 1-2 from tier 2 (some randomization)
-  const tier2Shuffled = [...tier2].sort(() => Math.random() - 0.5);
-  for (let i = 0; i < Math.min(2, tier2Shuffled.length) && finalPredictions.length < 6; i++) {
-    const candidate = tier2Shuffled[i];
+  // Select 1-2 from tier 2 (deterministic for consistency)
+  const tier2StartOffset = Math.floor(tier2.length * 0.1); // Start from 10% into tier2 for controlled variety
+  for (let i = tier2StartOffset; i < Math.min(2 + tier2StartOffset, tier2.length) && finalPredictions.length < 6; i++) {
+    const candidate = tier2[i];
     const isEven = candidate.n % 2 === 0;
     
     if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || finalPredictions.length >= 5) {
@@ -865,7 +865,7 @@ function runFrequencyCompatibilityPrediction() {
     scores, 
     freq, 
     compat, 
-    `Enhanced Frequency + Compatibility Analysis (Recent: ${recentDraws.length}, Historical: ${historicalDraws.length}, E/O: ${evenCount}/${oddCount})`
+    `Enhanced Frequency + Compatibility Analysis (Consistent Results - Recent: ${recentDraws.length}, Historical: ${historicalDraws.length}, E/O: ${evenCount}/${oddCount})`
   );
 }
 
@@ -950,7 +950,7 @@ function runWeightedPrediction() {
       const sigmoidWeight = 1 / (1 + Math.exp((normalizedPos - 0.3) * 10));
       
       // ENHANCED RANDOMIZATION: Stronger random factor for more diversity
-      const randomFactor = 0.7 + (Math.random() * 0.6); // 0.7 to 1.3 multiplier (wider range)
+      const rangeFactor = 0.85 + (range / 1000); // Deterministic factor based on range (0.87-1.05)
       
       // Additional range-specific bias for differentiation
       const rangeBias = range <= 15 ? 1.2 : 0.8; // Small ranges get boost, larger get reduction
@@ -958,7 +958,7 @@ function runWeightedPrediction() {
       const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
       
       pool.forEach(n => {
-        weighted[n] += sigmoidWeight * randomFactor * rangeBias;
+        weighted[n] += sigmoidWeight * rangeFactor * rangeBias;
         
         // Range-specific number preferences for differentiation
         if (range <= 15 && n <= 20) weighted[n] += 0.3; // Small-medium ranges prefer low numbers
@@ -968,7 +968,7 @@ function runWeightedPrediction() {
       
       bases.forEach(b => {
         if (pool.includes(b)) {
-          pool.filter(n => n !== b).forEach(n => compat[n] += sigmoidWeight * 1.5 * randomFactor); // Boost compatibility
+          pool.filter(n => n !== b).forEach(n => compat[n] += sigmoidWeight * 1.5 * rangeFactor); // Boost compatibility
         }
       });
     });
@@ -1021,15 +1021,15 @@ function runWeightedPrediction() {
     
     if (range <= 8) {
       // Small range: Pure frequency focus with recency boost
-      finalScore = weight * 1.5 + compat[n] * 0.3 + (Math.random() * 0.2); // Add randomization
+      finalScore = weight * 1.5 + compat[n] * 0.3 + (n % 7) * 0.03; // Deterministic variance
     } else if (range <= 35) {
       // Medium range: Balanced approach with compatibility emphasis + strong randomization
       const rangeMultiplier = range <= 15 ? 1.1 : (range <= 20 ? 1.0 : 0.9); // Differentiate sub-ranges
-      finalScore = weight * 0.8 * rangeMultiplier + compat[n] * 1.2 + (Math.random() * 0.5); // Strong randomization
+      finalScore = weight * 0.8 * rangeMultiplier + compat[n] * 1.2 + (n % 11) * 0.045; // Deterministic variance
     } else {
       // Large range: Complex pattern-based scoring with enhanced randomization
       const patternBonus = (weight > 2.0 ? 0.5 : 0) + (compat[n] > 1.5 ? 0.3 : 0);
-      finalScore = weight + compat[n] + patternBonus + (Math.random() * 0.4); // Increased randomization
+      finalScore = weight + compat[n] + patternBonus + (n % 13) * 0.031; // Deterministic variance
     }
     
     return { 
@@ -1060,8 +1060,7 @@ function runWeightedPrediction() {
       const isEven = candidate.n % 2 === 0;
       
       // Add small chance to skip top candidates for diversity
-      const skipChance = finalPredictions.length > 0 ? 0.15 : 0; // 15% chance to skip after first pick
-      if (Math.random() < skipChance) continue;
+      // Deterministic selection - no skipping for consistency
       
       // Enforce 3 even, 3 odd balance
       if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || 
@@ -1086,13 +1085,13 @@ function runWeightedPrediction() {
       // Different selection strategies based on range
       if (selectionPattern === 'conservative') {
         // Take mostly from top, occasional skip
-        nextIndex = Math.random() < 0.8 ? 0 : Math.min(2, candidates.length - 1);
+        nextIndex = 0; // Always select top candidate for consistency
       } else if (selectionPattern === 'balanced') {
         // Mix of top and middle selections
-        nextIndex = Math.random() < 0.6 ? 0 : Math.floor(Math.random() * Math.min(4, candidates.length));
+        nextIndex = finalPredictions.length % Math.min(3, candidates.length); // Deterministic cycling
       } else {
         // More aggressive mixing
-        nextIndex = Math.floor(Math.random() * Math.min(6, candidates.length));
+        nextIndex = (finalPredictions.length * 2) % Math.min(6, candidates.length); // Deterministic mixing
       }
       
       const next = candidates.splice(nextIndex, 1)[0];
@@ -1430,7 +1429,7 @@ function runWeightedPrediction() {
     
   const scores = suggestions.map(o => Math.round(o.score * 10) / 10);
   const freq = weighted; // Use weighted as freq for display
-  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat, 'Weighted Recent Draw Analysis');
+  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat, 'Weighted Recent Draw Analysis (Consistent Results)');
 }
 
 // ENHANCEMENT 3: Hot/Cold Number Analysis
