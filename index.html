@@ -1238,9 +1238,10 @@ function runHotColdPrediction() {
   const range = parseInt(document.getElementById('drawRange').value);
   const includeAdd = document.getElementById('includeAdd').checked;
   
-  // FIXED: Use standardized 20 recent draws vs remaining historical data
-  const recentDraws = historical.slice(0, Math.min(20, historical.length));
-  const historicalDraws = historical.slice(20, Math.min(range + 20, historical.length));
+  // RANGE-SENSITIVE: Use proportional recent draws based on range
+  const recentSize = Math.min(Math.max(10, Math.floor(range * 0.3)), 30); // 30% of range, min 10, max 30
+  const recentDraws = historical.slice(0, Math.min(recentSize, historical.length));
+  const historicalDraws = historical.slice(recentSize, Math.min(range + recentSize, historical.length));
   
   console.log('Debug: Hot/Cold using', recentDraws.length, 'recent vs', historicalDraws.length, 'historical draws');
   
@@ -1289,6 +1290,10 @@ function runHotColdPrediction() {
     if (recentCount === 0 && historicalRate > 0.08) {
       hotScore -= 0.15; // Avoid numbers that went completely cold
     }
+    
+    // Factor 5: Range-specific adjustments
+    const rangeBonus = range <= 20 ? hotScore * 0.1 : range <= 50 ? hotScore * 0.05 : 0;
+    hotScore += rangeBonus;
     
     return {
       n,
@@ -1425,14 +1430,21 @@ function runWeightedPrediction() {
   const compat = Array(50).fill(0);
   
   draws.forEach((draw, index) => {
-    const weight = Math.exp(-index * 0.1); // Exponential decay for older draws
-  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
+    // RANGE-SENSITIVE: Different decay rates based on range
+    const decayRate = range <= 20 ? 0.2 : range <= 50 ? 0.1 : 0.05; // Faster decay for smaller ranges
+    const weight = Math.exp(-index * decayRate);
     
-    pool.forEach(n => weighted[n] += weight);
+    // RANGE-SPECIFIC MULTIPLIER: Different emphasis based on range
+    const rangeMultiplier = range <= 20 ? 1.5 : range <= 50 ? 1.2 : 1.0;
+    const adjustedWeight = weight * rangeMultiplier;
+    
+    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
+    
+    pool.forEach(n => weighted[n] += adjustedWeight);
     
     bases.forEach(b => {
       if (pool.includes(b)) {
-        pool.filter(n => n !== b).forEach(n => compat[n] += weight);
+        pool.filter(n => n !== b).forEach(n => compat[n] += adjustedWeight);
       }
     });
   });
