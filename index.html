@@ -929,20 +929,23 @@ function runWeightedPrediction() {
     });
     
   } else if (range <= 30) {
-    // MEDIUM RANGE: Balanced frequency + compatibility
+    // MEDIUM RANGE: Balanced frequency + compatibility with randomization
     console.log('Debug: Using BALANCED algorithm for medium range');
     draws.forEach((draw, index) => {
       // Sigmoid-like decay that emphasizes middle positions
       const normalizedPos = index / (range - 1);
       const sigmoidWeight = 1 / (1 + Math.exp((normalizedPos - 0.3) * 10));
       
+      // ADD RANDOMIZATION: Small random factor for diversity
+      const randomFactor = 0.9 + (Math.random() * 0.2); // 0.9 to 1.1 multiplier
+      
       const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
       
-      pool.forEach(n => weighted[n] += sigmoidWeight);
+      pool.forEach(n => weighted[n] += sigmoidWeight * randomFactor);
       
       bases.forEach(b => {
         if (pool.includes(b)) {
-          pool.filter(n => n !== b).forEach(n => compat[n] += sigmoidWeight * 1.5); // Boost compatibility
+          pool.filter(n => n !== b).forEach(n => compat[n] += sigmoidWeight * 1.5 * randomFactor); // Boost compatibility
         }
       });
     });
@@ -1000,9 +1003,9 @@ function runWeightedPrediction() {
       // Medium range: Balanced approach with compatibility emphasis
       finalScore = weight * 0.8 + compat[n] * 1.2;
     } else {
-      // Large range: Complex pattern-based scoring
+      // Large range: Complex pattern-based scoring with enhanced randomization
       const patternBonus = (weight > 2.0 ? 0.5 : 0) + (compat[n] > 1.5 ? 0.3 : 0);
-      finalScore = weight + compat[n] + patternBonus + (Math.random() * 0.1); // Tiny randomization for ties
+      finalScore = weight + compat[n] + patternBonus + (Math.random() * 0.3); // Increased randomization
     }
     
     return { 
@@ -1084,10 +1087,8 @@ function runWeightedPrediction() {
         
         const isEven = candidate.n % 2 === 0;
         
-        // Enforce even/odd balance with tier preferences
-        if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || 
-            (finalPredictions.length >= 4)) {
-          
+        // STRICT: Enforce even/odd balance with tier preferences
+        if ((isEven && evenCount < 3) || (!isEven && oddCount < 3)) {
           finalPredictions.push(candidate);
           tierCount++;
           if (isEven) evenCount++;
@@ -1097,7 +1098,7 @@ function runWeightedPrediction() {
     }
   }
   
-  // Fill remaining slots if needed (ensuring balance)
+  // ENHANCED: Fill remaining slots with strict balance enforcement
   while (finalPredictions.length < 6) {
     const remaining = filteredSuggestions.filter(s => 
       !finalPredictions.some(p => p.n === s.n)
@@ -1105,19 +1106,38 @@ function runWeightedPrediction() {
     
     if (remaining.length === 0) break;
     
-    // Prefer numbers that help balance even/odd
+    // STRICT: Only add numbers that maintain 3/3 balance
     let candidate;
-    if (evenCount < 3) {
-      candidate = remaining.find(c => c.n % 2 === 0) || remaining[0];
+    if (evenCount < 3 && oddCount < 3) {
+      // Need both even and odd - prefer the one with higher score
+      const evenCandidates = remaining.filter(c => c.n % 2 === 0);
+      const oddCandidates = remaining.filter(c => c.n % 2 === 1);
+      
+      if (evenCandidates.length > 0 && oddCandidates.length > 0) {
+        candidate = evenCandidates[0].finalScore > oddCandidates[0].finalScore ? evenCandidates[0] : oddCandidates[0];
+      } else {
+        candidate = evenCandidates[0] || oddCandidates[0] || remaining[0];
+      }
+    } else if (evenCount < 3) {
+      // Need more even numbers
+      candidate = remaining.find(c => c.n % 2 === 0);
+      if (!candidate) break; // Can't maintain balance
     } else if (oddCount < 3) {
-      candidate = remaining.find(c => c.n % 2 === 1) || remaining[0];
+      // Need more odd numbers
+      candidate = remaining.find(c => c.n % 2 === 1);
+      if (!candidate) break; // Can't maintain balance
     } else {
-      candidate = remaining[0];
+      // Already balanced - shouldn't happen
+      break;
     }
     
-    finalPredictions.push(candidate);
-    if (candidate.n % 2 === 0) evenCount++;
-    else oddCount++;
+    if (candidate) {
+      finalPredictions.push(candidate);
+      if (candidate.n % 2 === 0) evenCount++;
+      else oddCount++;
+    } else {
+      break;
+    }
   }
   
   const scores = finalPredictions.map(o => o.finalScore);
