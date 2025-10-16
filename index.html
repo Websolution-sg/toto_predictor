@@ -449,23 +449,25 @@ function applyPatternFilters(numbers, patterns) {
     console.log(`🔧 Adjusting sum from ${sum} to target range ${targetSumMin.toFixed(0)}-${targetSumMax.toFixed(0)}`);
     
     if (sum < targetSumMin) {
-      // Replace lowest numbers with higher ones
+      // Replace lowest numbers with higher ones - deterministic selection
       const available = [];
       for (let i = 25; i <= 49; i++) {
         if (!filtered.includes(i)) available.push(i);
       }
       if (available.length > 0) {
-        filtered[0] = available[Math.floor(Math.random() * Math.min(5, available.length))];
+        // Use the lowest available high number for consistency
+        filtered[0] = available[0];
         filtered.sort((a, b) => a - b);
       }
     } else {
-      // Replace highest numbers with lower ones
+      // Replace highest numbers with lower ones - deterministic selection
       const available = [];
       for (let i = 1; i <= 25; i++) {
         if (!filtered.includes(i)) available.push(i);
       }
       if (available.length > 0) {
-        filtered[filtered.length - 1] = available[Math.floor(Math.random() * Math.min(5, available.length))];
+        // Use the highest available low number for consistency
+        filtered[filtered.length - 1] = available[available.length - 1];
         filtered.sort((a, b) => a - b);
       }
     }
