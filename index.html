@@ -933,8 +933,8 @@ function runEnhancedPrediction() {
   displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat, 'Enhanced Analysis (Freq + Compat + Weighted)');
 }
 
-// Weighted Recent Prediction - DRAMATICALLY RANGE-DIFFERENTIATED algorithm
-function runWeightedPrediction() {
+// Weighted Recent Prediction - COMPLEX VERSION DISABLED (duplicate function exists below)
+function runWeightedPrediction_DISABLED() {
   const bases = getSelectedBases();
   const range = parseInt(document.getElementById('drawRange').value);
   const includeAdd = document.getElementById('includeAdd').checked;
@@ -1350,7 +1350,7 @@ function runHotColdPrediction() {
     scores, 
     freq, 
     trends, 
-    `Data-Driven Hot/Cold Analysis (${recentDraws.length} recent vs ${historicalDraws.length} historical, Even: ${evenCount}, Odd: ${6-evenCount})`
+    `Data-Driven Hot/Cold Analysis (Consistent Results - ${recentDraws.length} recent vs ${historicalDraws.length} historical, E/O: ${evenCount}/${6-evenCount})`
   );
 }
 
@@ -1452,62 +1452,8 @@ function runWeightedPrediction() {
   displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat, 'Weighted Recent Draw Analysis (Consistent Results)');
 }
 
-// ENHANCEMENT 3: Hot/Cold Number Analysis
-function runHotColdPrediction() {
-  const bases = getSelectedBases();
-  const range = parseInt(document.getElementById('drawRange').value);
-  const includeAdd = document.getElementById('includeAdd').checked;
-  const draws = historical.slice(0, range);
-  
-  const recentRange = Math.floor(range * 0.3);
-  const recent = draws.slice(0, recentRange);
-  const older = draws.slice(recentRange);
-  
-  const recentFreq = Array(50).fill(0);
-  const olderFreq = Array(50).fill(0);
-  const compat = Array(50).fill(0);
-  
-  recent.forEach(draw => {
-  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => recentFreq[n]++);
-  });
-  
-  older.forEach(draw => {
-    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
-    pool.forEach(n => olderFreq[n]++);
-  });
-  
-  draws.forEach(draw => {
-    const pool = includeAdd && draw.length >= 7 ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
-    bases.forEach(b => {
-      if (pool.includes(b)) {
-        pool.filter(n => n !== b).forEach(n => compat[n]++);
-      }
-    });
-  });
-  
-  const suggestions = recentFreq.map((recent, n) => {
-    const older = olderFreq[n];
-    const trend = recent - (older * (recentRange / (range - recentRange))); // Normalize for different periods
-    const temperature = trend > 0 ? 'hot' : trend < 0 ? 'cold' : 'neutral';
-    const hotBonus = trend > 0 ? trend * 2 : 0;
-    
-    return { 
-      n, 
-      recent: recent,
-      trend: trend,
-      temperature: temperature,
-      compat: compat[n],
-      score: recent + compat[n] + hotBonus
-    };
-  })
-    .filter(o => o.n >= 1 && o.n <= 49)
-    .sort((a, b) => b.score - a.score || a.n - b.n)
-    .slice(0, 6);
-    
-  const scores = suggestions.map(o => Math.round(o.score));
-  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, recentFreq, compat, 'Hot/Cold Number Analysis', suggestions);
-}
+// ENHANCEMENT 3: Hot/Cold Number Analysis - REMOVED DUPLICATE
+// The primary runHotColdPrediction() function is defined above at line 1236
 
 function displayPredictedNumbers(numbers, additional = null, scores, freq, compat, methodName = 'Analysis', extraData = null) {
   const rs = document.getElementById('results');
