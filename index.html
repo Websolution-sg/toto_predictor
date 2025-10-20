@@ -184,8 +184,14 @@ function fetchCsvAndUpdate() {
         document.getElementById(id).value = recent.numbers[idx];
       });
       document.getElementById('additional').value = recent.additional;
-      // Set default value for base7 (use additional number as default)
-      document.getElementById('base7').value = recent.additional;
+      
+      // Set default value for base7 (use additional number as default, or fallback to 1)
+      const base7Field = document.getElementById('base7');
+      if (base7Field) {
+        base7Field.value = recent.additional || 1;
+        console.log('Set base7 default value to:', base7Field.value);
+      }
+      
       document.getElementById('includeAdd').checked = false;
       updateLatestResult(recent.numbers, recent.additional, recent.date);
       
@@ -287,9 +293,27 @@ function getSelectedBases() {
     ? ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'base7']
     : ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'];
   
-  return baseIds
-    .map(id => parseInt(document.getElementById(id).value))
-    .sort((a, b) => a - b);
+  console.log('System type:', systemType, 'Base IDs:', baseIds);
+  
+  const bases = baseIds.map(id => {
+    const element = document.getElementById(id);
+    if (!element) {
+      console.error(`Element ${id} not found!`);
+      return NaN;
+    }
+    const value = parseInt(element.value);
+    if (isNaN(value)) {
+      console.error(`Element ${id} has invalid value:`, element.value);
+      return NaN;
+    }
+    return value;
+  });
+  
+  console.log('Raw bases:', bases);
+  const sortedBases = bases.filter(b => !isNaN(b)).sort((a, b) => a - b);
+  console.log('Sorted bases:', sortedBases);
+  
+  return sortedBases;
 }
 
 function arraysEqual(a, b) {
