@@ -22,7 +22,6 @@
     <select id="base4"></select>
     <select id="base5"></select>
     <select id="base6"></select>
-    <select id="base7" style="display:none;"></select>
   </div>
 
   <div>
@@ -53,7 +52,6 @@
     <label>System Type:</label><br/>
     <select id="systemType">
       <option value="6">System 6 </option>
-      <option value="7">System 7 </option>
     </select>
   </div>
 
@@ -170,7 +168,7 @@ function fetchCsvAndUpdate() {
       }
       // Update dropdowns and latest result
       for (let i = 1; i <= 49; i++) {
-        ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'base7', 'additional'].forEach(id => {
+        ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
           const select = document.getElementById(id);
           if (select && !select.querySelector(`option[value='${i}']`)) {
             const opt = document.createElement('option');
@@ -184,26 +182,8 @@ function fetchCsvAndUpdate() {
         document.getElementById(id).value = recent.numbers[idx];
       });
       document.getElementById('additional').value = recent.additional;
-      
-      // Set default value for base7 (use additional number as default, or fallback to 1)
-      const base7Field = document.getElementById('base7');
-      if (base7Field) {
-        base7Field.value = recent.additional || 1;
-        console.log('Set base7 default value to:', base7Field.value);
-      }
-      
       document.getElementById('includeAdd').checked = false;
       updateLatestResult(recent.numbers, recent.additional, recent.date);
-      
-      // Add system type change handler
-      document.getElementById('systemType').addEventListener('change', function() {
-        const base7Field = document.getElementById('base7');
-        if (this.value === '7') {
-          base7Field.style.display = 'inline';
-        } else {
-          base7Field.style.display = 'none';
-        }
-      });
       
       // Enable prediction button
       const predictBtn = document.querySelector('button[onclick="predict()"]');
@@ -220,7 +200,7 @@ function fetchCsvAndUpdate() {
       const predictBtn = document.querySelector('button[onclick="predict()"]');
       if (predictBtn) predictBtn.disabled = true;
       // Clear dropdowns
-      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'base7', 'additional'].forEach(id => {
+      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
         const select = document.getElementById(id);
         if (select) select.innerHTML = '<option value="">No data</option>';
       });
@@ -288,32 +268,9 @@ function predict() {
 }
 
 function getSelectedBases() {
-  const systemType = parseInt(document.getElementById('systemType').value);
-  const baseIds = systemType === 7 
-    ? ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'base7']
-    : ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'];
-  
-  console.log('System type:', systemType, 'Base IDs:', baseIds);
-  
-  const bases = baseIds.map(id => {
-    const element = document.getElementById(id);
-    if (!element) {
-      console.error(`Element ${id} not found!`);
-      return NaN;
-    }
-    const value = parseInt(element.value);
-    if (isNaN(value)) {
-      console.error(`Element ${id} has invalid value:`, element.value);
-      return NaN;
-    }
-    return value;
-  });
-  
-  console.log('Raw bases:', bases);
-  const sortedBases = bases.filter(b => !isNaN(b)).sort((a, b) => a - b);
-  console.log('Sorted bases:', sortedBases);
-  
-  return sortedBases;
+  return ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
+    .map(id => parseInt(document.getElementById(id).value))
+    .sort((a, b) => a - b);
 }
 
 function arraysEqual(a, b) {
@@ -360,7 +317,6 @@ function runEnhancedEnsemblePrediction() {
   const bases = getSelectedBases();
   const range = parseInt(document.getElementById('drawRange').value);
   const includeAdd = document.getElementById('includeAdd').checked;
-  const systemType = parseInt(document.getElementById('systemType').value);
   
   console.log('🚀 Running Enhanced Ensemble Prediction...');
   
@@ -418,7 +374,7 @@ function runEnhancedEnsemblePrediction() {
   
   // Smart selection with diversity
   let ensemblePrediction = [];
-  const neededNumbers = systemType - bases.length;
+  const neededNumbers = 6 - bases.length;
   
   // Select from tier 1 (60% of picks)
   const tier1Count = Math.min(Math.ceil(neededNumbers * 0.6), tier1.length);
@@ -457,7 +413,7 @@ function runEnhancedEnsemblePrediction() {
   ).map(obj => obj.n);
   
   // Combine with base numbers
-  let finalPrediction = [...bases, ...ensemblePrediction].slice(0, systemType).sort((a, b) => a - b);
+  let finalPrediction = [...bases, ...ensemblePrediction].slice(0, 6).sort((a, b) => a - b);
   
   // ENHANCED: Pattern filtering with diversity preservation
   finalPrediction = applyEnhancedPatternFilters(finalPrediction, patterns, sortedCandidates);
@@ -764,7 +720,6 @@ function runFrequencyCompatibilityPrediction() {
   const bases = getSelectedBases();
   const range = parseInt(document.getElementById('drawRange').value);
   const includeAdd = document.getElementById('includeAdd').checked;
-  const systemType = parseInt(document.getElementById('systemType').value);
   
   // IMPROVED: Use recent 20 draws as primary + historical for context
   const recentDraws = historical.slice(0, Math.min(20, historical.length));
@@ -869,7 +824,7 @@ function runFrequencyCompatibilityPrediction() {
   }
   
   // Select 1-2 from tier 2 (fully deterministic)
-  for (let i = 0; i < Math.min(2, tier2.length) && finalPredictions.length < systemType; i++) {
+  for (let i = 0; i < Math.min(2, tier2.length) && finalPredictions.length < 6; i++) {
     const candidate = tier2[i];
     const isEven = candidate.n % 2 === 0;
     
@@ -881,7 +836,7 @@ function runFrequencyCompatibilityPrediction() {
   }
   
   // Fill remaining with deterministic balanced selection
-  while (finalPredictions.length < systemType) {
+  while (finalPredictions.length < 6) {
     const remaining = filteredCandidates.filter(c => !finalPredictions.some(p => p.n === c.n));
     if (remaining.length === 0) break;
     
@@ -1281,7 +1236,6 @@ function runHotColdPrediction() {
   const bases = getSelectedBases();
   const range = parseInt(document.getElementById('drawRange').value);
   const includeAdd = document.getElementById('includeAdd').checked;
-  const systemType = parseInt(document.getElementById('systemType').value);
   
   // RANGE-SENSITIVE: Use proportional recent draws based on range
   const recentSize = Math.min(Math.max(10, Math.floor(range * 0.3)), 30); // 30% of range, min 10, max 30
@@ -1363,7 +1317,7 @@ function runHotColdPrediction() {
   let evenCount = 0, oddCount = 0;
   
   for (const candidate of filteredSuggestions) {
-    if (finalPredictions.length >= systemType) break;
+    if (finalPredictions.length >= 6) break;
     
     const isEven = candidate.n % 2 === 0;
     
@@ -1378,9 +1332,9 @@ function runHotColdPrediction() {
   }
   
   // Fill remaining slots if needed
-  if (finalPredictions.length < systemType) {
+  if (finalPredictions.length < 6) {
     for (const candidate of filteredSuggestions) {
-      if (finalPredictions.length >= systemType) break;
+      if (finalPredictions.length >= 6) break;
       if (!finalPredictions.some(p => p.n === candidate.n)) {
         finalPredictions.push(candidate);
       }
@@ -1448,9 +1402,8 @@ function runEnhancedPrediction() {
     .filter(o => o.n >= 1 && o.n <= 49)
     .sort((a, b) => b.score - a.score || a.n - b.n);
     
-  // Get system type (6 or 7 numbers)
-  const systemType = parseInt(document.getElementById('systemType').value);
-  const finalSuggestions = suggestions.slice(0, systemType);
+  // Get 6 numbers (standard system)
+  const finalSuggestions = suggestions.slice(0, 6);
     
   const scores = finalSuggestions.map(o => Math.round(o.score));
   displayPredictedNumbers(
@@ -1469,7 +1422,6 @@ function runWeightedPrediction() {
   const bases = getSelectedBases();
   const range = parseInt(document.getElementById('drawRange').value);
   const includeAdd = document.getElementById('includeAdd').checked;
-  const systemType = parseInt(document.getElementById('systemType').value);
   const draws = historical.slice(0, range);
   
   const weighted = Array(50).fill(0);
@@ -1503,7 +1455,7 @@ function runWeightedPrediction() {
   }))
     .filter(o => o.n >= 1 && o.n <= 49)
     .sort((a, b) => b.score - a.score || a.n - b.n)
-    .slice(0, systemType);
+    .slice(0, 6);
     
   const scores = suggestions.map(o => Math.round(o.score * 10) / 10);
   const freq = weighted; // Use weighted as freq for display
@@ -1517,7 +1469,6 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
   const rs = document.getElementById('results');
   const analytics = document.getElementById('analytics');
   const showAnalytics = document.getElementById('showAnalytics').checked;
-  const systemType = document.getElementById('systemType').value;
   
   const sorted = numbers.map((n, i) => ({ n, score: scores[i], freq: freq[n], compat: compat[n] }))
     .sort((a, b) => a.n - b.n);
@@ -1598,17 +1549,7 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
       </div>
     `;
     
-    // Add System 7 benefit explanation
-    if (systemType === '7') {
-      analyticsHtml += `
-        <div style="background: #e8f8e8; padding: 10px; border-radius: 5px; margin-top: 10px; border-left: 4px solid #28a745;">
-          <strong>System 7 Advantage:</strong><br>
-          By selecting 7 numbers instead of 6, you significantly increase your winning chances:<br>
-          • More combinations covered (7 vs 6)<br>
-          • Higher probability of matching winning numbers<br>
-        </div>
-      `;
-    }
+
     
     analyticsHtml += `</div>`;
     analytics.innerHTML = analyticsHtml;
