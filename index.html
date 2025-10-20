@@ -22,6 +22,7 @@
     <select id="base4"></select>
     <select id="base5"></select>
     <select id="base6"></select>
+    <select id="base7" style="display:none;"></select>
   </div>
 
   <div>
@@ -169,7 +170,7 @@ function fetchCsvAndUpdate() {
       }
       // Update dropdowns and latest result
       for (let i = 1; i <= 49; i++) {
-        ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
+        ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'base7', 'additional'].forEach(id => {
           const select = document.getElementById(id);
           if (select && !select.querySelector(`option[value='${i}']`)) {
             const opt = document.createElement('option');
@@ -183,8 +184,21 @@ function fetchCsvAndUpdate() {
         document.getElementById(id).value = recent.numbers[idx];
       });
       document.getElementById('additional').value = recent.additional;
+      // Set default value for base7 (use additional number as default)
+      document.getElementById('base7').value = recent.additional;
       document.getElementById('includeAdd').checked = false;
       updateLatestResult(recent.numbers, recent.additional, recent.date);
+      
+      // Add system type change handler
+      document.getElementById('systemType').addEventListener('change', function() {
+        const base7Field = document.getElementById('base7');
+        if (this.value === '7') {
+          base7Field.style.display = 'inline';
+        } else {
+          base7Field.style.display = 'none';
+        }
+      });
+      
       // Enable prediction button
       const predictBtn = document.querySelector('button[onclick="predict()"]');
       if (predictBtn) predictBtn.disabled = false;
@@ -200,7 +214,7 @@ function fetchCsvAndUpdate() {
       const predictBtn = document.querySelector('button[onclick="predict()"]');
       if (predictBtn) predictBtn.disabled = true;
       // Clear dropdowns
-      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
+      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'base7', 'additional'].forEach(id => {
         const select = document.getElementById(id);
         if (select) select.innerHTML = '<option value="">No data</option>';
       });
