@@ -268,7 +268,12 @@ function predict() {
 }
 
 function getSelectedBases() {
-  return ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
+  const systemType = parseInt(document.getElementById('systemType').value);
+  const baseIds = systemType === 7 
+    ? ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'base7']
+    : ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'];
+  
+  return baseIds
     .map(id => parseInt(document.getElementById(id).value))
     .sort((a, b) => a - b);
 }
@@ -721,6 +726,7 @@ function runFrequencyCompatibilityPrediction() {
   const bases = getSelectedBases();
   const range = parseInt(document.getElementById('drawRange').value);
   const includeAdd = document.getElementById('includeAdd').checked;
+  const systemType = parseInt(document.getElementById('systemType').value);
   
   // IMPROVED: Use recent 20 draws as primary + historical for context
   const recentDraws = historical.slice(0, Math.min(20, historical.length));
@@ -825,7 +831,7 @@ function runFrequencyCompatibilityPrediction() {
   }
   
   // Select 1-2 from tier 2 (fully deterministic)
-  for (let i = 0; i < Math.min(2, tier2.length) && finalPredictions.length < 6; i++) {
+  for (let i = 0; i < Math.min(2, tier2.length) && finalPredictions.length < systemType; i++) {
     const candidate = tier2[i];
     const isEven = candidate.n % 2 === 0;
     
@@ -837,7 +843,7 @@ function runFrequencyCompatibilityPrediction() {
   }
   
   // Fill remaining with deterministic balanced selection
-  while (finalPredictions.length < 6) {
+  while (finalPredictions.length < systemType) {
     const remaining = filteredCandidates.filter(c => !finalPredictions.some(p => p.n === c.n));
     if (remaining.length === 0) break;
     
@@ -1237,6 +1243,7 @@ function runHotColdPrediction() {
   const bases = getSelectedBases();
   const range = parseInt(document.getElementById('drawRange').value);
   const includeAdd = document.getElementById('includeAdd').checked;
+  const systemType = parseInt(document.getElementById('systemType').value);
   
   // RANGE-SENSITIVE: Use proportional recent draws based on range
   const recentSize = Math.min(Math.max(10, Math.floor(range * 0.3)), 30); // 30% of range, min 10, max 30
@@ -1318,7 +1325,7 @@ function runHotColdPrediction() {
   let evenCount = 0, oddCount = 0;
   
   for (const candidate of filteredSuggestions) {
-    if (finalPredictions.length >= 6) break;
+    if (finalPredictions.length >= systemType) break;
     
     const isEven = candidate.n % 2 === 0;
     
@@ -1333,9 +1340,9 @@ function runHotColdPrediction() {
   }
   
   // Fill remaining slots if needed
-  if (finalPredictions.length < 6) {
+  if (finalPredictions.length < systemType) {
     for (const candidate of filteredSuggestions) {
-      if (finalPredictions.length >= 6) break;
+      if (finalPredictions.length >= systemType) break;
       if (!finalPredictions.some(p => p.n === candidate.n)) {
         finalPredictions.push(candidate);
       }
@@ -1424,6 +1431,7 @@ function runWeightedPrediction() {
   const bases = getSelectedBases();
   const range = parseInt(document.getElementById('drawRange').value);
   const includeAdd = document.getElementById('includeAdd').checked;
+  const systemType = parseInt(document.getElementById('systemType').value);
   const draws = historical.slice(0, range);
   
   const weighted = Array(50).fill(0);
@@ -1457,7 +1465,7 @@ function runWeightedPrediction() {
   }))
     .filter(o => o.n >= 1 && o.n <= 49)
     .sort((a, b) => b.score - a.score || a.n - b.n)
-    .slice(0, 6);
+    .slice(0, systemType);
     
   const scores = suggestions.map(o => Math.round(o.score * 10) / 10);
   const freq = weighted; // Use weighted as freq for display
