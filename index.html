@@ -1512,7 +1512,7 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
       analyticsHtml += `
         <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #2c5aa0;">
           <strong>Number ${num}</strong><br>
-          📈 Score: ${sortedScores[i]}<br>
+          📈 Score: ${typeof sortedScores[i] === 'number' ? sortedScores[i].toFixed(1) : sortedScores[i]}<br>
           🔢 Frequency: ${Math.round(sortedFreq[i] * 10) / 10}<br>
           🤝 Compatibility: ${Math.round(sortedCompat[i] * 10) / 10}${extraInfo}
         </div>
@@ -1548,7 +1548,7 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
       <div style="background: #f0f8e8; padding: 10px; border-radius: 5px; margin-top: 10px;">
         <strong>Prediction Confidence:</strong> ${confidence}%<br>
         <strong>Average Score:</strong> ${avgScore.toFixed(1)}<br>
-        <strong>📈 Score Range:</strong> ${Math.min(...sortedScores)} - ${Math.max(...sortedScores)}
+        <strong>📈 Score Range:</strong> ${Math.min(...sortedScores).toFixed(1)} - ${Math.max(...sortedScores).toFixed(1)}
       </div>
     `;
     
