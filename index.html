@@ -14,7 +14,7 @@
 <body>
   <h1>Singapore TOTO Predictor</h1>
   <p id="recentResult">RECENT RESULT: Loading...</p>
-  <p>By default, the previous lottery result is selected:</p>
+  <p><strong>Optional Base Numbers:</strong> Select numbers to build predictions around (leave empty for pure statistical analysis):</p>
   <div>
     <select id="base1"></select>
     <select id="base2"></select>
@@ -22,6 +22,10 @@
     <select id="base4"></select>
     <select id="base5"></select>
     <select id="base6"></select>
+  </div>
+
+  <div>
+    <button onclick="clearBaseNumbers()" style="margin: 10px 0; padding: 5px 10px;">Clear All Base Numbers</button>
   </div>
 
   <div>
@@ -178,8 +182,10 @@ function fetchCsvAndUpdate() {
         });
       }
       const recent = historical[0];
+      // Don't auto-populate base numbers - let users choose
       ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
-        document.getElementById(id).value = recent.numbers[idx];
+        // Leave base numbers empty by default for better range differentiation
+        // document.getElementById(id).value = recent.numbers[idx];
       });
       document.getElementById('additional').value = recent.additional;
       document.getElementById('includeAdd').checked = false;
@@ -265,6 +271,14 @@ function predict() {
     default:
       runEnhancedEnsemblePrediction();
   }
+}
+
+function clearBaseNumbers() {
+  ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach(id => {
+    const element = document.getElementById(id);
+    if (element) element.value = '';
+  });
+  console.log('Base numbers cleared - now you can test pure statistical analysis');
 }
 
 function getSelectedBases() {
