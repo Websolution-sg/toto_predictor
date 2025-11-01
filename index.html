@@ -14,7 +14,7 @@
 <body>
   <h1>Singapore TOTO Predictor</h1>
   <p id="recentResult">RECENT RESULT: Loading...</p>
-  <p><strong>Optional Base Numbers:</strong> Select numbers to build predictions around (leave empty for pure statistical analysis):</p>
+  <p><strong>Base Numbers:</strong> Auto-populated with recent result. Use "Clear All" button below for pure statistical analysis:</p>
   <div>
     <select id="base1"></select>
     <select id="base2"></select>
@@ -24,8 +24,9 @@
     <select id="base6"></select>
   </div>
 
-  <div>
-    <button onclick="clearBaseNumbers()" style="margin: 10px 0; padding: 5px 10px;">Clear All Base Numbers</button>
+  <div style="margin: 10px 0;">
+    <button onclick="clearBaseNumbers()" style="padding: 5px 10px; margin-right: 10px;">Clear All Base Numbers</button>
+    <button onclick="restoreBaseNumbers()" style="padding: 5px 10px;">Restore Recent Result</button>
   </div>
 
   <div>
@@ -182,10 +183,9 @@ function fetchCsvAndUpdate() {
         });
       }
       const recent = historical[0];
-      // Don't auto-populate base numbers - let users choose
+      // Auto-populate base numbers with most recent result (user can clear if desired)
       ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
-        // Leave base numbers empty by default for better range differentiation
-        // document.getElementById(id).value = recent.numbers[idx];
+        document.getElementById(id).value = recent.numbers[idx];
       });
       document.getElementById('additional').value = recent.additional;
       document.getElementById('includeAdd').checked = false;
@@ -278,7 +278,25 @@ function clearBaseNumbers() {
     const element = document.getElementById(id);
     if (element) element.value = '';
   });
-  console.log('Base numbers cleared - now you can test pure statistical analysis');
+  console.log('✅ Base numbers cleared - now using pure statistical analysis');
+  
+  // Optionally run a prediction immediately to show the difference
+  const currentMethod = document.getElementById('predictionMethod').value;
+  const currentRange = document.getElementById('drawRange').value;
+  console.log(`🎯 Re-running ${currentMethod} prediction with range ${currentRange} without base numbers...`);
+}
+
+function restoreBaseNumbers() {
+  if (historical && historical.length > 0) {
+    const recent = historical[0];
+    ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
+      document.getElementById(id).value = recent.numbers[idx];
+    });
+    console.log('✅ Base numbers restored to recent result:', recent.numbers);
+    console.log('🎯 Now using compatibility-based analysis with recent draw');
+  } else {
+    console.log('❌ No historical data available to restore');
+  }
 }
 
 function getSelectedBases() {
