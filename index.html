@@ -32,10 +32,12 @@
   <div>
     <label>Select draw range:</label><br/>
     <select id="drawRange">
-      <option value="20">Last 20</option>
-      <option value="50">Last 50</option>
-      <option value="100">Last 100</option>
+      <option value="20">Last 20 draws</option>
+      <option value="50">Last 50 draws</option>
+      <option value="100">Last 100 draws</option>
+      <option value="all">All results (129 draws)</option>
     </select>
+    <small id="dataPointInfo" style="color: #666; display: block; margin-top: 5px;">Data available: 31-Oct-25 to 5-Aug-24</small>
   </div>
 
   <div>
@@ -186,6 +188,9 @@ function fetchCsvAndUpdate() {
       document.getElementById('includeAdd').checked = false;
       updateLatestResult(recent.numbers, recent.additional, recent.date);
       
+      // Update data point information dynamically
+      updateDataPointInfo();
+      
       // Enable prediction button
       const predictBtn = document.querySelector('button[onclick="predict()"]');
       if (predictBtn) predictBtn.disabled = false;
@@ -268,6 +273,34 @@ function predict() {
   }
 }
 
+function updateDataPointInfo() {
+  if (historical && historical.length > 0) {
+    const totalDraws = historical.length;
+    const firstDate = historical[historical.length - 1].date;
+    const lastDate = historical[0].date;
+    
+    // Update the dropdown option text
+    const allOption = document.querySelector('#drawRange option[value="all"]');
+    if (allOption) {
+      allOption.textContent = `All results (${totalDraws} draws)`;
+    }
+    
+    // Update the data point info
+    const infoElement = document.getElementById('dataPointInfo');
+    if (infoElement) {
+      infoElement.textContent = `Data available: ${lastDate} to ${firstDate} (${totalDraws} draws total)`;
+    }
+  }
+}
+
+function getDrawRange() {
+  const rangeValue = document.getElementById('drawRange').value;
+  if (rangeValue === 'all') {
+    return historical ? historical.length : 129;
+  }
+  return parseInt(rangeValue);
+}
+
 function getSelectedBases() {
   return ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
     .map(id => parseInt(document.getElementById(id).value))
@@ -295,7 +328,7 @@ function checkHistoricalAndMaybePredict() {
 }
 
 function calculateScoresAndDisplay(numbers, additional = null) {
-  const range = parseInt(document.getElementById('drawRange').value);
+  const range = getDrawRange();
   const includeAdd = document.getElementById('includeAdd').checked;
   const draws = historical.slice(0, range);
   const freq = Array(50).fill(0);
@@ -316,7 +349,7 @@ function calculateScoresAndDisplay(numbers, additional = null) {
 // 🚀 NEW: Enhanced Ensemble Prediction with Pattern Filtering
 function runEnhancedEnsemblePrediction() {
   const bases = getSelectedBases();
-  const range = parseInt(document.getElementById('drawRange').value);
+  const range = getDrawRange();
   const includeAdd = document.getElementById('includeAdd').checked;
   
   console.log('🚀 Running Enhanced Ensemble Prediction...');
@@ -719,7 +752,7 @@ function getHotColdPrediction(bases, range, includeAdd) {
 
 function runFrequencyCompatibilityPrediction() {
   const bases = getSelectedBases();
-  const range = parseInt(document.getElementById('drawRange').value);
+  const range = getDrawRange();
   const includeAdd = document.getElementById('includeAdd').checked;
   
   // IMPROVED: Use recent 20 draws as primary + historical for context
@@ -892,7 +925,7 @@ function runFrequencyCompatibilityPrediction() {
 // Enhanced Prediction - DUPLICATE DISABLED (kept improved version at line 1363)
 function runEnhancedPrediction_DISABLED() {
   const bases = getSelectedBases();
-  const range = parseInt(document.getElementById('drawRange').value);
+  const range = getDrawRange();
   const includeAdd = document.getElementById('includeAdd').checked;
   const draws = historical.slice(0, range);
   console.log('Debug: Draws used for Enhanced Prediction:', draws.length);
@@ -936,7 +969,7 @@ function runEnhancedPrediction_DISABLED() {
 // Weighted Recent Prediction - COMPLEX VERSION DISABLED (duplicate function exists below)
 function runWeightedPrediction_DISABLED() {
   const bases = getSelectedBases();
-  const range = parseInt(document.getElementById('drawRange').value);
+  const range = getDrawRange();
   const includeAdd = document.getElementById('includeAdd').checked;
   const draws = historical.slice(0, range);
   console.log('Debug: Range-Differentiated Weighted Analysis using', draws.length, 'draws');
@@ -1235,7 +1268,7 @@ function runWeightedPrediction_DISABLED() {
 // Hot/Cold Analysis - IMPROVED: Based on actual data patterns
 function runHotColdPrediction() {
   const bases = getSelectedBases();
-  const range = parseInt(document.getElementById('drawRange').value);
+  const range = getDrawRange();
   const includeAdd = document.getElementById('includeAdd').checked;
   
   // RANGE-SENSITIVE: Use proportional recent draws based on range
@@ -1362,7 +1395,7 @@ function runHotColdPrediction() {
 // ENHANCEMENT 1: Enhanced Combined Analysis
 function runEnhancedPrediction() {
   const bases = getSelectedBases();
-  const range = parseInt(document.getElementById('drawRange').value);
+  const range = getDrawRange();
   const includeAdd = document.getElementById('includeAdd').checked;
   const draws = historical.slice(0, range);
   console.log('Draws used for Weighted Prediction:', draws.length);
@@ -1421,7 +1454,7 @@ function runEnhancedPrediction() {
 // ENHANCEMENT 2: Weighted Recent Analysis
 function runWeightedPrediction() {
   const bases = getSelectedBases();
-  const range = parseInt(document.getElementById('drawRange').value);
+  const range = getDrawRange();
   const includeAdd = document.getElementById('includeAdd').checked;
   const draws = historical.slice(0, range);
   
