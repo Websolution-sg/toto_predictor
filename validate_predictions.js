@@ -6,11 +6,11 @@ console.log('='.repeat(50));
 
 console.log('\n📊 RECENT WINNING RESULTS TO VALIDATE:');
 console.log('='.repeat(45));
+console.log('14-Nov-25: 6, 13, 18, 22, 34, 35 (Additional: 40) 🏆 GROUP 1 WINNER!');
+console.log('11-Nov-25: 2, 11, 12, 19, 25, 36 (Additional: 16)');
 console.log('06-Nov-25: 3, 20, 24, 29, 32, 44 (Additional: 46)');
 console.log('04-Nov-25: 10, 19, 22, 34, 39, 43 (Additional: 35)');
 console.log('31-Oct-25: 1, 5, 31, 34, 38, 45 (Additional: 21)');
-console.log('27-Oct-25: 4, 12, 14, 24, 36, 38 (Additional: 17)');
-console.log('24-Oct-25: 7, 14, 17, 18, 31, 38 (Additional: 46)');
 
 console.log('\n🧪 BROWSER CONSOLE VALIDATION TEST:');
 console.log('='.repeat(40));
@@ -22,11 +22,11 @@ console.log('');
 
 console.log('// Define recent winning results for validation');
 console.log('const recentWinners = [');
+console.log('  {date: "14-Nov-25", numbers: [6, 13, 18, 22, 34, 35], additional: 40, jackpot: true},');
+console.log('  {date: "11-Nov-25", numbers: [2, 11, 12, 19, 25, 36], additional: 16},');
 console.log('  {date: "06-Nov-25", numbers: [3, 20, 24, 29, 32, 44], additional: 46},');
 console.log('  {date: "04-Nov-25", numbers: [10, 19, 22, 34, 39, 43], additional: 35},');
-console.log('  {date: "31-Oct-25", numbers: [1, 5, 31, 34, 38, 45], additional: 21},');
-console.log('  {date: "27-Oct-25", numbers: [4, 12, 14, 24, 36, 38], additional: 17},');
-console.log('  {date: "24-Oct-25", numbers: [7, 14, 17, 18, 31, 38], additional: 46}');
+console.log('  {date: "31-Oct-25", numbers: [1, 5, 31, 34, 38, 45], additional: 21}');
 console.log('];');
 console.log('');
 
@@ -75,11 +75,11 @@ console.log('  });');
 console.log('}');
 console.log('');
 
-console.log('// Test latest winner (06-Nov-25) against different draw ranges');
-console.log('console.log("\\n🎯 TESTING 06-Nov-25 WINNER AGAINST DIFFERENT RANGES:");');
+console.log('// Test latest winner (14-Nov-25) against different draw ranges');
+console.log('console.log("\\n🎯 TESTING 14-Nov-25 JACKPOT WINNER AGAINST DIFFERENT RANGES:");');
 console.log('console.log("Testing Enhanced Ensemble with different historical ranges...");');
 console.log('');
-console.log('const latestWinner = recentWinners[0]; // 06-Nov-25');
+console.log('const latestWinner = recentWinners[0]; // 14-Nov-25 JACKPOT WINNER');
 console.log('document.getElementById("predictionMethod").value = "enhanced";');
 console.log('');
 console.log('["50", "100", "all"].forEach((range, index) => {');
@@ -95,7 +95,7 @@ console.log('        const predicted = predictionText.match(/\\d+/g)?.map(n => p
 console.log('        const matches = calculateMatches(predicted, latestWinner.numbers);');
 console.log('        const accuracy = ((matches / 6) * 100).toFixed(1);');
 console.log('        ');
-console.log('        const rangeText = range === "all" ? "132 draws" : `${range} draws`;');
+console.log('        const rangeText = range === "all" ? "134 draws" : `${range} draws`;');
 console.log('        console.log(`Enhanced Ensemble (${rangeText}):`);');
 console.log('        console.log(`  Predicted: ${predicted.join(", ")}`);');
 console.log('        console.log(`  Actual: ${latestWinner.numbers.join(", ")}`);');
@@ -109,7 +109,7 @@ console.log('');
 console.log('// Comprehensive validation against all recent winners');
 console.log('setTimeout(() => {');
 console.log('  console.log("\\n🔍 COMPREHENSIVE VALIDATION AGAINST ALL RECENT WINNERS:");');
-console.log('  console.log("Testing Enhanced Ensemble (132 draws) against last 5 winners...");');
+console.log('  console.log("Testing Enhanced Ensemble (134 draws) against last 5 winners...");');
 console.log('  ');
 console.log('  let totalMatches = 0;');
 console.log('  let totalPossible = recentWinners.length * 6;');
@@ -158,7 +158,7 @@ console.log('='.repeat(25));
 console.log('• Which method performs best against recent winners');
 console.log('• How different draw ranges affect accuracy');
 console.log('• Overall performance vs 16.7% random expectation');
-console.log('• Validation of "All results (132 draws)" effectiveness');
+console.log('• Validation of "All results (134 draws)" effectiveness');
 
 console.log('\n🚀 RUN THE VALIDATION:');
 console.log('1. Open index.html in your browser');
