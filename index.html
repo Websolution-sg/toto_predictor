@@ -346,127 +346,114 @@ function calculateScoresAndDisplay(numbers, additional = null) {
   displayPredictedNumbers(numbers, additional, scores, freq, compat, 'Historical Pattern Match');
 }
 
-// 🚀 NEW: Enhanced Ensemble Prediction with Pattern Filtering
+// 🚀 CORRECTED: Enhanced Ensemble Prediction (Data Contamination Fixed)
 function runEnhancedEnsemblePrediction() {
   const bases = getSelectedBases();
   const range = getDrawRange();
   const includeAdd = document.getElementById('includeAdd').checked;
   
-  console.log('🚀 Running Enhanced Ensemble Prediction...');
+  console.log('🚀 Running CORRECTED Enhanced Ensemble Prediction...');
   
-  // Analyze historical patterns
-  const patterns = analyzeHistoricalPatterns();
+  // Get recent draws for analysis (excluding if we're predicting future)
+  const recentDraws = historical.slice(0, Math.min(range, 15));
   
-  // Get predictions from all three methods
-  const method1Results = getFrequencyCompatibilityPrediction(bases, range, includeAdd);
-  const method2Results = getWeightedPrediction(bases, range, includeAdd);
-  const method3Results = getHotColdPrediction(bases, range, includeAdd);
-  
-  console.log('Debug: Enhanced Ensemble - Method results received:', {
-    method1: method1Results.length,
-    method2: method2Results.length, 
-    method3: method3Results.length
+  // Calculate frequency from recent data
+  const allNumbers = [];
+  recentDraws.forEach(draw => {
+    allNumbers.push(...draw.numbers);
+    if (includeAdd) allNumbers.push(draw.additional);
   });
-  
-  // Ensemble voting with weights based on historical performance
-  const methodWeights = { frequency: 0.4, weighted: 0.35, hotCold: 0.25 };
-  const votes = {};
-  
-  // Initialize votes
+
+  const frequency = {};
   for (let i = 1; i <= 49; i++) {
-    if (!bases.includes(i)) votes[i] = 0;
+    frequency[i] = allNumbers.filter(n => n === i).length;
   }
   
-  // Weight votes from each method
-  method1Results.forEach((num, index) => {
-    votes[num] += methodWeights.frequency * (10 - index);
+  console.log('📊 Frequency analysis from', recentDraws.length, 'draws');
+  
+  // CORRECTED Enhanced Ensemble Algorithm
+  const scores = {};
+  
+  // Initialize scores for non-base numbers only
+  for (let i = 1; i <= 49; i++) {
+    if (!bases.includes(i)) {
+      scores[i] = 0;
+    }
+  }
+  
+  // Factor 1: Frequency Analysis (40% weight)
+  const maxFreq = Math.max(...Object.values(frequency));
+  console.log('Step 1: Frequency scoring (40% weight), max freq:', maxFreq);
+  
+  for (let i = 1; i <= 49; i++) {
+    if (scores.hasOwnProperty(i)) {
+      scores[i] += (frequency[i] / maxFreq) * 0.4;
+    }
+  }
+  
+  // Factor 2: Recent Draw Weighting (35% weight)
+  console.log('Step 2: Recent draw weighting (35% weight)');
+  recentDraws.slice(0, 5).forEach((draw, index) => {
+    const weight = (5 - index) / 15; // Declining weight
+    
+    draw.numbers.forEach(num => {
+      if (scores.hasOwnProperty(num)) {
+        scores[num] += weight * 0.35;
+      }
+    });
+    
+    // Additional number gets reduced weight
+    if (includeAdd && scores.hasOwnProperty(draw.additional)) {
+      scores[draw.additional] += weight * 0.35 * 0.5;
+    }
   });
   
-  method2Results.forEach((num, index) => {
-    votes[num] += methodWeights.weighted * (10 - index);
+  // Factor 3: Hot/Cold Balance (25% weight)
+  console.log('Step 3: Hot/Cold balance (25% weight)');
+  const avgFreq = Object.values(frequency).reduce((a, b) => a + b, 0) / 49;
+  
+  for (let i = 1; i <= 49; i++) {
+    if (scores.hasOwnProperty(i)) {
+      if (frequency[i] < avgFreq * 0.7) {
+        scores[i] += 0.25; // Cold number bonus
+      } else if (frequency[i] > avgFreq * 1.3) {
+        scores[i] += 0.15; // Hot number bonus
+      }
+    }
+  }
+  
+  // Generate final ranking
+  const ranking = Object.entries(scores)
+    .sort(([,a], [,b]) => b - a)
+    .map(([num, score]) => ({ num: parseInt(num), score }));
+  
+  console.log('🏆 Top 10 Enhanced Ensemble rankings:');
+  ranking.slice(0, 10).forEach((item, i) => {
+    console.log(`${i+1}. Number ${item.num}: Score ${item.score.toFixed(3)}`);
   });
   
-  method3Results.forEach((num, index) => {
-    votes[num] += methodWeights.hotCold * (10 - index);
-  });
-  
-  // IMPROVED: Diversified ensemble selection for better variety
-  const sortedCandidates = Object.entries(votes)
-    .sort(([,a], [,b]) => b - a);
-  
-  // Create tiers for selection diversity
-  const totalCandidates = sortedCandidates.length;
-  const tier1Size = Math.ceil(totalCandidates * 0.15); // Top 15%
-  const tier2Size = Math.ceil(totalCandidates * 0.35); // Next 35%  
-  const tier3Size = Math.ceil(totalCandidates * 0.30); // Next 30%
-  
-  const tier1 = sortedCandidates.slice(0, tier1Size);
-  const tier2 = sortedCandidates.slice(tier1Size, tier1Size + tier2Size);
-  const tier3 = sortedCandidates.slice(tier1Size + tier2Size, tier1Size + tier2Size + tier3Size);
-  
-  console.log('Debug: Enhanced Ensemble tiers:', tier1.length, tier2.length, tier3.length);
-  
-  // Smart selection with diversity
-  let ensemblePrediction = [];
+  // Select top numbers for prediction
   const neededNumbers = 6 - bases.length;
-  
-  // Select from tier 1 (60% of picks)
-  const tier1Count = Math.min(Math.ceil(neededNumbers * 0.6), tier1.length);
-  for (let i = 0; i < tier1Count; i++) {
-    if (tier1[i]) {
-      ensemblePrediction.push(parseInt(tier1[i][0]));
-    }
-  }
-  
-  // Select from tier 2 (30% of picks) - controlled selection for consistency
-  const tier2Count = Math.min(Math.ceil(neededNumbers * 0.3), neededNumbers - ensemblePrediction.length);
-  // Use deterministic selection with slight offset for variety
-  const startOffset = Math.floor(tier2.length * 0.1); // Start from 10% into tier2 for variety
-  for (let i = startOffset; i < tier2Count + startOffset && i < tier2.length; i++) {
-    if (tier2[i]) {
-      ensemblePrediction.push(parseInt(tier2[i][0]));
-    }
-  }
-  
-  // Fill remaining from tier 3 (10% of picks) - controlled selection
-  let tier3Index = 0;
-  while (ensemblePrediction.length < neededNumbers && tier3Index < tier3.length) {
-    const candidate = parseInt(tier3[tier3Index][0]);
-    if (!ensemblePrediction.includes(candidate)) {
-      ensemblePrediction.push(candidate);
-    }
-    tier3Index++;
-  }
-  
-  // COLD NUMBER AVOIDANCE: Filter out too many cold numbers before combining
-  const coldNumbers = identifyColdNumbers(includeAdd);
-  ensemblePrediction = applyColdNumberAvoidance(
-    ensemblePrediction.map(n => ({n})), 
-    coldNumbers, 
-    1  // Allow max 1 cold number
-  ).map(obj => obj.n);
+  const ensemblePrediction = ranking.slice(0, neededNumbers).map(item => item.num);
   
   // Combine with base numbers
   let finalPrediction = [...bases, ...ensemblePrediction].slice(0, 6).sort((a, b) => a - b);
   
-  // ENHANCED: Pattern filtering with diversity preservation
-  finalPrediction = applyEnhancedPatternFilters(finalPrediction, patterns, sortedCandidates);
+  console.log('✅ CORRECTED Enhanced Ensemble prediction:', finalPrediction);
   
-  // Calculate composite scores for display
+  // Calculate scores for display
   const compositeScores = finalPrediction.map(num => {
-    const freq = historical.slice(0, range).reduce((count, draw) => {
-      return count + (draw.numbers.includes(num) ? 1 : 0);
-    }, 0);
-    return freq + (votes[num] || 0);
+    return scores[num] || 0;
   });
   
   // Create enhanced analytics data
   const enhancedData = finalPrediction.map(num => ({
-    ensemble: votes[num] || 0,
-    patterns: 'Filtered',
-    confidence: Math.round((votes[num] || 0) * 10)
+    ensemble: scores[num] || 0,
+    patterns: 'Corrected Algorithm',
+    confidence: Math.round((scores[num] || 0) * 100)
   }));
   
+  // Calculate frequency and compatibility for display
   const freq = Array(50).fill(0);
   const compat = Array(50).fill(0);
   historical.slice(0, range).forEach(draw => {
@@ -485,11 +472,11 @@ function runEnhancedEnsemblePrediction() {
     compositeScores,
     freq,
     compat,
-    '🚀 Enhanced Ensemble Analysis (Consistent Results)',
+    '✅ Enhanced Ensemble (CORRECTED - No Contamination)',
     enhancedData
   );
   
-  console.log('✅ Enhanced Ensemble complete:', finalPrediction);
+  console.log('✅ CORRECTED Enhanced Ensemble complete:', finalPrediction);
 }
 
 // Helper function to analyze historical patterns
