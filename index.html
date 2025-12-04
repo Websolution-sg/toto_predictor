@@ -352,92 +352,68 @@ function calculateScoresAndDisplay(numbers, additional = null) {
 // 🚀 CORRECTED: Enhanced Ensemble Prediction (Data Contamination Fixed)
 // 🔄 FORCE-UPDATE: Version 2.0 - Dec 1, 2025
 function runEnhancedEnsemblePrediction() {
-  const bases = getSelectedBases();
+  // Use fixed base numbers for consistency with prediction script
+  const bases = [16, 22]; // Fixed high-frequency anchors
   const range = getDrawRange();
   const includeAdd = document.getElementById('includeAdd').checked;
   
   console.log('🚀 Running CORRECTED Enhanced Ensemble Prediction v2.0 - Force Update...');
-  console.log('📅 Algorithm updated: Dec 1, 2025 - Latest data included');
+  console.log('📅 Algorithm updated: Dec 5, 2025 - Fixed base numbers for consistency');
+  console.log('📌 Using fixed bases:', bases, 'for consistent results');
   
-  // Get recent draws for analysis (excluding if we're predicting future)
-  const recentDraws = historical.slice(0, Math.min(range, 15));
+  // Initialize scores (corrected algorithm)
+  const scores = Array(50).fill(0);
+  const analysisRange = Math.min(30, historical.length);
   
-  // Calculate frequency from recent data
-  const allNumbers = [];
-  recentDraws.forEach(draw => {
-    allNumbers.push(...draw.numbers);
-    if (includeAdd) allNumbers.push(draw.additional);
-  });
-
-  const frequency = {};
-  for (let i = 1; i <= 49; i++) {
-    frequency[i] = allNumbers.filter(n => n === i).length;
-  }
+  console.log('📊 Enhanced Ensemble Analysis Range:', analysisRange, 'draws');
   
-  console.log('📊 Frequency analysis from', recentDraws.length, 'draws');
-  
-  // CORRECTED Enhanced Ensemble Algorithm
-  const scores = {};
-  
-  // Initialize scores for non-base numbers only
-  for (let i = 1; i <= 49; i++) {
-    if (!bases.includes(i)) {
-      scores[i] = 0;
-    }
-  }
-  
-  // Factor 1: Frequency Analysis (40% weight)
-  const maxFreq = Math.max(...Object.values(frequency));
-  console.log('Step 1: Frequency scoring (40% weight), max freq:', maxFreq);
-  
-  for (let i = 1; i <= 49; i++) {
-    if (scores.hasOwnProperty(i)) {
-      scores[i] += (frequency[i] / maxFreq) * 0.4;
-    }
-  }
-  
-  // Factor 2: Recent Draw Weighting (35% weight)
-  console.log('Step 2: Recent draw weighting (35% weight)');
-  recentDraws.slice(0, 5).forEach((draw, index) => {
-    const weight = (5 - index) / 15; // Declining weight
+  // Multi-factor scoring exactly as prediction script
+  historical.slice(0, analysisRange).forEach((draw, idx) => {
+    const weight = Math.pow(0.95, idx); // Recent weighting
     
+    // Frequency analysis (40%) + Recent weighting (35%)
     draw.numbers.forEach(num => {
-      if (scores.hasOwnProperty(num)) {
-        scores[num] += weight * 0.35;
-      }
+      scores[num] += 0.4 + (0.35 * weight);
     });
     
-    // Additional number gets reduced weight
-    if (includeAdd && scores.hasOwnProperty(draw.additional)) {
-      scores[draw.additional] += weight * 0.35 * 0.5;
+    if (includeAdd && draw.additional) {
+      scores[draw.additional] += 0.2 + (0.15 * weight);
     }
   });
   
-  // Factor 3: Hot/Cold Balance (25% weight)
-  console.log('Step 3: Hot/Cold balance (25% weight)');
-  const avgFreq = Object.values(frequency).reduce((a, b) => a + b, 0) / 49;
+  // Hot/Cold balance (25%)
+  const recentDraws = historical.slice(0, 10);
+  console.log('🌡️ Hot/Cold analysis on last', recentDraws.length, 'draws');
   
-  for (let i = 1; i <= 49; i++) {
-    if (scores.hasOwnProperty(i)) {
-      if (frequency[i] < avgFreq * 0.7) {
-        scores[i] += 0.25; // Cold number bonus
-      } else if (frequency[i] > avgFreq * 1.3) {
-        scores[i] += 0.15; // Hot number bonus
-      }
+  for (let num = 1; num <= 49; num++) {
+    const recentCount = recentDraws.reduce((count, draw) => {
+      return count + (draw.numbers.includes(num) ? 1 : 0);
+    }, 0);
+    
+    if (recentCount >= 3) {
+      scores[num] += 0.25 * 0.3; // Hot bonus
+    } else if (recentCount === 0) {
+      scores[num] += 0.25 * 0.7; // Cold bonus
+    } else {
+      scores[num] += 0.25 * 0.1; // Neutral
     }
   }
   
-  // Generate final ranking
-  const ranking = Object.entries(scores)
-    .sort(([,a], [,b]) => b - a)
-    .map(([num, score]) => ({ num: parseInt(num), score }));
+  // Create ranking exactly as prediction script
+  const ranking = [];
+  for (let num = 1; num <= 49; num++) {
+    if (!bases.includes(num)) {
+      ranking.push({ num, score: scores[num] });
+    }
+  }
+  ranking.sort((a, b) => b.score - a.score);
   
   console.log('🏆 Top 10 Enhanced Ensemble rankings:');
   ranking.slice(0, 10).forEach((item, i) => {
-    console.log(`${i+1}. Number ${item.num}: Score ${item.score.toFixed(3)}`);
+    console.log(`  ${i+1}. Number ${item.num}: Score ${item.score.toFixed(4)}`);
   });
   
-  // Select top numbers for prediction
+  // Select top numbers for prediction exactly as script
   const neededNumbers = 6 - bases.length;
   const ensemblePrediction = ranking.slice(0, neededNumbers).map(item => item.num);
   
@@ -445,6 +421,9 @@ function runEnhancedEnsemblePrediction() {
   let finalPrediction = [...bases, ...ensemblePrediction].slice(0, 6).sort((a, b) => a - b);
   
   console.log('✅ CORRECTED Enhanced Ensemble prediction:', finalPrediction);
+  console.log('🧮 Prediction components:');
+  console.log('  📌 Base numbers:', bases);
+  console.log('  🎯 Ensemble picks:', ensemblePrediction);
   
   // Calculate scores for display
   const compositeScores = finalPrediction.map(num => {
@@ -477,7 +456,7 @@ function runEnhancedEnsemblePrediction() {
     compositeScores,
     freq,
     compat,
-    '✅ Enhanced Ensemble (CORRECTED - No Contamination)',
+    '✅ Enhanced Ensemble (CORRECTED - Fixed Bases)',
     enhancedData
   );
   
