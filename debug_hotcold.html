@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Hot/Cold Debug Test</title>
+</head>
+<body>
+    <input id="includeAdd" type="checkbox">
+    <select id="drawRange">
+        <option value="50" selected>50 draws</option>
+    </select>
+    <input id="base1" value="16">
+    <input id="base2" value="22">
+    <input id="base3" value="10">
+    <div id="results"></div>
+    <button onclick="testHotCold()">Test Hot/Cold Analysis</button>
+    <div id="debug-output" style="white-space: pre-wrap; font-family: monospace; margin-top: 20px; border: 1px solid #ccc; padding: 10px;"></div>
+
+    <script>
+        // Override console.log to show output on page
+        const originalLog = console.log;
+        const debugDiv = document.getElementById('debug-output');
+        
+        console.log = function(...args) {
+            originalLog(...args);
+            debugDiv.textContent += args.join(' ') + '\n';
+        };
+
+        // Add sample historical data
+        const historical = [];
+        for (let i = 0; i < 100; i++) {
+            historical.push({
+                numbers: [
+                    Math.floor(Math.random() * 49) + 1,
+                    Math.floor(Math.random() * 49) + 1,
+                    Math.floor(Math.random() * 49) + 1,
+                    Math.floor(Math.random() * 49) + 1,
+                    Math.floor(Math.random() * 49) + 1,
+                    Math.floor(Math.random() * 49) + 1
+                ],
+                additional: Math.floor(Math.random() * 49) + 1
+            });
+        }
+
+        function getSelectedBases() { return [16, 22, 10]; }
+        function getDrawRange() { return parseInt(document.getElementById('drawRange').value); }
+        
+        function displayPredictedNumbers(numbers, additional, scores, freq, compat, title, extraData) {
+            console.log('=== DISPLAY FUNCTION CALLED ===');
+            console.log('Numbers:', numbers);
+            console.log('Scores:', scores);
+            console.log('Title:', title);
+            console.log('Extra Data:', extraData);
+            
+            if (!numbers || numbers.length === 0) {
+                console.log('ERROR: No numbers to display!');
+            } else {
+                console.log('SUCCESS: ' + numbers.length + ' numbers ready to display');
+            }
+        }
+
+        function testHotCold() {
+            console.log('Starting Hot/Cold Analysis test...');
+            debugDiv.textContent = '';
+            
+            try {
+                runHotColdPrediction();
+            } catch (error) {
+                console.log('ERROR:', error.message);
+                console.log('Stack:', error.stack);
+            }
+        }
+    </script>
+
+    <!-- Include the Hot/Cold function from the main HTML file -->
+    <script>
