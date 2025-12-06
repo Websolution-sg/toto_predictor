@@ -354,7 +354,7 @@ function runEnhancedEnsemblePrediction() {
   
   // Initialize scores (corrected algorithm)
   const scores = Array(50).fill(0);
-  const analysisRange = Math.min(30, historical.length);
+  const analysisRange = Math.min(range, historical.length);
   
   console.log('📊 Enhanced Ensemble Analysis Range:', analysisRange, 'draws');
   
