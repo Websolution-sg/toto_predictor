@@ -1301,21 +1301,45 @@ function runHotColdPrediction() {
       }
     }
   }
-  
+
   const scores = finalPredictions.map(o => o.hotScore);
-  const freq = finalPredictions.map(o => o.recentCount);
-  const trends = finalPredictions.map(o => o.hotRatio);
   
+  // Calculate proper frequency and compatibility data for analytics
+  const freq = Array(50).fill(0);
+  const compat = Array(50).fill(0);
+  
+  // Calculate total frequency over the selected range
+  historical.slice(0, range).forEach(draw => {
+    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
+    pool.forEach(n => freq[n]++);
+    bases.forEach(b => {
+      if (pool.includes(b)) {
+        pool.filter(n => n !== b).forEach(n => compat[n]++);
+      }
+    });
+  });
+  
+  // Create temperature extraData for analytics display
+  const temperatureData = finalPredictions.map(prediction => {
+    const temp = prediction.hotRatio > 1.5 ? 'hot' : 
+                 prediction.hotRatio < 0.5 ? 'cold' : 'warm';
+    return {
+      temperature: temp,
+      trend: prediction.hotRatio - 1.0 // Deviation from normal
+    };
+  });
+
   console.log('Debug: Hot/Cold predictions with trends:', 
     finalPredictions.map(p => `${p.n}(${p.hotRatio.toFixed(1)}x, ${p.trend})`).join(', '));
-  
+
   displayPredictedNumbers(
     finalPredictions.map(o => o.n), 
     null, 
     scores, 
     freq, 
-    trends, 
-    `Data-Driven Hot/Cold Analysis (Consistent Results - ${recentDraws.length} recent vs ${historicalDraws.length} historical, E/O: ${evenCount}/${6-evenCount})`
+    compat, 
+    `Data-Driven Hot/Cold Analysis (Consistent Results - ${recentDraws.length} recent vs ${historicalDraws.length} historical, E/O: ${evenCount}/${6-evenCount})`,
+    temperatureData
   );
 }
 
@@ -1458,11 +1482,11 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
     
     sortedNumbers.forEach((num, i) => {
       let extraInfo = '';
-      if (extraData && extraData[numbers.indexOf(num)]) {
+      if (extraData && extraData[i]) {
         const data = extraData[numbers.indexOf(num)];
-        if (data.temperature) {
+        if (data && data.temperature) {
           extraInfo = `<br>🌡️ ${data.temperature.toUpperCase()} (${data.trend > 0 ? '+' : ''}${data.trend.toFixed(1)})`;
-        } else if (data.weighted) {
+        } else if (data && data.weighted) {
           extraInfo = `<br>⚖️ Weighted: ${data.weighted.toFixed(1)}`;
         }
       }
