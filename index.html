@@ -1418,7 +1418,7 @@ function runEnhancedPrediction() {
 function runWeightedPrediction() {
   const bases = getSelectedBases();
   const range = getDrawRange();
-  const includeAdd = document.getElementById('includeAdd').checked;
+  const includeAdd = false; // Additional number dropdown removed
   const draws = historical.slice(0, range);
   
   const weighted = Array(50).fill(0);
