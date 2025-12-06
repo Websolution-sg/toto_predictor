@@ -678,174 +678,70 @@ function getHotColdPrediction(bases, range, includeAdd) {
 }
 
 function runFrequencyCompatibilityPrediction() {
-  const bases = getSelectedBases();
+  const bases = [16, 22, 10]; // Fixed base numbers for compatibility calculation
   const range = getDrawRange();
   const includeAdd = false; // Additional number dropdown removed
   
-  // IMPROVED: Use recent 20 draws as primary + historical for context
-  const recentDraws = historical.slice(0, Math.min(20, historical.length));
-  const historicalDraws = historical.slice(20, Math.min(range + 20, historical.length));
-  const allDraws = historical.slice(0, range);
+  console.log('📊 Running Frequency + Compatibility Prediction');
+  console.log('📌 Base numbers for compatibility:', bases);
+  console.log('📊 Analysis range:', range, 'draws');
   
-  console.log('Debug: Frequency+Compatibility using', recentDraws.length, 'recent +', historicalDraws.length, 'historical draws');
-  
-  const recentFreq = Array(50).fill(0);
-  const historicalFreq = Array(50).fill(0);
+  const freq = Array(50).fill(0);
   const compat = Array(50).fill(0);
   
-  // Recent frequency analysis (higher weight)
-  recentDraws.forEach(draw => {
-    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
+  // Calculate frequency and compatibility exactly like validation tool
+  historical.slice(0, range).forEach(draw => {
+    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
+    
+    // Count frequency
     pool.forEach(n => {
-      if (n >= 1 && n <= 49) recentFreq[n]++;
+      if (n >= 1 && n <= 49) {
+        freq[n]++;
+      }
     });
-  });
-  
-  // Historical frequency (context)
-  historicalDraws.forEach(draw => {
-    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => {
-      if (n >= 1 && n <= 49) historicalFreq[n]++;
-    });
-  });
-  
-  // Compatibility analysis with base numbers
-  allDraws.forEach(draw => {
-    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
+    
+    // Calculate compatibility with base numbers
     bases.forEach(b => {
       if (pool.includes(b)) {
-        pool.filter(n => n !== b && n >= 1 && n <= 49).forEach(n => compat[n]++);
+        pool.filter(n => n !== b).forEach(n => {
+          if (n >= 1 && n <= 49) {
+            compat[n]++;
+          }
+        });
       }
     });
   });
   
-  // ENHANCED: Multi-factor scoring with diversity
-  const candidates = recentFreq.map((recentCount, n) => {
-    const historicalCount = historicalFreq[n];
-    const compatScore = compat[n];
-    
-    // Weighted scoring: Recent frequency (50%) + Compatibility (30%) + Historical context (20%)
-    const recentRate = recentCount / Math.max(1, recentDraws.length);
-    const historicalRate = historicalCount / Math.max(1, historicalDraws.length);
-    const compatRate = compatScore / Math.max(1, allDraws.length * bases.length);
-    
-    const compositeScore = (recentRate * 0.5) + (compatRate * 0.3) + (historicalRate * 0.2);
-    
-    return {
-      n,
-      recentCount,
-      historicalCount,
-      compatScore,
-      compositeScore,
-      recentRate: recentRate * 100,
-      momentum: recentCount > historicalCount ? '+' : (recentCount === 0 ? '--' : '-')
-    };
-  })
-    .filter(o => o.n >= 1 && o.n <= 49 && !bases.includes(o.n))
-    .sort((a, b) => {
-      // More stable sorting with multiple tie-breakers
-      if (Math.abs(b.compositeScore - a.compositeScore) > 0.000001) {
-        return b.compositeScore - a.compositeScore;
-      }
-      if (a.recentCount !== b.recentCount) {
-        return b.recentCount - a.recentCount;
-      }
-      if (a.compatScore !== b.compatScore) {
-        return b.compatScore - a.compatScore;
-      }
-      return a.n - b.n; // Final tie-breaker by number
-    });
+  // Calculate total scores (Frequency + Compatibility)
+  const scores = freq.map((f, i) => f + compat[i]);
+  const suggestions = scores
+    .map((score, n) => ({ n, score, freq: freq[n], compat: compat[n] }))
+    .filter(o => o.n >= 1 && o.n <= 49)
+    .sort((a, b) => b.score - a.score || a.n - b.n)
+    .slice(0, 6);
   
-  // COLD NUMBER AVOIDANCE: Reduce priority of cold numbers
-  const coldNumbers = identifyColdNumbers(includeAdd);
-  const filteredCandidates = applyColdNumberAvoidance(candidates, coldNumbers, 1);
+  const prediction = suggestions.map(o => o.n).sort((a, b) => a - b);
   
-  // IMPROVED: Diversified selection with even/odd balance
-  let finalPredictions = [];
-  let evenCount = 0, oddCount = 0;
-  
-  // Tier-based selection for diversity (similar to Enhanced Ensemble)
-  const tier1Size = Math.ceil(filteredCandidates.length * 0.20); // Top 20%
-  const tier2Size = Math.ceil(filteredCandidates.length * 0.35); // Next 35%
-  
-  const tier1 = filteredCandidates.slice(0, tier1Size);
-  const tier2 = filteredCandidates.slice(tier1Size, tier1Size + tier2Size);
-  const tier3 = filteredCandidates.slice(tier1Size + tier2Size);
-  
-  // Select 4 from tier 1 (deterministic)
-  for (let i = 0; i < Math.min(4, tier1.length); i++) {
-    const candidate = tier1[i];
-    const isEven = candidate.n % 2 === 0;
-    
-    if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || finalPredictions.length >= 4) {
-      finalPredictions.push(candidate);
-      if (isEven) evenCount++;
-      else oddCount++;
-    }
-  }
-  
-  // Select 1-2 from tier 2 (fully deterministic)
-  for (let i = 0; i < Math.min(2, tier2.length) && finalPredictions.length < 6; i++) {
-    const candidate = tier2[i];
-    const isEven = candidate.n % 2 === 0;
-    
-    if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || finalPredictions.length >= 5) {
-      finalPredictions.push(candidate);
-      if (isEven) evenCount++;
-      else oddCount++;
-    }
-  }
-  
-  // Fill remaining with deterministic balanced selection
-  while (finalPredictions.length < 6) {
-    const remaining = filteredCandidates.filter(c => !finalPredictions.some(p => p.n === c.n));
-    if (remaining.length === 0) break;
-    
-    // Deterministic selection with even/odd preference
-    let candidate;
-    if (evenCount < 3) {
-      // Sort evens by score first, then by number for consistency
-      const evenCandidates = remaining.filter(c => c.n % 2 === 0);
-      candidate = evenCandidates.length > 0 ? evenCandidates[0] : remaining[0];
-    } else if (oddCount < 3) {
-      // Sort odds by score first, then by number for consistency
-      const oddCandidates = remaining.filter(c => c.n % 2 === 1);
-      candidate = oddCandidates.length > 0 ? oddCandidates[0] : remaining[0];
-    } else {
-      candidate = remaining[0];
-    }
-    
-    finalPredictions.push(candidate);
-    if (candidate.n % 2 === 0) evenCount++;
-    else oddCount++;
-  }
-  
-  // Sort by composite score for display (stable sort)
-  finalPredictions.sort((a, b) => {
-    if (Math.abs(b.compositeScore - a.compositeScore) > 0.000001) {
-      return b.compositeScore - a.compositeScore;
-    }
-    return a.n - b.n; // Stable tie-breaker
+  console.log('🏆 Top 6 Frequency + Compatibility results:');
+  suggestions.forEach((item, i) => {
+    console.log(`  ${i+1}. Number ${item.n}: Score ${item.score} (Freq: ${item.freq}, Compat: ${item.compat})`);
   });
-  
-  const scores = finalPredictions.map(o => o.compositeScore * 100);
-  const freq = allDraws.reduce((acc, draw) => {
-    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => { if (n >= 1 && n <= 49) acc[n]++; });
-    return acc;
-  }, Array(50).fill(0));
-  
-  console.log('Debug: Freq+Compat predictions with momentum:', 
-    finalPredictions.map(p => `${p.n}(${p.momentum}, ${p.recentRate.toFixed(1)}%)`).join(', '));
-  console.log('Debug: Even/Odd balance:', evenCount, '/', oddCount);
+  console.log('✅ Frequency + Compatibility prediction:', prediction);
+  // Create enhanced analytics data
+  const enhancedData = prediction.map(num => ({
+    frequency: freq[num],
+    compatibility: compat[num],
+    score: freq[num] + compat[num]
+  }));
   
   displayPredictedNumbers(
-    finalPredictions.map(o => o.n), 
-    null, 
-    scores, 
-    freq, 
-    compat, 
-    `Enhanced Frequency + Compatibility Analysis (Consistent Results - Recent: ${recentDraws.length}, Historical: ${historicalDraws.length}, E/O: ${evenCount}/${oddCount})`
+    prediction,
+    null,
+    suggestions.map(o => o.score),
+    freq,
+    compat,
+    'Frequency + Compatibility Analysis',
+    enhancedData
   );
 }
 
