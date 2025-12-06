@@ -1164,13 +1164,13 @@ function runHotColdPrediction() {
   });
   console.log('✅ Hot/Cold prediction:', prediction);
   
-  // Create enhanced analytics data with temperature information
-  const enhancedData = prediction.map(num => ({
-    frequency: freq[num],
-    compatibility: compat[num],
-    score: freq[num] + compat[num],
-    temperature: temperature[num].status,
-    recentCount: temperature[num].count
+  // Create enhanced analytics data with temperature information  
+  const enhancedData = suggestions.map(item => ({
+    frequency: item.freq,
+    compatibility: item.compat,
+    score: item.score,
+    temperature: item.temp.status,
+    recentCount: item.temp.count
   }));
   
   displayPredictedNumbers(
@@ -1401,9 +1401,9 @@ function displayPredictedNumbers(numbers, additional = null, scores, freq, compa
     sortedNumbers.forEach((num, i) => {
       let extraInfo = '';
       if (extraData && extraData[i]) {
-        const data = extraData[numbers.indexOf(num)];
+        const data = extraData[i];
         if (data && data.temperature) {
-          extraInfo = `<br>🌡️ ${data.temperature.toUpperCase()} (${data.trend > 0 ? '+' : ''}${data.trend.toFixed(1)})`;
+          extraInfo = `<br>🌡️ ${data.temperature} (Recent: ${data.recentCount || 0})`;
         } else if (data && data.weighted) {
           extraInfo = `<br>⚖️ Weighted: ${data.weighted.toFixed(1)}`;
         }
