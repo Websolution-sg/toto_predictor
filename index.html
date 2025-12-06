@@ -14,14 +14,11 @@
 <body>
   <h1>Singapore TOTO Predictor</h1>
   <p id="recentResult">RECENT RESULT: Loading...</p>
-  <p>By default, the previous lottery result is selected:</p>
+  <p>Enhanced 3-Base System v3.0 (Previous lottery result selected by default):</p>
   <div>
     <select id="base1"></select>
     <select id="base2"></select>
     <select id="base3"></select>
-    <select id="base4"></select>
-    <select id="base5"></select>
-    <select id="base6"></select>
   </div>
 
   <div>
@@ -195,7 +192,7 @@ function fetchCsvAndUpdate() {
       }
       // Update dropdowns and latest result
       for (let i = 1; i <= 49; i++) {
-        ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
+        ['base1', 'base2', 'base3', 'additional'].forEach(id => {
           const select = document.getElementById(id);
           if (select && !select.querySelector(`option[value='${i}']`)) {
             const opt = document.createElement('option');
@@ -206,7 +203,7 @@ function fetchCsvAndUpdate() {
       }
       const recent = historical[0];
       // Auto-populate base numbers with most recent result (user can clear if desired)
-      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
+      ['base1', 'base2', 'base3'].forEach((id, idx) => {
         document.getElementById(id).value = recent.numbers[idx];
       });
       document.getElementById('additional').value = recent.additional;
@@ -231,7 +228,7 @@ function fetchCsvAndUpdate() {
       const predictBtn = document.querySelector('button[onclick="predict()"]');
       if (predictBtn) predictBtn.disabled = true;
       // Clear dropdowns
-      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
+      ['base1', 'base2', 'base3', 'additional'].forEach(id => {
         const select = document.getElementById(id);
         if (select) select.innerHTML = '<option value="">No data</option>';
       });
@@ -327,7 +324,7 @@ function getDrawRange() {
 }
 
 function getSelectedBases() {
-  return ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
+  return ['base1', 'base2', 'base3']
     .map(id => parseInt(document.getElementById(id).value))
     .sort((a, b) => a - b);
 }
