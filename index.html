@@ -1090,97 +1090,142 @@ function runWeightedPrediction_DISABLED() {
 
 // Hot/Cold Analysis - IMPROVED: Based on actual data patterns
 function runHotColdPrediction() {
-  const bases = [16, 22, 10]; // Fixed base numbers for compatibility calculation
+  const bases = getSelectedBases();
   const range = getDrawRange();
   const includeAdd = false; // Additional number dropdown removed
   
-  console.log('🌡️ Running Hot/Cold Analysis (uses Frequency + Compatibility scoring)');
-  console.log('📌 Base numbers for compatibility:', bases);
-  console.log('📊 Analysis range:', range, 'draws');
+  // RANGE-SENSITIVE: Use proportional recent draws based on range
+  const recentSize = Math.min(Math.max(10, Math.floor(range * 0.3)), 30); // 30% of range, min 10, max 30
+  const recentDraws = historical.slice(0, Math.min(recentSize, historical.length));
+  const historicalDraws = historical.slice(recentSize, Math.min(range + recentSize, historical.length));
   
-  const freq = Array(50).fill(0);
-  const compat = Array(50).fill(0);
+  console.log('Debug: Hot/Cold using', recentDraws.length, 'recent vs', historicalDraws.length, 'historical draws');
   
-  // Calculate frequency and compatibility (identical to Frequency+Compatibility method)
-  historical.slice(0, range).forEach(draw => {
-    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
-    
-    // Count frequency
+  const recentFreq = Array(50).fill(0);
+  const historicalFreq = Array(50).fill(0);
+  
+  // Count recent frequencies
+  recentDraws.forEach(draw => {
+    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
     pool.forEach(n => {
-      if (n >= 1 && n <= 49) {
-        freq[n]++;
-      }
-    });
-    
-    // Calculate compatibility with base numbers
-    bases.forEach(b => {
-      if (pool.includes(b)) {
-        pool.filter(n => n !== b).forEach(n => {
-          if (n >= 1 && n <= 49) {
-            compat[n]++;
-          }
-        });
-      }
+      if (n >= 1 && n <= 49) recentFreq[n]++;
     });
   });
   
-  // Hot/Cold temperature analysis (for display only - doesn't affect scoring)
-  const recentDraws = historical.slice(0, 10);
-  const temperature = {};
+  // Count historical frequencies
+  historicalDraws.forEach(draw => {
+    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
+    pool.forEach(n => {
+      if (n >= 1 && n <= 49) historicalFreq[n]++;
+    });
+  });
   
-  for (let num = 1; num <= 49; num++) {
-    const recentCount = recentDraws.reduce((count, draw) => {
-      return count + (draw.numbers.includes(num) ? 1 : 0);
-    }, 0);
+  // IMPROVED: Calculate true hotness ratios like actual data analysis
+  const suggestions = recentFreq.map((recentCount, n) => {
+    const recentRate = recentCount / recentDraws.length;
+    const historicalRate = historicalFreq[n] / Math.max(1, historicalDraws.length);
+    const hotRatio = historicalRate > 0 ? recentRate / historicalRate : (recentCount > 0 ? 10 : 0);
     
-    if (recentCount >= 3) {
-      temperature[num] = { status: 'HOT', count: recentCount };
-    } else if (recentCount === 0) {
-      temperature[num] = { status: 'COLD', count: recentCount };
-    } else {
-      temperature[num] = { status: 'NEUTRAL', count: recentCount };
+    // ENHANCED: Multi-factor scoring based on actual data insights
+    let hotScore = 0;
+    
+    // Factor 1: Recent activity (25% weight)
+    hotScore += recentCount * 0.25;
+    
+    // Factor 2: Heat ratio vs historical (40% weight) 
+    if (hotRatio > 1.5 && recentRate > 0.10) { // Minimum 10% recent appearance
+      hotScore += hotRatio * 0.40;
+    }
+    
+    // Factor 3: Momentum boost for trending numbers (20% weight)
+    if (recentCount >= 3 && hotRatio > 1.2) {
+      hotScore += 0.20;
+    }
+    
+    // Factor 4: Penalty for completely cold numbers (15% weight)
+    if (recentCount === 0 && historicalRate > 0.08) {
+      hotScore -= 0.15; // Avoid numbers that went completely cold
+    }
+    
+    // Factor 5: Range-specific adjustments
+    const rangeBonus = range <= 20 ? hotScore * 0.1 : range <= 50 ? hotScore * 0.05 : 0;
+    hotScore += rangeBonus;
+    
+    return {
+      n,
+      recentCount,
+      recentRate: recentRate * 100, // Convert to percentage
+      historicalRate: historicalRate * 100,
+      hotRatio,
+      hotScore,
+      trend: recentCount > historicalFreq[n] / Math.max(1, historicalDraws.length) * recentDraws.length ? '+' : (recentCount === 0 ? '--' : '-'),
+      confidence: Math.min(95, 50 + hotScore * 20)
+    };
+  })
+    .filter(o => o.n >= 1 && o.n <= 49 && !bases.includes(o.n))
+    .sort((a, b) => b.hotScore - a.hotScore || a.n - b.n);
+  
+  // COLD NUMBER AVOIDANCE: Filter candidates but allow some for balance
+  const coldNumbers = identifyColdNumbers(includeAdd);
+  const filteredSuggestions = applyColdNumberAvoidance(suggestions, coldNumbers, 1);
+  
+  // ENHANCED: Smart selection with even/odd balance
+  const finalPredictions = [];
+  let evenCount = 0, oddCount = 0;
+  
+  for (const candidate of filteredSuggestions) {
+    if (finalPredictions.length >= 6) break;
+    
+    const isEven = candidate.n % 2 === 0;
+    
+    // Enforce 3 even, 3 odd balance (based on actual data: perfect 50/50 split)
+    if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || 
+        (finalPredictions.length >= 4)) { // Allow flexibility for last 2 picks
+      
+      finalPredictions.push(candidate);
+      if (isEven) evenCount++;
+      else oddCount++;
     }
   }
   
-  // Calculate total scores (Frequency + Compatibility) - identical to Frequency+Compatibility
-  const scores = freq.map((f, i) => f + compat[i]);
-  const suggestions = scores
-    .map((score, n) => ({ 
-      n, 
-      score, 
-      freq: freq[n], 
-      compat: compat[n],
-      temp: temperature[n]
-    }))
-    .filter(o => o.n >= 1 && o.n <= 49)
-    .sort((a, b) => b.score - a.score || a.n - b.n)
-    .slice(0, 6);
+  // Fill remaining slots if needed
+  if (finalPredictions.length < 6) {
+    for (const candidate of filteredSuggestions) {
+      if (finalPredictions.length >= 6) break;
+      if (!finalPredictions.some(p => p.n === candidate.n)) {
+        finalPredictions.push(candidate);
+      }
+    }
+  }
+
+  const scores = finalPredictions.map(o => o.hotScore);
   
-  const prediction = suggestions.map(o => o.n).sort((a, b) => a - b);
+  // Calculate proper frequency and compatibility data for analytics
+  const freq = Array(50).fill(0);
+  const compat = Array(50).fill(0);
   
-  console.log('🌡️ Hot/Cold Analysis results with temperature:');
-  suggestions.forEach((item, i) => {
-    console.log(`  ${i+1}. Number ${item.n}: Score ${item.score} (Freq: ${item.freq}, Compat: ${item.compat}) - ${item.temp.status}`);
+  // Calculate total frequency over the selected range
+  historical.slice(0, range).forEach(draw => {
+    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
+    pool.forEach(n => freq[n]++);
+    bases.forEach(b => {
+      if (pool.includes(b)) {
+        pool.filter(n => n !== b).forEach(n => compat[n]++);
+      }
+    });
   });
-  console.log('✅ Hot/Cold prediction:', prediction);
   
-  // Create enhanced analytics data with temperature information
-  const enhancedData = prediction.map(num => ({
-    frequency: freq[num],
-    compatibility: compat[num],
-    score: freq[num] + compat[num],
-    temperature: temperature[num].status,
-    recentCount: temperature[num].count
-  }));
+  console.log('Debug: Hot/Cold predictions with heat ratios:', 
+    finalPredictions.map(p => `${p.n}(${p.trend}, ${p.recentRate.toFixed(1)}%)`).join(', '));
+  console.log('Debug: Even/Odd balance:', evenCount, '/', oddCount);
   
   displayPredictedNumbers(
-    prediction,
-    null,
-    suggestions.map(o => o.score),
-    freq,
-    compat,
-    '🌡️ Hot/Cold Number Analysis',
-    enhancedData
+    finalPredictions.map(o => o.n), 
+    null, 
+    scores, 
+    freq, 
+    compat, 
+    `Hot/Cold Number Analysis (Recent: ${recentDraws.length}, E/O: ${evenCount}/${oddCount})`
   );
 }
 
