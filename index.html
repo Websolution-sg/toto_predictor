@@ -1090,64 +1090,99 @@ function runWeightedPrediction_DISABLED() {
 
 // Hot/Cold Analysis - IMPROVED: Based on actual data patterns
 function runHotColdPrediction() {
-  const bases = getSelectedBases();
+  const bases = [16, 22, 10]; // Fixed base numbers for compatibility calculation
   const range = getDrawRange();
   const includeAdd = false; // Additional number dropdown removed
   
-  // RANGE-SENSITIVE: Use proportional recent draws based on range
-  const recentSize = Math.min(Math.max(10, Math.floor(range * 0.3)), 30); // 30% of range, min 10, max 30
-  const recentDraws = historical.slice(0, Math.min(recentSize, historical.length));
-  const historicalDraws = historical.slice(recentSize, Math.min(range + recentSize, historical.length));
+  console.log('🌡️ Running Hot/Cold Analysis (uses Frequency + Compatibility scoring)');
+  console.log('📌 Base numbers for compatibility:', bases);
+  console.log('📊 Analysis range:', range, 'draws');
   
-  console.log('Debug: Hot/Cold using', recentDraws.length, 'recent vs', historicalDraws.length, 'historical draws');
+  const freq = Array(50).fill(0);
+  const compat = Array(50).fill(0);
   
-  const recentFreq = Array(50).fill(0);
-  const historicalFreq = Array(50).fill(0);
-  
-  // Count recent frequencies
-  recentDraws.forEach(draw => {
-    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
+  // Calculate frequency and compatibility (identical to Frequency+Compatibility method)
+  historical.slice(0, range).forEach(draw => {
+    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
+    
+    // Count frequency
     pool.forEach(n => {
-      if (n >= 1 && n <= 49) recentFreq[n]++;
+      if (n >= 1 && n <= 49) {
+        freq[n]++;
+      }
+    });
+    
+    // Calculate compatibility with base numbers
+    bases.forEach(b => {
+      if (pool.includes(b)) {
+        pool.filter(n => n !== b).forEach(n => {
+          if (n >= 1 && n <= 49) {
+            compat[n]++;
+          }
+        });
+      }
     });
   });
   
-  // Count historical frequencies
-  historicalDraws.forEach(draw => {
-    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => {
-      if (n >= 1 && n <= 49) historicalFreq[n]++;
-    });
-  });
+  // Hot/Cold temperature analysis (for display only - doesn't affect scoring)
+  const recentDraws = historical.slice(0, 10);
+  const temperature = {};
   
-  // IMPROVED: Calculate true hotness ratios like actual data analysis
-  const suggestions = recentFreq.map((recentCount, n) => {
-    const recentRate = recentCount / recentDraws.length;
-    const historicalRate = historicalFreq[n] / Math.max(1, historicalDraws.length);
-    const hotRatio = historicalRate > 0 ? recentRate / historicalRate : (recentCount > 0 ? 10 : 0);
+  for (let num = 1; num <= 49; num++) {
+    const recentCount = recentDraws.reduce((count, draw) => {
+      return count + (draw.numbers.includes(num) ? 1 : 0);
+    }, 0);
     
-    // ENHANCED: Multi-factor scoring based on actual data insights
-    let hotScore = 0;
-    
-    // Factor 1: Recent activity (25% weight)
-    hotScore += recentCount * 0.25;
-    
-    // Factor 2: Heat ratio vs historical (40% weight) 
-    if (hotRatio > 1.5 && recentRate > 0.10) { // Minimum 10% recent appearance
-      hotScore += hotRatio * 0.40;
+    if (recentCount >= 3) {
+      temperature[num] = { status: 'HOT', count: recentCount };
+    } else if (recentCount === 0) {
+      temperature[num] = { status: 'COLD', count: recentCount };
+    } else {
+      temperature[num] = { status: 'NEUTRAL', count: recentCount };
     }
-    
-    // Factor 3: Momentum boost for trending numbers (20% weight)
-    if (recentCount >= 3 && hotRatio > 1.2) {
-      hotScore += 0.20;
-    }
-    
-    // Factor 4: Penalty for completely cold numbers (15% weight)
-    if (recentCount === 0 && historicalRate > 0.08) {
-      hotScore -= 0.15; // Avoid numbers that went completely cold
-    }
-    
-    // Factor 5: Range-specific adjustments
+  }
+  
+  // Calculate total scores (Frequency + Compatibility) - identical to Frequency+Compatibility
+  const scores = freq.map((f, i) => f + compat[i]);
+  const suggestions = scores
+    .map((score, n) => ({ 
+      n, 
+      score, 
+      freq: freq[n], 
+      compat: compat[n],
+      temp: temperature[n]
+    }))
+    .filter(o => o.n >= 1 && o.n <= 49)
+    .sort((a, b) => b.score - a.score || a.n - b.n)
+    .slice(0, 6);
+  
+  const prediction = suggestions.map(o => o.n).sort((a, b) => a - b);
+  
+  console.log('🌡️ Hot/Cold Analysis results with temperature:');
+  suggestions.forEach((item, i) => {
+    console.log(`  ${i+1}. Number ${item.n}: Score ${item.score} (Freq: ${item.freq}, Compat: ${item.compat}) - ${item.temp.status}`);
+  });
+  console.log('✅ Hot/Cold prediction:', prediction);
+  
+  // Create enhanced analytics data with temperature information
+  const enhancedData = prediction.map(num => ({
+    frequency: freq[num],
+    compatibility: compat[num],
+    score: freq[num] + compat[num],
+    temperature: temperature[num].status,
+    recentCount: temperature[num].count
+  }));
+  
+  displayPredictedNumbers(
+    prediction,
+    null,
+    suggestions.map(o => o.score),
+    freq,
+    compat,
+    '🌡️ Hot/Cold Number Analysis',
+    enhancedData
+  );
+}
     const rangeBonus = range <= 20 ? hotScore * 0.1 : range <= 50 ? hotScore * 0.05 : 0;
     hotScore += rangeBonus;
     
