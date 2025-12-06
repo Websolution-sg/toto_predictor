@@ -43,7 +43,6 @@
           <option value="20" selected>Last 20 draws (Recommended)</option>
           <option value="50">Last 50 draws</option>
           <option value="100">Last 100 draws</option>
-          <option value="all">All results (139 draws)</option>
         </select>
         <small id="dataPointInfo" style="color: #666; display: block; margin-top: 5px;">
           Default (20 draws) provides focused recent trend analysis
@@ -274,12 +273,6 @@ function updateDataPointInfo() {
     const totalDraws = historical.length;
     const firstDate = historical[historical.length - 1].date;
     const lastDate = historical[0].date;
-    
-    // Update the dropdown option text
-    const allOption = document.querySelector('#drawRange option[value="all"]');
-    if (allOption) {
-      allOption.textContent = `All results (${totalDraws} draws)`;
-    }
     
     // Update the data point info
     const infoElement = document.getElementById('dataPointInfo');
