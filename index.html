@@ -30,17 +30,6 @@
   </div>
 
   <div>
-    <label>Select draw range:</label><br/>
-    <select id="drawRange">
-      <option value="20">Last 20 draws</option>
-      <option value="50">Last 50 draws</option>
-      <option value="100">Last 100 draws</option>
-      <option value="all">All results (129 draws)</option>
-    </select>
-    <small id="dataPointInfo" style="color: #666; display: block; margin-top: 5px;">Data available: 31-Oct-25 to 5-Aug-24</small>
-  </div>
-
-  <div>
     <label>Prediction Method:</label><br/>
     <select id="predictionMethod">
       <option value="enhanced">🚀 Enhanced Ensemble (Recommended)</option>
@@ -48,6 +37,30 @@
       <option value="weighted">⚖️ Weighted Recent Analysis</option>
       <option value="hotcold">🌡️ Hot/Cold Number Analysis</option>
     </select>
+  </div>
+
+  <!-- Advanced Options Panel -->
+  <div style="margin: 15px 0;">
+    <button type="button" onclick="toggleAdvancedOptions()" style="background: #f0f0f0; border: 1px solid #ccc; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+      ⚙️ Advanced Options
+    </button>
+    
+    <div id="advancedOptions" style="display: none; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin-top: 10px;">
+      <div style="margin-bottom: 15px;">
+        <label style="font-weight: bold; color: #333;">Draw Range Analysis:</label><br/>
+        <select id="drawRange" style="margin-top: 5px;">
+          <option value="30" selected>Last 30 draws (Recommended)</option>
+          <option value="20">Last 20 draws</option>
+          <option value="50">Last 50 draws</option>
+          <option value="100">Last 100 draws</option>
+          <option value="all">All results (139 draws)</option>
+        </select>
+        <small id="dataPointInfo" style="color: #666; display: block; margin-top: 5px;">
+          Default (30 draws) used by Enhanced Ensemble for optimal balance
+        </small>
+      </div>
+    </div>
+  </div>
   </div>
 
   <label><input type="checkbox" id="includeAdd"/> Include additional number</label><br/>
@@ -64,6 +77,22 @@ let historical = [];
 let chartInstance = null;
 // Auto-refresh interval in milliseconds (e.g., 5 minutes)
 const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000;
+
+// Toggle Advanced Options Panel
+function toggleAdvancedOptions() {
+  const panel = document.getElementById('advancedOptions');
+  const button = event.target;
+  
+  if (panel.style.display === 'none' || panel.style.display === '') {
+    panel.style.display = 'block';
+    button.innerHTML = '⚙️ Hide Advanced Options';
+    button.style.background = '#e3f2fd';
+  } else {
+    panel.style.display = 'none';
+    button.innerHTML = '⚙️ Advanced Options';
+    button.style.background = '#f0f0f0';
+  }
+}
 
 function fetchCsvAndUpdate() {
   // FORCE-REFRESH: Ultra-enhanced cache-busting - Updated Dec 1, 2025
