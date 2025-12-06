@@ -30,6 +30,15 @@
     </select>
   </div>
 
+  <div>
+    <label>Draw Range Analysis:</label><br/>
+    <select id="drawRange">
+      <option value="20" selected>Last 20 draws (Recommended)</option>
+      <option value="50">Last 50 draws</option>
+      <option value="100">Last 100 draws</option>
+    </select>
+  </div>
+
   <!-- Advanced Options Panel -->
   <div style="margin: 15px 0;">
     <button type="button" onclick="toggleAdvancedOptions()" style="background: #f0f0f0; border: 1px solid #ccc; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px;">
@@ -38,14 +47,9 @@
     
     <div id="advancedOptions" style="display: none; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin-top: 10px;">
       <div style="margin-bottom: 15px;">
-        <label style="font-weight: bold; color: #333;">Draw Range Analysis:</label><br/>
-        <select id="drawRange" style="margin-top: 5px;">
-          <option value="20" selected>Last 20 draws (Recommended)</option>
-          <option value="50">Last 50 draws</option>
-          <option value="100">Last 100 draws</option>
-        </select>
-        <small id="dataPointInfo" style="color: #666; display: block; margin-top: 5px;">
-          Default (20 draws) provides focused recent trend analysis
+        <label style="font-weight: bold; color: #333;">Additional Options:</label><br/>
+        <small style="color: #666; display: block; margin-top: 5px;">
+          Advanced configuration options will be added here in future updates
         </small>
       </div>
     </div>
