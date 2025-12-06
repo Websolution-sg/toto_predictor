@@ -21,11 +21,6 @@
   </div>
 
   <div>
-    <label>Additional Number:</label><br/>
-    <select id="additional"></select>
-  </div>
-
-  <div>
     <label>Prediction Method:</label><br/>
     <select id="predictionMethod">
       <option value="enhanced">🚀 Enhanced Ensemble (Recommended)</option>
@@ -59,7 +54,6 @@
   </div>
   </div>
 
-  <label><input type="checkbox" id="includeAdd"/> Include additional number</label><br/>
   <label><input type="checkbox" id="showAnalytics" checked/> Show detailed analytics</label><br/>
   <button onclick="predict()">Predict</button>
 
@@ -191,18 +185,9 @@ function fetchCsvAndUpdate() {
       }
       // Update dropdowns and latest result
       for (let i = 1; i <= 49; i++) {
-        ['additional'].forEach(id => {
-          const select = document.getElementById(id);
-          if (select && !select.querySelector(`option[value='${i}']`)) {
-            const opt = document.createElement('option');
-            opt.value = opt.textContent = i;
-            select.append(opt);
-          }
-        });
+        // No dropdowns to populate - using fixed base numbers
       }
       const recent = historical[0];
-      document.getElementById('additional').value = recent.additional;
-      document.getElementById('includeAdd').checked = false;
       updateLatestResult(recent.numbers, recent.additional, recent.date);
       
       // Update data point information dynamically
@@ -222,11 +207,7 @@ function fetchCsvAndUpdate() {
       // Disable prediction button
       const predictBtn = document.querySelector('button[onclick="predict()"]');
       if (predictBtn) predictBtn.disabled = true;
-      // Clear dropdowns
-      ['additional'].forEach(id => {
-        const select = document.getElementById(id);
-        if (select) select.innerHTML = '<option value="">No data</option>';
-      });
+      // No dropdowns to clear - using fixed base numbers
     });
 }
 
@@ -344,12 +325,12 @@ function checkHistoricalAndMaybePredict() {
 
 function calculateScoresAndDisplay(numbers, additional = null) {
   const range = getDrawRange();
-  const includeAdd = document.getElementById('includeAdd').checked;
+  const includeAdd = false; // Additional numbers excluded for cleaner predictions
   const draws = historical.slice(0, range);
   const freq = Array(50).fill(0);
   const compat = Array(50).fill(0);
   draws.forEach(draw => {
-  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
+  const pool = draw.numbers; // Additional numbers excluded
     pool.forEach(n => freq[n]++);
     numbers.forEach(b => {
       if (pool.includes(b)) {
@@ -388,7 +369,7 @@ function runEnhancedEnsemblePrediction() {
       scores[num] += 0.4 + (0.35 * weight);
     });
     
-    if (includeAdd && draw.additional) {
+    if (false && draw.additional) { // Additional numbers not used
       scores[draw.additional] += 0.2 + (0.15 * weight);
     }
   });
@@ -453,7 +434,7 @@ function runEnhancedEnsemblePrediction() {
   const freq = Array(50).fill(0);
   const compat = Array(50).fill(0);
   historical.slice(0, range).forEach(draw => {
-    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
+    const pool = draw.numbers; // Additional numbers excluded
     pool.forEach(n => freq[n]++);
     bases.forEach(b => {
       if (pool.includes(b)) {
@@ -667,7 +648,7 @@ function getFrequencyCompatibilityPrediction(bases, range, includeAdd) {
   const draws = historical.slice(0, range);
   
   draws.forEach(draw => {
-    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
+    const pool = draw.numbers; // Additional numbers excluded
     pool.forEach(n => freq[n]++);
     bases.forEach(b => {
       if (pool.includes(b)) {
@@ -689,7 +670,7 @@ function getWeightedPrediction(bases, range, includeAdd) {
   
   draws.forEach((draw, index) => {
     const weight = Math.exp(-index * 0.03);
-    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
+    const pool = draw.numbers; // Additional numbers excluded
     pool.forEach(n => weighted[n] += weight);
   });
   
@@ -708,12 +689,12 @@ function getHotColdPrediction(bases, range, includeAdd) {
   const overallFreq = Array(50).fill(0);
   
   recentDraws.forEach(draw => {
-    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
+    const pool = draw.numbers; // Additional numbers excluded
     pool.forEach(n => recentFreq[n]++);
   });
   
   allDraws.forEach(draw => {
-    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
+    const pool = draw.numbers; // Additional numbers excluded
     pool.forEach(n => overallFreq[n]++);
   });
   
