@@ -1232,7 +1232,7 @@ function runWeightedPrediction_DISABLED() {
 function runHotColdPrediction() {
   const bases = getSelectedBases();
   const range = getDrawRange();
-  const includeAdd = document.getElementById('includeAdd').checked;
+  const includeAdd = false; // Additional number dropdown removed
   
   // RANGE-SENSITIVE: Use proportional recent draws based on range
   const recentSize = Math.min(Math.max(10, Math.floor(range * 0.3)), 30); // 30% of range, min 10, max 30
