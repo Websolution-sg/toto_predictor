@@ -39,22 +39,6 @@
     </select>
   </div>
 
-  <!-- Advanced Options Panel -->
-  <div style="margin: 15px 0;">
-    <button type="button" onclick="toggleAdvancedOptions()" style="background: #f0f0f0; border: 1px solid #ccc; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 14px;">
-      ⚙️ Advanced Options
-    </button>
-    
-    <div id="advancedOptions" style="display: none; background: #f9f9f9; border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin-top: 10px;">
-      <div style="margin-bottom: 15px;">
-        <label style="font-weight: bold; color: #333;">Additional Options:</label><br/>
-        <small style="color: #666; display: block; margin-top: 5px;">
-          Advanced configuration options will be added here in future updates
-        </small>
-      </div>
-    </div>
-  </div>
-
   <label><input type="checkbox" id="showAnalytics" checked/> Show detailed analytics</label><br/>
   <button onclick="predict()">Predict</button>
 
@@ -68,22 +52,6 @@ let historical = [];
 let chartInstance = null;
 // Auto-refresh interval in milliseconds (e.g., 5 minutes)
 const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000;
-
-// Toggle Advanced Options Panel
-function toggleAdvancedOptions() {
-  const panel = document.getElementById('advancedOptions');
-  const button = event.target;
-  
-  if (panel.style.display === 'none' || panel.style.display === '') {
-    panel.style.display = 'block';
-    button.innerHTML = '⚙️ Hide Advanced Options';
-    button.style.background = '#e3f2fd';
-  } else {
-    panel.style.display = 'none';
-    button.innerHTML = '⚙️ Advanced Options';
-    button.style.background = '#f0f0f0';
-  }
-}
 
 function fetchCsvAndUpdate() {
   // FORCE-REFRESH: Ultra-enhanced cache-busting - Updated Dec 1, 2025
