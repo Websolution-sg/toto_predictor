@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Current Predictions</title>
+</head>
+<body>
+    <h1>Current TOTO Predictions</h1>
+    <div id="results"></div>
+    
+    <script>
+        // Load historical data from CSV content
+        const csvData = `9-Dec-25,9,12,15,23,27,47,45
+5-Dec-25,1,5,24,36,41,46,39
+1-Dec-25,2,10,24,35,45,49,37
+27-Nov-25,6,8,17,28,32,46,16
+24-Nov-25,8,25,27,34,45,47,19
+20-Nov-25,11,13,22,31,47,49,39
+17-Nov-25,3,9,12,18,19,34,24
+13-Nov-25,6,13,18,22,34,35,40
+10-Nov-25,2,11,12,19,25,36,16
+6-Nov-25,3,20,24,29,32,44,46
+3-Nov-25,10,19,22,34,39,43,35
+30-Oct-25,1,14,15,19,38,45,3
+27-Oct-25,2,8,11,13,24,35,34
+23-Oct-25,6,11,14,18,25,49,32
+20-Oct-25,3,6,8,22,36,46,19
+16-Oct-25,10,19,24,31,34,47,35`;
+
+        // Parse historical data
+        const historical = csvData.trim().split('\n').map(line => {
+            const parts = line.split(',');
+            return {
+                date: parts[0],
+                numbers: parts.slice(1, 7).map(n => parseInt(n)),
+                additional: parseInt(parts[7])
+            };
+        });
+
+        function getSelectedBases() {
+            return [16, 22, 10];
+        }
+
+        function getDrawRange() {
+            return 50; // Use 50 draws
+        }
+
+        // Simple prediction based on frequency + compatibility
+        function generatePrediction(methodName) {
+            const bases = getSelectedBases();
+            const range = getDrawRange();
+            const draws = historical.slice(0, range);
+            
+            const freq = Array(50).fill(0);
+            const compat = Array(50).fill(0);
+            
+            // Calculate frequencies
+            draws.forEach(draw => {
+                draw.numbers.forEach(n => freq[n]++);
+                bases.forEach(b => {
+                    if (draw.numbers.includes(b)) {
+                        draw.numbers.filter(n => n !== b).forEach(n => compat[n]++);
+                    }
+                });
+            });
+            
+            // Score numbers
+            const suggestions = [];
+            for (let n = 1; n <= 49; n++) {
+                if (!bases.includes(n)) {
+                    const score = freq[n] + compat[n] * 0.5;
+                    suggestions.push({ n, score, freq: freq[n], compat: compat[n] });
+                }
+            }
+            
+            suggestions.sort((a, b) => b.score - a.score);
+            
+            // Select top 6 with even/odd balance
+            const selected = [];
+            let evenCount = 0, oddCount = 0;
+            
+            for (const s of suggestions) {
+                if (selected.length >= 6) break;
+                const isEven = s.n % 2 === 0;
+                if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || selected.length >= 4) {
+                    selected.push(s.n);
+                    if (isEven) evenCount++;
+                    else oddCount++;
+                }
+            }
+            
+            return selected.sort((a, b) => a - b);
+        }
+
+        // Generate multiple predictions
+        function generateMultiplePredictions() {
+            const predictions = [];
+            
+            // Method 1: Standard frequency
+            predictions.push({
+                method: "Frequency Analysis",
+                numbers: generatePrediction("freq")
+            });
+            
+            // Method 2: Modify for hot/cold (favor recent)
+            const recentDraws = historical.slice(0, 10);
+            const recentFreq = Array(50).fill(0);
+            recentDraws.forEach(draw => {
+                draw.numbers.forEach(n => recentFreq[n]++);
+            });
+            
+            const hotPrediction = [];
+            const bases = getSelectedBases();
+            const candidates = [];
+            
+            for (let n = 1; n <= 49; n++) {
+                if (!bases.includes(n)) {
+                    const hotScore = recentFreq[n] * 2 + Math.random() * 0.5;
+                    candidates.push({ n, score: hotScore });
+                }
+            }
+            
+            candidates.sort((a, b) => b.score - a.score);
+            
+            let evenCount = 0, oddCount = 0;
+            for (const c of candidates) {
+                if (hotPrediction.length >= 6) break;
+                const isEven = c.n % 2 === 0;
+                if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || hotPrediction.length >= 4) {
+                    hotPrediction.push(c.n);
+                    if (isEven) evenCount++;
+                    else oddCount++;
+                }
+            }
+            
+            predictions.push({
+                method: "Hot Numbers Focus",
+                numbers: hotPrediction.sort((a, b) => a - b)
+            });
+            
+            return predictions;
+        }
+
+        // Check if user's numbers match any prediction
+        function checkUserNumbers() {
+            const userNumbers = [12, 15, 23, 30, 42, 43];
+            const predictions = generateMultiplePredictions();
+            
+            let html = '<h2>Current Prediction Analysis</h2>';
+            html += `<p><strong>Your winning numbers:</strong> [${userNumbers.join(', ')}]</p>`;
+            
+            predictions.forEach((pred, index) => {
+                const matches = userNumbers.filter(n => pred.numbers.includes(n));
+                const matchCount = matches.length;
+                
+                html += `<div style="margin: 20px 0; padding: 15px; border: 1px solid #ddd;">`;
+                html += `<h3>${pred.method}</h3>`;
+                html += `<p><strong>Predicted:</strong> [${pred.numbers.join(', ')}]</p>`;
+                html += `<p><strong>Matches:</strong> ${matchCount}/6 [${matches.join(', ') || 'none'}] ${matchCount >= 3 ? '✅' : ''}</p>`;
+                html += `</div>`;
+            });
+            
+            // Generate additional random variations
+            html += '<h2>Additional Prediction Variations</h2>';
+            for (let i = 0; i < 8; i++) {
+                const variation = generateRandomVariation();
+                const matches = userNumbers.filter(n => variation.includes(n));
+                const matchCount = matches.length;
+                
+                html += `<div style="margin: 10px 0; padding: 10px; border: 1px solid #eee;">`;
+                html += `<p><strong>Variation ${i + 3}:</strong> [${variation.join(', ')}]</p>`;
+                html += `<p><strong>Matches:</strong> ${matchCount}/6 [${matches.join(', ') || 'none'}] ${matchCount >= 3 ? '✅' : ''}</p>`;
+                html += `</div>`;
+            }
+            
+            return html;
+        }
+
+        function generateRandomVariation() {
+            const bases = [16, 22, 10];
+            const available = [];
+            for (let n = 1; n <= 49; n++) {
+                if (!bases.includes(n)) available.push(n);
+            }
+            
+            // Shuffle and pick 6
+            for (let i = available.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [available[i], available[j]] = [available[j], available[i]];
+            }
+            
+            return available.slice(0, 6).sort((a, b) => a - b);
+        }
+
+        // Run the analysis
+        document.getElementById('results').innerHTML = checkUserNumbers();
+    </script>
+</body>
+</html>
