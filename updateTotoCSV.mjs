@@ -2,8 +2,8 @@ import fs from 'fs';
 import axios from 'axios';
 import * as cheerio from 'cheerio';
 
-// Use absolute path for local CSV file
-const CSV_FILE = 'd:/Timothy/Toto Predictor/Repository/toto_predictor/totoResult.csv';
+// Use relative path for CSV file
+const CSV_FILE = './totoResult.csv';
 
 // --- All function definitions copied from updateTotoCSV.cjs ---
 async function fetchLatestByDateAnalysis() {
