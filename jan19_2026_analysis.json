@@ -1,0 +1,211 @@
+{
+  "drawDate": "19-Jan-26",
+  "actualNumbers": [
+    4,
+    11,
+    21,
+    23,
+    31,
+    35
+  ],
+  "additional": 48,
+  "predictions": [
+    {
+      "rank": 1,
+      "algorithm": "Core Frequency",
+      "numbers": [
+        2,
+        4,
+        17,
+        18,
+        37,
+        43
+      ]
+    },
+    {
+      "rank": 2,
+      "algorithm": "Mathematical Balance",
+      "numbers": [
+        2,
+        10,
+        20,
+        28,
+        37,
+        47
+      ]
+    },
+    {
+      "rank": 3,
+      "algorithm": "Pattern Harmony",
+      "numbers": [
+        2,
+        6,
+        27,
+        32,
+        36,
+        49
+      ]
+    },
+    {
+      "rank": 4,
+      "algorithm": "Gap Equilibrium",
+      "numbers": [
+        7,
+        11,
+        21,
+        28,
+        44,
+        47
+      ]
+    },
+    {
+      "rank": 5,
+      "algorithm": "Hybrid Balance",
+      "numbers": [
+        7,
+        14,
+        25,
+        31,
+        40,
+        47
+      ]
+    },
+    {
+      "rank": 6,
+      "algorithm": "Low Frequency Focus",
+      "numbers": [
+        6,
+        13,
+        16,
+        25,
+        27,
+        39
+      ]
+    },
+    {
+      "rank": 7,
+      "algorithm": "Low Pattern Analysis",
+      "numbers": [
+        2,
+        6,
+        12,
+        15,
+        18,
+        37
+      ]
+    },
+    {
+      "rank": 8,
+      "algorithm": "Low Gap Strategy",
+      "numbers": [
+        7,
+        9,
+        14,
+        19,
+        25,
+        28
+      ]
+    },
+    {
+      "rank": 9,
+      "algorithm": "High Frequency Focus",
+      "numbers": [
+        2,
+        17,
+        22,
+        34,
+        37,
+        42
+      ]
+    },
+    {
+      "rank": 10,
+      "algorithm": "High Pattern Analysis",
+      "numbers": [
+        13,
+        18,
+        37,
+        40,
+        43,
+        46
+      ]
+    },
+    {
+      "rank": 11,
+      "algorithm": "High Gap Strategy",
+      "numbers": [
+        25,
+        28,
+        31,
+        38,
+        39,
+        47
+      ]
+    },
+    {
+      "rank": 12,
+      "algorithm": "Mid Frequency Focus",
+      "numbers": [
+        4,
+        18,
+        24,
+        25,
+        28,
+        48
+      ]
+    },
+    {
+      "rank": 13,
+      "algorithm": "Mid Pattern Analysis",
+      "numbers": [
+        1,
+        6,
+        17,
+        22,
+        33,
+        36
+      ]
+    },
+    {
+      "rank": 14,
+      "algorithm": "Even-Odd Optimizer",
+      "numbers": [
+        2,
+        15,
+        23,
+        32,
+        38,
+        40
+      ]
+    },
+    {
+      "rank": 15,
+      "algorithm": "Weighted Systematic",
+      "numbers": [
+        2,
+        19,
+        25,
+        28,
+        37,
+        39
+      ]
+    }
+  ],
+  "performance": {
+    "bestMatches": 2,
+    "topAlgorithms": [
+      "Gap Equilibrium"
+    ],
+    "averageMatches": 0.4666666666666667,
+    "predictionsWithMatches": 6,
+    "totalPredictions": 15
+  },
+  "actualPattern": {
+    "sum": 125,
+    "evenOdd": "1/5",
+    "ranges": "2/3/1",
+    "range": 31,
+    "type": "MID-HEAVY"
+  },
+  "analysisDate": "2026-01-19T15:50:58.453Z"
+}
