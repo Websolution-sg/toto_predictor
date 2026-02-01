@@ -49,9 +49,6 @@
     <button onclick="fetchLatestFromSingaporePools()" style="background-color: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; margin-right: 10px; cursor: pointer;">
       🔄 Fetch Latest Results
     </button>
-    <button onclick="refreshAndValidate()" style="background-color: #ffc107; color: #212529; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; margin-right: 10px; cursor: pointer;">
-      ⚡ Quick Refresh & Validate
-    </button>
 
   </div>
 
@@ -548,48 +545,6 @@ function showCurrentData() {
       </ol>
     </div>
   `;
-}
-
-// Quick Refresh and Validate Function
-async function refreshAndValidate() {
-  const fetchDiv = document.getElementById('latestFetch');
-  fetchDiv.style.display = 'block';
-  fetchDiv.innerHTML = `
-    <h3>⚡ Quick Refresh & Validation in Progress...</h3>
-    <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 10px 0;">
-      <h4>🔄 Step 1: Refreshing Local CSV Data</h4>
-      <p>Checking for any local updates...</p>
-    </div>
-  `;
-  
-  try {
-    // First refresh local CSV
-    await fetchCsvAndUpdate();
-    
-    fetchDiv.innerHTML += `
-      <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 10px 0;">
-        <h4>✅ Step 1 Complete: Local Data Refreshed</h4>
-        <p>CSV data reloaded successfully</p>
-      </div>
-      <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 10px 0;">
-        <h4>🔄 Step 2: Fetching from Singapore Pools</h4>
-        <p>Connecting to Singapore Pools for latest results...</p>
-      </div>
-    `;
-    
-    // Then fetch from Singapore Pools
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay for user experience
-    await fetchLatestFromSingaporePools();
-    
-  } catch (error) {
-    fetchDiv.innerHTML += `
-      <div style="background: #f8d7da; padding: 15px; border-radius: 8px; margin: 10px 0;">
-        <h4>❌ Quick Refresh Error</h4>
-        <p><strong>Error:</strong> ${error.message}</p>
-        <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
-      </div>
-    `;
-  }
 }
 
 function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
