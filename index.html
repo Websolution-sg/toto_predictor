@@ -40,8 +40,25 @@
   </div>
 
   <label><input type="checkbox" id="showAnalytics" checked/> Show detailed analytics</label><br/>
-  <button onclick="predict()">Predict</button>
-  <button onclick="fetchLatestFromSingaporePools()" style="margin-left: 10px; background-color: #28a745; color: white;">🔄 Fetch Latest from Singapore Pools</button>
+  
+  <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #28a745, #20c997); border-radius: 8px; color: white;">
+    <h4 style="margin: 0 0 10px 0; color: white;">🏆 Singapore Pools Integration</h4>
+    <button onclick="predict()" style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; margin-right: 10px; cursor: pointer;">
+      🎯 Generate Predictions
+    </button>
+    <button onclick="fetchLatestFromSingaporePools()" style="background-color: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; margin-right: 10px; cursor: pointer;">
+      🔄 Fetch Latest Results
+    </button>
+    <button onclick="refreshAndValidate()" style="background-color: #ffc107; color: #212529; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; margin-right: 10px; cursor: pointer;">
+      ⚡ Quick Refresh & Validate
+    </button>
+    <br><br>
+    <label style="color: white;">
+      <input type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()"/> 
+      🔄 Auto-refresh every 30 minutes
+    </label>
+    <span id="autoRefreshStatus" style="margin-left: 10px; font-size: 0.9em; opacity: 0.8;"></span>
+  </div>
 
   <h2>Results</h2>
   <div id="results"></div>
@@ -54,6 +71,10 @@ let historical = [];
 let chartInstance = null;
 // Auto-refresh interval in milliseconds (e.g., 5 minutes)
 const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000;
+// Singapore Pools auto-refresh interval (30 minutes)
+const SINGAPORE_POOLS_REFRESH_INTERVAL = 30 * 60 * 1000;
+let singaporePoolsAutoRefreshInterval = null;
+let lastSingaporePoolsCheck = null;
 
 function fetchCsvAndUpdate() {
   // FORCE-REFRESH: Ultra-enhanced cache-busting - Updated Dec 1, 2025
@@ -541,6 +562,98 @@ function showCurrentData() {
       </ol>
     </div>
   `;
+}
+
+// Quick Refresh and Validate Function
+async function refreshAndValidate() {
+  const fetchDiv = document.getElementById('latestFetch');
+  fetchDiv.style.display = 'block';
+  fetchDiv.innerHTML = `
+    <h3>⚡ Quick Refresh & Validation in Progress...</h3>
+    <div style="background: #e8f4f8; padding: 15px; border-radius: 8px; margin: 10px 0;">
+      <h4>🔄 Step 1: Refreshing Local CSV Data</h4>
+      <p>Checking for any local updates...</p>
+    </div>
+  `;
+  
+  try {
+    // First refresh local CSV
+    await fetchCsvAndUpdate();
+    
+    fetchDiv.innerHTML += `
+      <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 10px 0;">
+        <h4>✅ Step 1 Complete: Local Data Refreshed</h4>
+        <p>CSV data reloaded successfully</p>
+      </div>
+      <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 10px 0;">
+        <h4>🔄 Step 2: Fetching from Singapore Pools</h4>
+        <p>Connecting to Singapore Pools for latest results...</p>
+      </div>
+    `;
+    
+    // Then fetch from Singapore Pools
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Small delay for user experience
+    await fetchLatestFromSingaporePools();
+    
+  } catch (error) {
+    fetchDiv.innerHTML += `
+      <div style="background: #f8d7da; padding: 15px; border-radius: 8px; margin: 10px 0;">
+        <h4>❌ Quick Refresh Error</h4>
+        <p><strong>Error:</strong> ${error.message}</p>
+        <p><strong>Time:</strong> ${new Date().toLocaleString()}</p>
+      </div>
+    `;
+  }
+}
+
+// Auto-refresh toggle functionality
+function toggleAutoRefresh() {
+  const checkbox = document.getElementById('autoRefresh');
+  const statusSpan = document.getElementById('autoRefreshStatus');
+  
+  if (checkbox.checked) {
+    // Start auto-refresh
+    singaporePoolsAutoRefreshInterval = setInterval(() => {
+      console.log('🔄 Auto-refreshing Singapore Pools data...');
+      fetchLatestFromSingaporePools();
+      lastSingaporePoolsCheck = new Date();
+    }, SINGAPORE_POOLS_REFRESH_INTERVAL);
+    
+    lastSingaporePoolsCheck = new Date();
+    statusSpan.textContent = '✅ Active - Next check in 30 mins';
+    statusSpan.style.color = '#28a745';
+    
+    console.log('✅ Singapore Pools auto-refresh enabled (every 30 minutes)');
+    
+    // Update status every minute
+    const statusUpdateInterval = setInterval(() => {
+      if (!document.getElementById('autoRefresh').checked) {
+        clearInterval(statusUpdateInterval);
+        return;
+      }
+      
+      if (lastSingaporePoolsCheck) {
+        const minutesAgo = Math.floor((new Date() - lastSingaporePoolsCheck) / 60000);
+        const minutesUntilNext = 30 - minutesAgo;
+        if (minutesUntilNext > 0) {
+          statusSpan.textContent = `✅ Next check in ${minutesUntilNext} mins`;
+        } else {
+          statusSpan.textContent = '🔄 Checking soon...';
+        }
+      }
+    }, 60000); // Update every minute
+    
+  } else {
+    // Stop auto-refresh
+    if (singaporePoolsAutoRefreshInterval) {
+      clearInterval(singaporePoolsAutoRefreshInterval);
+      singaporePoolsAutoRefreshInterval = null;
+    }
+    
+    statusSpan.textContent = '⏸️ Disabled';
+    statusSpan.style.color = '#6c757d';
+    console.log('⏸️ Singapore Pools auto-refresh disabled');
+  }
 }
 function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
   const resultText = `${winningNumbers.join(',')}(${additionalNumber})`;
