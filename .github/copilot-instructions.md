@@ -1,15 +1,13 @@
 # Singapore TOTO Predictor - AI Coding Agent Instructions
 
 ## Project Overview
-This is a web-based Singapore TOTO lottery prediction system with dual predictors:
+This is a web-based Singapore TOTO lottery prediction system:
 - **TOTO Predictor** (`index.html`) - Main 6-number lottery predictor 
-- **4D Predictor** (`4d_predictor.html`) - 4-digit number predictor
 
 ## Core Architecture
 
 ### Data Structure
 - `totoResult.csv`: TOTO draws in format `date,n1,n2,n3,n4,n5,n6,additional` 
-- `4dResult.csv`: 4D draws with draw number, date, and prize categories
 - CSV files are auto-updated via GitHub Actions on Mon/Thu at 1:00 UTC
 
 ### Prediction Algorithm Foundation
@@ -79,7 +77,7 @@ node comprehensive_csv_validation.js
 #### CSV Parsing Requirements
 - Handle Singapore Pools format variations
 - Robust date parsing (multiple formats)
-- Validate number ranges (TOTO: 1-49, 4D: 0000-9999)
+- Validate number ranges (TOTO: 1-49)
 - Preserve draw sequence integrity
 
 #### Prediction Validation Pattern
@@ -100,7 +98,6 @@ function validatePrediction(predicted, actual) {
 - **GitHub Actions**: Automated data updates
 
 ### Cross-Component Communication
-- Shared prediction algorithms between TOTO/4D systems
 - Common CSV validation utilities
 - Unified analytics and accuracy tracking
 
@@ -136,6 +133,5 @@ For CSV updates:
 
 ## Key Files for Algorithm Changes
 - `index.html` (lines 600-900) - Main TOTO prediction logic
-- `4d_predictor.html` - 4D prediction algorithms  
 - `*_validator.js` - Individual algorithm testing
 - `comprehensive_prediction_validation.mjs` - Full system validation
