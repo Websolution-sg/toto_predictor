@@ -41,22 +41,16 @@
 
   <label><input type="checkbox" id="showAnalytics" checked/> Show detailed analytics</label><br/>
   
-  <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #28a745, #20c997); border-radius: 8px; color: white;">
-    <h4 style="margin: 0 0 10px 0; color: white;">🏆 Singapore Pools Integration</h4>
-    <button onclick="predict()" style="background-color: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; margin-right: 10px; cursor: pointer;">
-      🎯 Generate Predictions
-    </button>
-    <button onclick="fetchLatestFromSingaporePools()" style="background-color: #dc3545; color: white; padding: 10px 20px; border: none; border-radius: 5px; font-weight: bold; margin-right: 10px; cursor: pointer;">
+  <div style="margin: 15px 0; padding: 15px; background: linear-gradient(135deg, #dc3545, #c82333); border-radius: 8px; color: white;">
+    <h4 style="margin: 0 0 10px 0; color: white;">🔄 Singapore Pools TOTO Results Fetcher</h4>
+    <button onclick="fetchLatestFromSingaporePools()" style="background-color: #dc3545; color: white; padding: 15px 25px; border: none; border-radius: 5px; font-weight: bold; font-size: 16px; cursor: pointer;">
       🔄 Fetch Latest Results
     </button>
-
+    <p style="margin: 10px 0 0 0; font-size: 14px; opacity: 0.9;">Click to get the latest TOTO results from Singapore Pools</p>
   </div>
 
-  <h2>Results</h2>
-  <div id="results"></div>
+  <h2>Latest TOTO Results</h2>
   <div id="latestFetch" style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; display: none;"></div>
-  <div id="analytics" style="margin-top: 20px;"></div>
-  <canvas id="freqChart"></canvas>
 
 <script>
 let historical = [];
