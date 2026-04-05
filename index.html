@@ -13,7 +13,7 @@
 </head>
 <body>
   <h1>Singapore TOTO Predictor</h1>
-  <p>RECENT RESULT: 9,11,24,32,39,49(26)</p>
+  <p id="recentResult"></p>
   <p>By default, the previous lottery result is selected:</p>
   <div>
     <select id="base1"></select>
@@ -240,6 +240,13 @@ const historical = [
       })
     }
 
+const recent = historical[0];
+
+// Update "RECENT RESULT" text from historical[0]
+document.getElementById('recentResult').textContent =
+  `RECENT RESULT: ${recent.slice(0, 6).join(',') }(${recent[6]})`;
+
+  
     // Auto-select most recent result
     const recent = historical[0];
     ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
@@ -248,6 +255,10 @@ const historical = [
     document.getElementById('additional').value = recent[6];
    document.getElementById('includeAdd').checked = false;
 
+
+
+
+  
     let chartInstance = null;
 
     function predict() {
