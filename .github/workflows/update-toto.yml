@@ -25,46 +25,18 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: 'package-lock.json'
 
-      # ✅ STEP 3: Install dependencies (robust approach)
+      # ✅ STEP 3: Install dependencies
       - name: Install dependencies
         run: |
-          echo "� Running robust dependency installation..."
-          
-          # Method 1: Try the fix script
-          if [ -f fix-dependencies.cjs ]; then
-            echo "🎯 Using dependency fixer script..."
-            if node fix-dependencies.cjs; then
-              echo "✅ Dependency fixer succeeded"
-            else
-              echo "⚠️ Dependency fixer failed, trying manual approach..."
-            fi
-          fi
-          
-          # Method 2: Fallback manual installation
-          echo "🔄 Verifying installation..."
-          if ! node -e "require('node-fetch'); require('cheerio')" 2>/dev/null; then
-            echo "� Installing critical dependencies manually..."
-            npm install node-fetch@2.7.0 cheerio@1.0.0-rc.12 --no-optional --no-audit --force
-          fi
-          
-          # Final verification
-          echo "🧪 Final verification..."
-          node -e "
-            try {
-              const fetch = require('node-fetch');
-              const cheerio = require('cheerio');
-              console.log('✅ node-fetch:', typeof fetch === 'function' ? 'OK' : 'ERROR');
-              console.log('✅ cheerio:', typeof cheerio.load === 'function' ? 'OK' : 'ERROR');
-              console.log('🎉 All dependencies verified successfully!');
-            } catch (err) {
-              console.log('💥 Verification failed:', err.message);
-              process.exit(1);
-            }
-          "
-          echo "✅ Dependencies installation completed"
+          echo "📦 Installing dependencies..."
+          npm install --no-audit --no-fund
+          echo "🧪 Verifying cheerio..."
+          node --input-type=module <<'EOF'
+          import { load } from 'cheerio';
+          console.log('✅ cheerio OK');
+          EOF
+          echo "✅ Dependencies ready"
 
       # ✅ STEP 4: Debug environment (helps troubleshoot issues)
       - name: Debug environment
