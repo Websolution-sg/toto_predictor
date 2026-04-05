@@ -101,7 +101,7 @@ function parseResults(html) {
     const rows = $(table).find('tr');
     rows.each((_, row) => {
       const cells = $(row).find('td');
-      if (cells.length < 7) return; // need at least date + 6 numbers + additional
+      if (cells.length < 8) return; // need at least: date + 6 winning numbers + additional
 
       // First cell may be the draw date
       const dateText = $(cells[0]).text().trim();
@@ -114,8 +114,7 @@ function parseResults(html) {
         if (isNaN(n) || n < 1 || n > 49) return;
         nums.push(n);
       }
-      const addCell = cells[7] ? cells[7] : cells[6];
-      const add = parseInt($(addCell).text().trim(), 10);
+      const add = parseInt($(cells[7]).text().trim(), 10);
       if (isNaN(add) || add < 1 || add > 49) return;
 
       results.push({ csvLine: `${dateKey},${nums.join(',')},${add}`, dateKey });
