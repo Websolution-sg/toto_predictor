@@ -240,15 +240,13 @@ const historical = [
       })
     }
 
-const recent = historical[0];
-
-// Update "RECENT RESULT" text from historical[0]
-document.getElementById('recentResult').textContent =
-  `RECENT RESULT: ${recent.slice(0, 6).join(',') }(${recent[6]})`;
-
-  
     // Auto-select most recent result
     const recent = historical[0];
+
+  // Update "RECENT RESULT" text from historical[0]
+document.getElementById('recentResult').textContent =
+  `RECENT RESULT: ${recent.slice(0, 6).join(',') }(${recent[6]})`;
+  
     ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
       document.getElementById(id).value = recent[idx]
     });
