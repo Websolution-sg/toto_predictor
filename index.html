@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> 
+<head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Singapore TOTO Predictor</title>
@@ -13,1483 +13,446 @@
 </head>
 <body>
   <h1>Singapore TOTO Predictor</h1>
-  <p id="recentResult">RECENT RESULT: 11,13,16,31,42,48(21) - 29-Jan-26</p>
-  <p>Enhanced 3-Base System v3.0:</p>
-  <div style="background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; padding: 12px; margin: 10px 0;">
-    <strong>🎯 OPTIMAL Base Numbers:</strong> <span style="color: #0066cc; font-weight: bold; font-size: 18px;">10, 49, 2</span>
-    <br><small style="color: #666;">Data-driven optimal bases (19.9%, 19.2%, 17.8% historical frequency) - 6.25% better performance</small>
+  <p id="recentResult"></p>
+  <p>By default, the previous lottery result is selected:</p>
+  <div>
+    <select id="base1"></select>
+    <select id="base2"></select>
+    <select id="base3"></select>
+    <select id="base4"></select>
+    <select id="base5"></select>
+    <select id="base6"></select>
   </div>
 
   <div>
-    <label>Prediction Method:</label><br/>
-    <select id="predictionMethod">
-      <option value="enhanced">🚀 Enhanced Ensemble (Recommended)</option>
-      <option value="frequency">📊 Frequency + Compatibility</option>
-      <option value="weighted">⚖️ Weighted Recent Analysis</option>
-      <option value="hotcold">🌡️ Hot/Cold Number Analysis</option>
-    </select>
+    <label>Additional Number:</label><br/>
+    <select id="additional"></select>
   </div>
 
   <div>
-    <label>Draw Range Analysis:</label><br/>
+    <label>Select draw range:</label><br/>
     <select id="drawRange">
-      <option value="20" selected>Last 20 draws</option>
-      <option value="50">Last 50 draws</option>
-      <option value="100">Last 100 draws</option>
+      <option value="20">Last 20</option>
+      <option value="50">Last 50</option>
+      <option value="100">Last 100</option>
     </select>
   </div>
 
-  <label><input type="checkbox" id="showAnalytics" checked/> Show detailed analytics</label><br/>
+  <label>
+    <input type="checkbox" id="includeAdd" /> Include additional number
+  </label><br/>
+
   <button onclick="predict()">Predict</button>
 
   <h2>Results</h2>
   <div id="results"></div>
-  <div id="analytics" style="margin-top: 20px;"></div>
   <canvas id="freqChart"></canvas>
 
 <script>
-let historical = [];
-let chartInstance = null;
-// Auto-refresh interval in milliseconds (e.g., 5 minutes)
-const AUTO_REFRESH_INTERVAL = 5 * 60 * 1000;
+let historical = [
+  // Replace with real Singapore TOTO data: 6 winning + 1 additional
+  
+[14,23,29,30,39,48,12],
+[1,7,8,23,30,33,21],
+[4,12,26,30,46,47,6],
+[4,7,22,29,33,46,48],
+[4,25,28,33,43,48,31],
+[3,27,34,35,38,49,17],
+[6,14,18,22,35,36,13],
+[12,25,33,40,43,46,21],
+[7,13,14,17,40,44,35],
+[1,5,12,15,22,42,37],
+[6,8,28,37,41,49,40],
+[5,9,20,23,45,46,7],
+[24,26,30,32,37,47,2],
+[8,16,17,34,38,48,25],
+[13,24,28,34,37,44,29],
+[10,15,25,43,45,49,4],
+[8,16,17,34,38,48,25],
+[13,24,28,34,37,44,29],
+[10,15,25,43,45,49,4],
+[10,15,29,31,33,49,30],
+[6,18,24,26,36,48,5],
+[4,19,40,41,46,47,20],
+[11,13,16,31,42,48,21],
+[10,11,13,26,32,39,44],
+[6,22,27,32,37,44,19],
+[4,11,21,23,31,35,48],
+[16,32,34,35,36,41,14],
+[1,9,16,18,35,43,12],
+[3,14,15,17,25,27,31],
+[5,20,35,39,40,49,27],
+[11,18,20,32,38,39,34],
+[2,4,22,24,30,33,49],
+[3,8,15,28,37,43,49],
+[4,5,13,22,24,30,36],
+[2,14,15,30,31,43,27],
+[17,21,22,35,37,42,9],
+[6,11,20,28,33,43,16],
+[9,12,15,23,27,47,45],
+[1,5,24,36,41,46,39],
+[2,10,24,35,45,49,37],
+[6,8,17,28,32,46,16],
+[8,25,27,34,45,47,19],
+[11,13,22,31,47,49,39],
+[3,9,12,18,19,34,24],
+[6,13,18,22,34,35,40],
+[2,11,12,19,25,36,16],
+[3,20,24,29,32,44,46],
+[10,19,22,34,39,43,35],
+[1,5,31,34,38,45,21],
+[4,12,14,24,36,38,17],
+[7,14,17,18,31,38,46],
+[3,10,13,15,32,37,8],
+[2,4,8,19,35,39,7],
+[13,14,19,22,31,42,41],
+[10,15,22,31,42,48,4],
+[19,22,26,37,40,46,14],
+[15,16,22,34,35,43,26],
+[1,6,9,11,29,36,12],
+[8,15,22,24,43,47,44],
+[6,8,9,20,45,49,21],
+[10,19,25,29,33,37,24],
+[2,15,19,35,41,48,33],
+[1,3,33,38,39,42,31],
+[8,12,21,38,40,43,25],
+[3,4,8,13,14,17,20],
+[10,11,16,24,34,35,1],
+[2,3,4,16,22,39,48],
+[4,13,22,36,38,46,12],
+[1,4,18,24,37,42,26],
+[22,25,29,31,34,43,11],
+[9,24,31,34,43,44,1],
+[2,15,28,39,42,44,5],
+[30,32,40,43,45,49,5],
+[7,19,20,21,22,29,37],
+[2,14,16,21,36,47,1],
+[9,11,24,32,39,49,26],
+[2,5,10,12,14,37,17],
+[7,8,17,29,32,42,1],
+[2,8,19,29,38,41,20],
+[12,21,26,27,35,44,10],
+[10,15,17,33,36,45,34],
+[6,15,16,17,25,34,31],
+[11,27,31,33,34,36,13],
+[10,26,28,35,37,46,20],
+[2,15,29,37,45,49,24],
+[1,10,37,40,45,47,19],
+[5,18,27,32,48,49,21],
+[3,7,38,41,44,49,20],
+[7,10,11,21,32,48,27],
+[2,5,25,26,29,30,42],
+[10,19,21,22,28,31,34],
+[1,5,7,11,19,47,44],
+[5,9,15,28,46,48,8],
+[3,10,32,34,44,48,29],
+[2,15,17,18,39,45,26],
+[9,16,17,20,34,38,18],
+[6,16,20,23,40,48,45],
+[9,13,17,39,46,47,22],
+[5,8,28,38,40,43,39],
+[2,8,12,30,35,49,38],
+[3,8,12,18,24,41,11],
+[17,19,21,23,30,40,33],
+[1,17,30,37,41,43,32],
+[15,17,26,31,40,46,19],
+[6,14,29,30,35,42,25],
+[14,26,27,30,46,48,10],
+[7,19,35,40,43,47,33],
+[12,14,15,16,21,40,23],
+[9,12,17,23,29,46,20],
+[21,22,27,35,40,42,3],
+[18,19,25,28,31,44,34],
+[9,10,11,13,23,42,20],
+[7,30,39,42,43,48,33],
+[16,26,34,36,42,49,41],
+[5,7,32,38,42,47,27],
+[19,33,35,38,46,49,39],
+[4,16,24,25,43,49,46],
+[2,10,13,15,37,40,28],
+[24,37,38,42,48,49,31],
+[3,25,31,37,39,42,21],
+[1,16,23,39,41,42,9],
+[5,8,13,28,30,49,17],
+[1,3,7,18,34,39,46],
+[16,18,22,23,28,35,32],
+[1,12,29,31,41,48,25],
+[2,9,13,24,26,43,49],
+[7,16,22,26,33,43,44],
+[9,10,18,35,43,49,42],
+[3,5,6,16,32,49,4],
+[6,13,18,27,35,46,48],
+[3,7,11,13,34,35,17],
+[13,32,34,36,38,40,37],
+[6,10,13,27,41,49,4],
+[9,11,24,29,39,46,31],
+[3,10,13,29,32,46,18],
+[8,21,30,35,44,49,39],
+[34,40,42,44,45,46,19],
+[3,9,10,20,23,32,42],
+[13,19,22,26,40,49,45],
+[17,18,19,31,32,33,8],
+[1,4,8,10,16,46,23],
+[8,14,15,20,31,49,13],
+[10,11,12,21,41,49,44],
+[1,2,4,15,18,24,35],
+[26,28,31,38,41,42,23],
+[4,7,11,14,21,28,36],
+[1,2,14,36,44,46,20],
+[12,16,29,36,39,40,37],
+[13,28,39,43,46,48,30],
+[4,12,17,18,23,34,28],
+[14,18,25,28,29,44,36],
+[2,6,10,17,18,49,35],
+[10,16,33,37,45,47,6],
+[20,24,28,37,46,47,36],
+[4,13,19,44,46,49,31],
+[2,4,10,25,36,38,22],
+[12,33,39,42,43,48,10],
+[1,17,24,25,27,39,30],
+[16,22,23,31,41,49,8],
+[2,9,15,17,40,48,28],
+[4,33,34,38,40,43,15],
+[17,23,26,31,38,40,14],
+[9,20,22,32,37,47,1],
+[7,13,17,22,31,37,1],
+[2,8,15,19,33,38,21],
+[5,6,14,36,45,49,12],
+[1,4,10,16,18,29,6],
+[1,13,27,38,40,43,2],
+[6,7,13,30,37,39,16],
+[3,9,10,12,27,41,29],
+[6,8,18,34,35,37,33],
+[2,5,8,43,45,48,41],
+[2,3,16,26,29,41,12],
+[15,24,35,36,42,46,48],
+[2,8,27,33,34,43,11],
+[23,26,32,36,41,49,31],
+[1,12,15,30,42,43,22],
+  /* ... */
+];
 
-function fetchCsvAndUpdate() {
-  // FORCE-REFRESH: Ultra-enhanced cache-busting - Updated Dec 1, 2025
-  const cacheBuster = new Date().getTime();
-  const randomId = Math.random().toString(36).substring(7);
-  const forceUpdate = Date.now() + Math.random();
-  const csvUrl = `totoResult.csv?v=${cacheBuster}&r=${randomId}&nocache=${Date.now()}&force=${forceUpdate}&t=${new Date().toISOString()}`;
-
-  fetch(csvUrl, {
-    cache: 'no-store',
-    method: 'GET',
-    headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0',
-      'Pragma': 'no-cache',
-      'Expires': '0',
-      'If-Modified-Since': 'Mon, 01 Jan 1970 00:00:00 GMT'
+    function parseHistoricalCsv(csvText) {
+      return csvText
+        .split(/\r?\n/)
+        .map(line => line.trim())
+        .filter(Boolean)
+        .map(line => {
+          const cols = line.split(',').map(s => s.trim());
+          if (cols.length < 8) {
+            return null;
+          }
+          const nums = cols.slice(1, 8).map(Number);
+          const isValid = nums.every(n => Number.isInteger(n) && n >= 1 && n <= 49);
+          return isValid ? nums : null;
+        })
+        .filter(Boolean);
     }
-  })
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      return response.text();
-    })
-    .then(text => {
-      if (!text.trim()) {
-        throw new Error('CSV file is empty');
-      }
-      let unrecognizedDates = [];
-      historical = text.trim().split('\n').map(line => {
-        const parts = line.split(',');
-        // Accept 'DD MMM YYYY', 'DD-MMM-YYYY', 'DD-MMM-YY', 'DD-MMMM-YY', etc.
-        const datePatternSpace = /\d{1,2} \w{3,9} \d{2,4}/i;
-        const datePatternDash = /\d{1,2}-\w{3,9}-\d{2,4}/i;
-        let hasDate = parts.length === 8 && (
-          datePatternSpace.test(parts[0]) ||
-          datePatternDash.test(parts[0])
-        );
-        if (hasDate) {
-          return {
-            date: parts[0],
-            numbers: parts.slice(1, 7).map(Number),
-            additional: Number(parts[7])
-          };
-        } else if (parts.length === 7) {
-          return {
-            date: null,
-            numbers: parts.slice(0, 6).map(Number),
-            additional: Number(parts[6])
-          };
-        } else {
-          if (parts[0]) unrecognizedDates.push(parts[0]);
-          return null;
+
+    async function loadHistoricalData() {
+      try {
+        const response = await fetch(`totoResult.csv?ts=${Date.now()}`, { cache: 'no-store' });
+        if (!response.ok) {
+          throw new Error(`Failed to load totoResult.csv: ${response.status}`);
         }
-      }).filter(line => line !== null);
-      console.log('Debug: Parsed dates:', historical.map(d => d.date));
-      if (unrecognizedDates.length > 0) {
-        console.warn('Unrecognized date formats:', unrecognizedDates);
+        const csvText = await response.text();
+        const parsed = parseHistoricalCsv(csvText);
+        if (parsed.length > 0) {
+          historical = parsed;
+        }
+      } catch (err) {
+        console.warn('Using embedded fallback data because CSV could not be loaded.', err);
       }
 
-            // Normalize to newest-first if CSV is oldest-first
-      function _parseDateForOrder(s) {
-        if (!s) return null;
-        // Accept 'DD-MMM-YY', 'DD-MMM-YYYY', 'DD MMM YYYY', 'DD MMM YY'
-        // Accept 'DD-MMM-YY', 'DD-MMMM-YY', 'DD MMM YYYY', 'DD MMMM YYYY', etc.
-        const m = s.match(/^(\d{1,2})(?:-| )([A-Za-z]{3,9})(?:-| )(\d{2,4})$/i);
-        if (!m) return null;
-        const day = +m[1];
-        let monthStr = m[2].toUpperCase();
-        // Normalize common variants
-        const monthMap = {
-          'JAN':0, 'JANUARY':0,
-          'FEB':1, 'FEBRUARY':1,
-          'MAR':2, 'MARCH':2,
-          'APR':3, 'APRIL':3,
-          'MAY':4,
-          'JUN':5, 'JUNE':5,
-          'JUL':6, 'JULY':6,
-          'AUG':7, 'AUGUST':7,
-          'SEP':8, 'SEPT':8, 'SEPTEMBER':8,
-          'OCT':9, 'OCTOBER':9,
-          'NOV':10, 'NOVEMBER':10,
-          'DEC':11, 'DECEMBER':11
-        };
-        const mon = monthMap[monthStr] !== undefined ? monthMap[monthStr] : -1;
-        let yr = m[3];
-        let year = parseInt(yr, 10);
-        if (yr.length === 2) {
-          year = year < 50 ? 2000 + year : 1900 + year;
-        }
-        if (mon === -1) return null;
-        return new Date(year, mon, day);
+      applyRecentResultToUi();
+    }
+
+    function applyRecentResultToUi() {
+      if (!historical.length) {
+        document.getElementById('recentResult').textContent = 'RECENT RESULT: unavailable';
+        return;
       }
-      const _dates = historical.map(d => d.date ? _parseDateForOrder(d.date) : null).filter(Boolean);
-      if (_dates.length >= 2 && _dates[0] < _dates[_dates.length - 1]) {
-        historical.reverse();
-      }
-      if (historical.length === 0) {
-        throw new Error('No valid data found in CSV');
-      }
-      // Update dropdowns and latest result
-      for (let i = 1; i <= 49; i++) {
-        // No additional dropdown to populate
-      }
+
       const recent = historical[0];
-      updateLatestResult(recent.numbers, recent.additional, recent.date);
-      
-      // Update data point information dynamically
-      updateDataPointInfo();
-      
-      // Enable prediction button
-      const predictBtn = document.querySelector('button[onclick="predict()"]');
-      if (predictBtn) predictBtn.disabled = false;
-    })
-    .catch(error => {
-      // Show error message in UI, do not use any hardcoded results
-      const resultElement = document.getElementById('recentResult');
-      if (resultElement) {
-        resultElement.textContent = 'RECENT RESULT: No data available. Please check totoResult.csv.';
-        resultElement.style.color = '#dc3545';
+      document.getElementById('recentResult').textContent =
+        `RECENT RESULT: ${recent.slice(0, 6).join(',')}(${recent[6]})`;
+
+      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6'].forEach((id, idx) => {
+        document.getElementById(id).value = recent[idx];
+      });
+      document.getElementById('additional').value = recent[6];
+    }
+
+    // Populate selects
+    for (let i = 1; i <= 49; i++) {
+      ['base1', 'base2', 'base3', 'base4', 'base5', 'base6', 'additional'].forEach(id => {
+        const opt = document.createElement('option');
+        opt.value = opt.textContent = i;
+        document.getElementById(id).append(opt);
+      })
+    }
+
+    document.getElementById('includeAdd').checked = false;
+    loadHistoricalData();
+
+
+
+
+  
+    let chartInstance = null;
+
+    function predict() {
+      const hasHistoricalMatch = checkHistoricalAndMaybePredict();
+      if (!hasHistoricalMatch) {
+        runFrequencyCompatibilityPrediction();
       }
-      // Disable prediction button
-      const predictBtn = document.querySelector('button[onclick="predict()"]');
-      if (predictBtn) predictBtn.disabled = true;
-      // No additional dropdown to clear
-    });
-}
-
-
-// Initial fetch on page load
-fetchCsvAndUpdate();
-
-// Auto-refresh in the background
-setInterval(fetchCsvAndUpdate, AUTO_REFRESH_INTERVAL);
-function updateLatestResult(winningNumbers, additionalNumber, drawDate = null) {
-  const resultText = `${winningNumbers.join(',')}(${additionalNumber})`;
-  const resultElement = document.getElementById('recentResult');
-  let formattedDate = drawDate;
-  // Convert 'DD MMM YYYY' or 'DD-MMM-YYYY' to display format
-  if (drawDate) {
-    if (/^\d{2} \w{3} \d{4}$/.test(drawDate)) {
-      const [day, monthStr, year] = drawDate.split(' ');
-      formattedDate = `${day}-${monthStr}-${year}`;
-    } else if (/^\d{2}-\w{3}-\d{4}$/.test(drawDate)) {
-      formattedDate = drawDate;
     }
-  }
-  if (resultElement) {
-    resultElement.textContent = `RECENT RESULT: ${resultText}${formattedDate ? ' - ' + formattedDate : ''}`;
-  }
-}
-
-function hasDuplicates(arr) {
-  return new Set(arr).size !== arr.length;
-}
-
-function predict() {
-  const bases = getSelectedBases();
-  if (hasDuplicates(bases)) {
-    alert("Duplicate base numbers selected. Please choose unique numbers.");
-    return;
-  }
-  
-  // Check if we should use historical match first
-  const hasHistoricalMatch = checkHistoricalAndMaybePredict();
-  if (hasHistoricalMatch) return;
-  
-  // Get selected prediction method
-  const method = document.getElementById('predictionMethod').value;
-  
-  switch (method) {
-    case 'enhanced':
-      runEnhancedEnsemblePrediction();
-      break;
-    case 'frequency':
-      runFrequencyCompatibilityPrediction();
-      break;
-    case 'weighted':
-      runWeightedPrediction();
-      break;
-    case 'hotcold':
-      runHotColdPrediction();
-      break;
-    default:
-      runEnhancedEnsemblePrediction();
-  }
-}
-
-function updateDataPointInfo() {
-  if (historical && historical.length > 0) {
-    const totalDraws = historical.length;
-    const firstDate = historical[historical.length - 1].date;
-    const lastDate = historical[0].date;
-    
-    // Update the data point info
-    const infoElement = document.getElementById('dataPointInfo');
-    if (infoElement) {
-      infoElement.textContent = `Data available: ${lastDate} to ${firstDate} (${totalDraws} draws total)`;
-    }
-  }
-}
-
-function getDrawRange() {
-  const rangeValue = document.getElementById('drawRange').value;
-  if (rangeValue === 'all') {
-    return historical ? historical.length : 129;
-  }
-  return parseInt(rangeValue);
-}
-
-function getSelectedBases() {
-  return [16, 22, 10]; // Enhanced 3-Base System v3.0 - scientifically selected
-}
-
-function arraysEqual(a, b) {
-  return a.length === b.length && a.every((val, index) => val === b[index]);
-}
 
 function checkHistoricalAndMaybePredict() {
-  const bases = getSelectedBases();
-    const mostRecentDraw = historical[0].numbers.slice().sort((a, b) => a - b);
-  if (arraysEqual(bases, mostRecentDraw)) return false;
+  const bases = getSelectedBases().sort((a, b) => a - b);
+  const mostRecentDraw = historical[0].slice(0, 6).sort((a, b) => a - b);
+
+  // ✅ Skip historical prediction entirely if base = most recent draw
+  if (arraysEqual(bases, mostRecentDraw)) {
+    return false;
+  }
+
   for (let i = historical.length - 1; i > 0; i--) {
-      const draw = historical[i].numbers.slice().sort((a, b) => a - b);
-    if (arraysEqual(draw, mostRecentDraw)) continue;
+    const draw = historical[i].slice(0, 6).sort((a, b) => a - b);
+
+    // This only prevents matching the most recent draw as a historical case
+    if (arraysEqual(draw, mostRecentDraw)) {
+      continue;
+    }
+
     if (arraysEqual(draw, bases)) {
       const prevDraw = historical[i - 1];
-        calculateScoresAndDisplay(prevDraw.numbers, prevDraw.additional);
+      calculateScoresAndDisplay(prevDraw.slice(0, 6), prevDraw[6]);
       return true;
     }
   }
+
   return false;
 }
 
-function calculateScoresAndDisplay(numbers, additional = null) {
-  const range = getDrawRange();
-  const includeAdd = false; // Additional number dropdown removed
-  const draws = historical.slice(0, range);
-  const freq = Array(50).fill(0);
-  const compat = Array(50).fill(0);
-  draws.forEach(draw => {
-  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => freq[n]++);
-    numbers.forEach(b => {
-      if (pool.includes(b)) {
-        pool.filter(n => n !== b).forEach(n => compat[n]++);
-      }
-    });
-  });
-  const scores = numbers.map(n => freq[n] + compat[n]);
-  displayPredictedNumbers(numbers, additional, scores, freq, compat, 'Historical Pattern Match');
-}
-
-// 🚀 OPTIMIZED: Enhanced Ensemble Prediction (Optimal Fixed Bases)
-// 🔄 FORCE-UPDATE: Version 4.0 - Dec 25, 2025
-function runEnhancedEnsemblePrediction() {
-  // OPTIMAL fixed bases based on historical analysis - 0.85 avg performance
-  const bases = [10, 49, 2]; // Data-driven optimal: 19.9%, 19.2%, 17.8% frequency
-  const range = getDrawRange();
-  const includeAdd = false; // Additional number dropdown removed
-  
-  console.log('🚀 Running Enhanced Ensemble Prediction v4.0 - OPTIMAL Fixed Bases...');
-  console.log('📅 Algorithm updated: Dec 25, 2025 - Using optimal fixed bases');
-  console.log('📌 Using OPTIMAL bases:', bases, '(most frequent historically)');
-  
-  // Initialize scores (corrected algorithm)
-  const scores = Array(50).fill(0);
-  const analysisRange = Math.min(range, historical.length);
-  
-  console.log('📊 Enhanced Ensemble Analysis Range:', analysisRange, 'draws');
-  
-  // Multi-factor scoring exactly as prediction script
-  historical.slice(0, analysisRange).forEach((draw, idx) => {
-    const weight = Math.pow(0.95, idx); // Recent weighting
-    
-    // Frequency analysis (40%) + Recent weighting (35%)
-    draw.numbers.forEach(num => {
-      scores[num] += 0.4 + (0.35 * weight);
-    });
-    
-    if (includeAdd && draw.additional) {
-      scores[draw.additional] += 0.2 + (0.15 * weight);
+    function getSelectedBases() {
+      return ['base1', 'base2', 'base3', 'base4', 'base5', 'base6']
+        .map(id => parseInt(document.getElementById(id).value))
+        .sort((a, b) => a - b);
     }
-  });
-  
-  // Hot/Cold balance (25%)
-  const recentDraws = historical.slice(0, 10);
-  console.log('🌡️ Hot/Cold analysis on last', recentDraws.length, 'draws');
-  
-  for (let num = 1; num <= 49; num++) {
-    const recentCount = recentDraws.reduce((count, draw) => {
-      return count + (draw.numbers.includes(num) ? 1 : 0);
-    }, 0);
-    
-    if (recentCount >= 3) {
-      scores[num] += 0.25 * 0.3; // Hot bonus
-    } else if (recentCount === 0) {
-      scores[num] += 0.25 * 0.7; // Cold bonus
-    } else {
-      scores[num] += 0.25 * 0.1; // Neutral
+
+    function arraysEqual(a, b) {
+      return a.length === b.length && a.every((val, index) => val === b[index]);
     }
-  }
-  
-  // Create ranking exactly as prediction script
-  const ranking = [];
-  for (let num = 1; num <= 49; num++) {
-    if (!bases.includes(num)) {
-      ranking.push({ num, score: scores[num] });
-    }
-  }
-  ranking.sort((a, b) => b.score - a.score);
-  
-  console.log('🏆 Top 10 Enhanced Ensemble rankings:');
-  ranking.slice(0, 10).forEach((item, i) => {
-    console.log(`  ${i+1}. Number ${item.num}: Score ${item.score.toFixed(4)}`);
-  });
-  
-  // Select top numbers for prediction exactly as script
-  const neededNumbers = 6 - bases.length;
-  const ensemblePrediction = ranking.slice(0, neededNumbers).map(item => item.num);
-  
-  // Combine with base numbers
-  let finalPrediction = [...bases, ...ensemblePrediction].slice(0, 6).sort((a, b) => a - b);
-  
-  console.log('✅ CORRECTED Enhanced Ensemble prediction:', finalPrediction);
-  console.log('🧮 Prediction components:');
-  console.log('  📌 Base numbers:', bases);
-  console.log('  🎯 Ensemble picks:', ensemblePrediction);
-  
-  // Calculate scores for display
-  const compositeScores = finalPrediction.map(num => {
-    return scores[num] || 0;
-  });
-  
-  // Create enhanced analytics data
-  const enhancedData = finalPrediction.map(num => ({
-    ensemble: scores[num] || 0,
-    patterns: 'Corrected Algorithm',
-    confidence: Math.round((scores[num] || 0) * 100)
-  }));
-  
-  // Calculate frequency and compatibility for display
-  const freq = Array(50).fill(0);
-  const compat = Array(50).fill(0);
-  historical.slice(0, range).forEach(draw => {
-    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => freq[n]++);
-    bases.forEach(b => {
-      if (pool.includes(b)) {
-        pool.filter(n => n !== b).forEach(n => compat[n]++);
-      }
-    });
-  });
-  
-  displayPredictedNumbers(
-    finalPrediction,
-    null,
-    compositeScores,
-    freq,
-    compat,
-    '✅ Enhanced Ensemble (CORRECTED - Fixed Bases)',
-    enhancedData
-  );
-  
-  console.log('✅ CORRECTED Enhanced Ensemble complete:', finalPrediction);
-}
 
-// Helper function to analyze historical patterns
-function analyzeHistoricalPatterns() {
-  const patterns = {
-    sumRange: { min: 999, max: 0, avg: 0 },
-    evenOddRatio: 0,
-    rangeDistribution: { low: 0, mid: 0, high: 0 }
-  };
-  
-  let totalSum = 0;
-  let totalEven = 0;
-  let totalLow = 0, totalMid = 0, totalHigh = 0;
-  
-  historical.forEach(draw => {
-    const sum = draw.numbers.reduce((a, b) => a + b, 0);
-    patterns.sumRange.min = Math.min(patterns.sumRange.min, sum);
-    patterns.sumRange.max = Math.max(patterns.sumRange.max, sum);
-    totalSum += sum;
-    
-    totalEven += draw.numbers.filter(n => n % 2 === 0).length;
-    totalLow += draw.numbers.filter(n => n <= 16).length;
-    totalMid += draw.numbers.filter(n => n >= 17 && n <= 33).length;
-    totalHigh += draw.numbers.filter(n => n >= 34).length;
-  });
-  
-  patterns.sumRange.avg = totalSum / historical.length;
-  patterns.evenOddRatio = totalEven / historical.length;
-  patterns.rangeDistribution.low = totalLow / historical.length;
-  patterns.rangeDistribution.mid = totalMid / historical.length;
-  patterns.rangeDistribution.high = totalHigh / historical.length;
-  
-  return patterns;
-}
+    function calculateScoresAndDisplay(numbers, additional = null) {
+      const bases = numbers.slice();
+      const range = parseInt(document.getElementById('drawRange').value);
+      const includeAdd = document.getElementById('includeAdd').checked;
+      const draws = historical.slice(0, range);
+      const freq = Array(50).fill(0);
+      const compat = Array(50).fill(0);
 
-// ENHANCED: Pattern filters with diversity preservation
-function applyEnhancedPatternFilters(numbers, patterns, candidatePool) {
-  let filtered = [...numbers];
-  
-  // 1. Enhanced sum range filter with smart replacements
-  let sum = filtered.reduce((a, b) => a + b, 0);
-  const targetSumMin = patterns.sumRange.avg - 25; // Tighter range based on actual data
-  const targetSumMax = patterns.sumRange.avg + 25;
-  
-  if (sum < targetSumMin || sum > targetSumMax) {
-    console.log(`🔧 Adjusting sum from ${sum} to target range ${targetSumMin.toFixed(0)}-${targetSumMax.toFixed(0)}`);
-    
-    if (sum < targetSumMin) {
-      // Smart replacement: pick available higher numbers with good ensemble scores
-      const availableHigh = candidatePool
-        .filter(([num, score]) => parseInt(num) > 25 && !filtered.includes(parseInt(num)))
-        .slice(0, 10) // Top 10 candidates
-        .map(([num]) => parseInt(num));
-      
-      if (availableHigh.length > 0) {
-        // Use first available high number for consistency (was random)
-        const replacement = availableHigh[0];
-        filtered[filtered.indexOf(Math.min(...filtered))] = replacement;
-        filtered.sort((a, b) => a - b);
-      }
-    } else {
-      // Smart replacement: pick available lower numbers with good ensemble scores
-      const availableLow = candidatePool
-        .filter(([num, score]) => parseInt(num) <= 25 && !filtered.includes(parseInt(num)))
-        .slice(0, 10)
-        .map(([num]) => parseInt(num));
-      
-      if (availableLow.length > 0) {
-        // Use last available low number for consistency (was random)
-        const replacement = availableLow[availableLow.length - 1];
-        filtered[filtered.indexOf(Math.max(...filtered))] = replacement;
-        filtered.sort((a, b) => a - b);
-      }
-    }
-  }
-  
-  // 2. CRITICAL: Perfect Even/Odd balance (3 even, 3 odd) based on actual data
-  let evenCount = filtered.filter(n => n % 2 === 0).length;
-  const oddCount = 6 - evenCount;
-  
-  console.log(`Current even/odd: ${evenCount}/${oddCount}, target: 3/3`);
-  
-  if (evenCount !== 3) {
-    const availableEven = candidatePool
-      .filter(([num]) => parseInt(num) % 2 === 0 && !filtered.includes(parseInt(num)))
-      .map(([num]) => parseInt(num));
-    const availableOdd = candidatePool
-      .filter(([num]) => parseInt(num) % 2 === 1 && !filtered.includes(parseInt(num)))
-      .map(([num]) => parseInt(num));
-    
-    if (evenCount < 3 && availableEven.length > 0) {
-      // Need more even numbers
-      const needed = 3 - evenCount;
-      for (let i = 0; i < needed && i < availableEven.length; i++) {
-        // Replace an odd number with an even one
-        const oddIndices = filtered.map((n, idx) => n % 2 === 1 ? idx : -1).filter(idx => idx >= 0);
-        if (oddIndices.length > 0) {
-          // Use first available odd index for consistency (was random) 
-          const replaceIdx = oddIndices[0];
-          filtered[replaceIdx] = availableEven[i];
-        }
-      }
-    } else if (evenCount > 3 && availableOdd.length > 0) {
-      // Need more odd numbers  
-      const needed = evenCount - 3;
-      for (let i = 0; i < needed && i < availableOdd.length; i++) {
-        // Replace an even number with an odd one
-        const evenIndices = filtered.map((n, idx) => n % 2 === 0 ? idx : -1).filter(idx => idx >= 0);
-        if (evenIndices.length > 0) {
-          // Use first available even index for consistency (was random)
-          const replaceIdx = evenIndices[0];
-          filtered[replaceIdx] = availableOdd[i];
-        }
-      }
-    }
-    
-    filtered.sort((a, b) => a - b);
-  }
-  
-  // 3. Range distribution balance (based on actual data patterns)
-  const lowCount = filtered.filter(n => n <= 16).length;
-  const midCount = filtered.filter(n => n >= 17 && n <= 33).length;
-  const highCount = filtered.filter(n => n >= 34).length;
-  
-  console.log(`Range distribution: Low ${lowCount}, Mid ${midCount}, High ${highCount}`);
-  
-  // Ensure at least 1 number from each range for diversity
-  if (lowCount === 0 || midCount === 0 || highCount === 0) {
-    console.log('🔧 Adjusting range distribution for better coverage');
-    // Implementation would go here for range balancing
-  }
-  
-  return filtered;
-}
-
-// Legacy function maintained for compatibility
-function applyPatternFilters(numbers, patterns) {
-  return applyEnhancedPatternFilters(numbers, patterns, []);
-}
-
-// COLD NUMBER AVOIDANCE: Helper function to identify numbers to avoid
-function identifyColdNumbers(includeAdd = false) {
-  const recentDraws = historical.slice(0, Math.min(20, historical.length));
-  const recentNumbers = new Set();
-  
-  // Collect all numbers that appeared in recent 20 draws
-  recentDraws.forEach(draw => {
-    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => {
-      if (n >= 1 && n <= 49) recentNumbers.add(n);
-    });
-  });
-  
-  // Identify completely cold numbers (absent from recent 20 draws)
-  const coldNumbers = [];
-  for (let n = 1; n <= 49; n++) {
-    if (!recentNumbers.has(n)) {
-      coldNumbers.push(n);
-    }
-  }
-  
-  console.log(`Debug: Cold numbers (absent from recent ${recentDraws.length} draws):`, coldNumbers);
-  return coldNumbers;
-}
-
-// Helper function to apply cold number avoidance
-function applyColdNumberAvoidance(candidates, coldNumbers, maxColdAllowed = 1) {
-  // Allow maximum 1 cold number in final selection for balance
-  const filtered = [];
-  let coldCount = 0;
-  
-  for (const candidate of candidates) {
-    if (coldNumbers.includes(candidate.n || candidate)) {
-      if (coldCount < maxColdAllowed) {
-        filtered.push(candidate);
-        coldCount++;
-      }
-      // Skip this cold number if quota exceeded
-    } else {
-      filtered.push(candidate);
-    }
-  }
-  
-  console.log(`Debug: Cold number avoidance - filtered ${candidates.length} to ${filtered.length} (cold quota: ${coldCount}/${maxColdAllowed})`);
-  return filtered;
-}
-
-// Helper functions for individual methods
-function getFrequencyCompatibilityPrediction(bases, range, includeAdd) {
-  const freq = Array(50).fill(0);
-  const compat = Array(50).fill(0);
-  const draws = historical.slice(0, range);
-  
-  draws.forEach(draw => {
-    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => freq[n]++);
-    bases.forEach(b => {
-      if (pool.includes(b)) {
-        pool.filter(n => n !== b).forEach(n => compat[n]++);
-      }
-    });
-  });
-  
-  return freq.map((count, n) => ({ n, score: count + compat[n] }))
-    .filter(o => o.n >= 1 && o.n <= 49 && !bases.includes(o.n))
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 10)
-    .map(o => o.n);
-}
-
-function getWeightedPrediction(bases, range, includeAdd) {
-  const weighted = Array(50).fill(0);
-  const draws = historical.slice(0, range);
-  
-  draws.forEach((draw, index) => {
-    const weight = Math.exp(-index * 0.03);
-    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => weighted[n] += weight);
-  });
-  
-  return weighted.map((weight, n) => ({ n, weight }))
-    .filter(o => o.n >= 1 && o.n <= 49 && !bases.includes(o.n))
-    .sort((a, b) => b.weight - a.weight)
-    .slice(0, 10)
-    .map(o => o.n);
-}
-
-function getHotColdPrediction(bases, range, includeAdd) {
-  const recentDraws = historical.slice(0, 20);
-  const allDraws = historical.slice(0, range);
-  
-  const recentFreq = Array(50).fill(0);
-  const overallFreq = Array(50).fill(0);
-  
-  recentDraws.forEach(draw => {
-    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => recentFreq[n]++);
-  });
-  
-  allDraws.forEach(draw => {
-    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => overallFreq[n]++);
-  });
-  
-  const hotColdScores = [];
-  for (let num = 1; num <= 49; num++) {
-    if (!bases.includes(num)) {
-      const recentRate = recentFreq[num] / recentDraws.length;
-      const overallRate = overallFreq[num] / allDraws.length;
-      const trend = (recentRate - overallRate) * 100;
-      hotColdScores.push({ n: num, score: trend + overallFreq[num] * 0.1 });
-    }
-  }
-  
-  return hotColdScores
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 10)
-    .map(o => o.n);
-}
-
-function runFrequencyCompatibilityPrediction() {
-  const bases = [10, 49, 2]; // OPTIMAL fixed base numbers for compatibility calculation
-  const range = getDrawRange();
-  const includeAdd = false; // Additional number dropdown removed
-  
-  console.log('📊 Running Frequency + Compatibility Prediction');
-  console.log('📌 OPTIMAL base numbers for compatibility:', bases);
-  console.log('📊 Analysis range:', range, 'draws');
-  
-  const freq = Array(50).fill(0);
-  const compat = Array(50).fill(0);
-  
-  // Calculate frequency and compatibility exactly like validation tool
-  historical.slice(0, range).forEach(draw => {
-    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
-    
-    // Count frequency
-    pool.forEach(n => {
-      if (n >= 1 && n <= 49) {
-        freq[n]++;
-      }
-    });
-    
-    // Calculate compatibility with base numbers
-    bases.forEach(b => {
-      if (pool.includes(b)) {
-        pool.filter(n => n !== b).forEach(n => {
-          if (n >= 1 && n <= 49) {
-            compat[n]++;
-          }
-        });
-      }
-    });
-  });
-  
-  // Calculate total scores (Frequency + Compatibility)
-  const scores = freq.map((f, i) => f + compat[i]);
-  const suggestions = scores
-    .map((score, n) => ({ n, score, freq: freq[n], compat: compat[n] }))
-    .filter(o => o.n >= 1 && o.n <= 49)
-    .sort((a, b) => b.score - a.score || a.n - b.n)
-    .slice(0, 6);
-  
-  const prediction = suggestions.map(o => o.n).sort((a, b) => a - b);
-  
-  console.log('🏆 Top 6 Frequency + Compatibility results:');
-  suggestions.forEach((item, i) => {
-    console.log(`  ${i+1}. Number ${item.n}: Score ${item.score} (Freq: ${item.freq}, Compat: ${item.compat})`);
-  });
-  console.log('✅ Frequency + Compatibility prediction:', prediction);
-  // Create enhanced analytics data
-  const enhancedData = prediction.map(num => ({
-    frequency: freq[num],
-    compatibility: compat[num],
-    score: freq[num] + compat[num]
-  }));
-  
-  displayPredictedNumbers(
-    prediction,
-    null,
-    suggestions.map(o => o.score),
-    freq,
-    compat,
-    'Frequency + Compatibility Analysis',
-    enhancedData
-  );
-}
-
-// Enhanced Prediction - DUPLICATE DISABLED (kept improved version at line 1363)
-function runEnhancedPrediction_DISABLED() {
-  const bases = getSelectedBases();
-  const range = getDrawRange();
-  const includeAdd = document.getElementById('includeAdd').checked;
-  const draws = historical.slice(0, range);
-  console.log('Debug: Draws used for Enhanced Prediction:', draws.length);
-  console.log('Draws used for Enhanced Prediction:', draws.length);
-  
-  const freq = Array(50).fill(0);
-  const compat = Array(50).fill(0);
-  const weighted = Array(50).fill(0);
-  
-  draws.forEach((draw, index) => {
-    const weight = Math.exp(-index * 0.03); // Recent draws weighted higher
-  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-    
-    pool.forEach(n => {
-      freq[n]++;
-      weighted[n] += weight;
-    });
-    
-    bases.forEach(b => {
-      if (pool.includes(b)) {
-        pool.filter(n => n !== b).forEach(n => compat[n] += weight);
-      }
-    });
-  });
-  
-  const suggestions = freq.map((count, n) => ({ 
-    n, 
-    freq: count,
-    compat: compat[n],
-    weighted: weighted[n],
-    score: count + compat[n] + weighted[n] * 0.5
-  }))
-    .filter(o => o.n >= 1 && o.n <= 49)
-    .sort((a, b) => b.score - a.score || a.n - b.n)
-    .slice(0, 6);
-    
-  const scores = suggestions.map(o => o.score);
-  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat, 'Enhanced Analysis (Freq + Compat + Weighted)');
-}
-
-// Weighted Recent Prediction - COMPLEX VERSION DISABLED (duplicate function exists below)
-function runWeightedPrediction_DISABLED() {
-  const bases = getSelectedBases();
-  const range = getDrawRange();
-  const includeAdd = document.getElementById('includeAdd').checked;
-  const draws = historical.slice(0, range);
-  console.log('Debug: Range-Differentiated Weighted Analysis using', draws.length, 'draws');
-  
-  const weighted = Array(50).fill(0);
-  const compat = Array(50).fill(0);
-  
-  // REVOLUTIONARY: Completely different algorithms based on range with clear boundaries
-  if (range <= 8) {
-    // SMALL RANGE: Focus on immediate recent patterns (reduced boundary for clearer separation)
-    console.log('Debug: Using RECENT FOCUS algorithm for small range');
-    draws.forEach((draw, index) => {
-      const weight = Math.pow(0.98, index); // Very gentle decay
-      const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-      
-      pool.forEach(n => weighted[n] += weight * 2.0); // Double weight for recency
-      
-      bases.forEach(b => {
-        if (pool.includes(b)) {
-          pool.filter(n => n !== b).forEach(n => compat[n] += weight * 0.5); // Reduce compatibility
-        }
-      });
-    });
-    
-  } else if (range <= 35) {
-    // MEDIUM RANGE: Balanced frequency + compatibility with STRONG randomization
-    console.log('Debug: Using BALANCED algorithm for medium range');
-    draws.forEach((draw, index) => {
-      // Sigmoid-like decay that emphasizes middle positions
-      const normalizedPos = index / (range - 1);
-      const sigmoidWeight = 1 / (1 + Math.exp((normalizedPos - 0.3) * 10));
-      
-      // ENHANCED RANDOMIZATION: Stronger random factor for more diversity
-      const rangeFactor = 0.85 + (range / 1000); // Deterministic factor based on range (0.87-1.05)
-      
-      // Additional range-specific bias for differentiation
-      const rangeBias = range <= 15 ? 1.2 : 0.8; // Small ranges get boost, larger get reduction
-      
-      const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-      
-      pool.forEach(n => {
-        weighted[n] += sigmoidWeight * rangeFactor * rangeBias;
-        
-        // Range-specific number preferences for differentiation
-        if (range <= 15 && n <= 20) weighted[n] += 0.3; // Small-medium ranges prefer low numbers
-        if (range > 15 && range <= 25 && n >= 25 && n <= 35) weighted[n] += 0.3; // Mid ranges prefer middle numbers  
-        if (range > 25 && n >= 35) weighted[n] += 0.3; // Larger medium ranges prefer high numbers
-      });
-      
-      bases.forEach(b => {
-        if (pool.includes(b)) {
-          pool.filter(n => n !== b).forEach(n => compat[n] += sigmoidWeight * 1.5 * rangeFactor); // Boost compatibility
-        }
-      });
-    });
-    
-  } else {
-    // LARGE RANGE: Historical pattern analysis
-    console.log('Debug: Using PATTERN ANALYSIS algorithm for large range');
-    
-    // Split into segments for pattern analysis
-    const segmentSize = Math.floor(range / 4);
-    
-    for (let segment = 0; segment < 4; segment++) {
-      const segmentStart = segment * segmentSize;
-      const segmentEnd = Math.min(segmentStart + segmentSize, range);
-      const segmentDraws = draws.slice(segmentStart, segmentEnd);
-      
-      // Each segment gets different treatment
-      const segmentWeight = segment === 0 ? 2.0 :   // Most recent segment gets double
-                           segment === 1 ? 1.5 :   // Recent gets 1.5x
-                           segment === 2 ? 1.0 :   // Medium gets 1x
-                           0.6;                    // Oldest gets 0.6x
-      
-      segmentDraws.forEach((draw, index) => {
-        const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-        
-        pool.forEach(n => {
-          // Add frequency analysis with segment weighting
-          weighted[n] += segmentWeight / (index + 1);
-          
-          // Add positional bias based on segment
-          if (segment === 0 && n >= 30) weighted[n] += 0.3; // Recent prefers high numbers
-          if (segment === 1 && n >= 20 && n <= 35) weighted[n] += 0.2; // Mid-range balance
-          if (segment >= 2 && n <= 25) weighted[n] += 0.1; // Historical prefers low numbers
-        });
-        
+      draws.forEach(draw => {
+        const pool = includeAdd ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+        pool.forEach(n => freq[n]++);
         bases.forEach(b => {
           if (pool.includes(b)) {
-            pool.filter(n => n !== b).forEach(n => {
-              compat[n] += segmentWeight * 0.8 / (index + 1);
-            });
+            pool.filter(n => n !== b).forEach(n => compat[n]++);
           }
         });
       });
-    }
-  }
-  
-  // RANGE-SPECIFIC SCORING ALGORITHMS with enhanced differentiation
-  const suggestions = weighted.map((weight, n) => {
-    let finalScore;
-    
-    if (range <= 8) {
-      // Small range: Pure frequency focus with recency boost
-      finalScore = weight * 1.5 + compat[n] * 0.3 + (n % 7) * 0.03; // Deterministic variance
-    } else if (range <= 35) {
-      // Medium range: Balanced approach with compatibility emphasis + strong randomization
-      const rangeMultiplier = range <= 15 ? 1.1 : (range <= 20 ? 1.0 : 0.9); // Differentiate sub-ranges
-      finalScore = weight * 0.8 * rangeMultiplier + compat[n] * 1.2 + (n % 11) * 0.045; // Deterministic variance
-    } else {
-      // Large range: Complex pattern-based scoring with enhanced randomization
-      const patternBonus = (weight > 2.0 ? 0.5 : 0) + (compat[n] > 1.5 ? 0.3 : 0);
-      finalScore = weight + compat[n] + patternBonus + (n % 13) * 0.031; // Deterministic variance
-    }
-    
-    return { 
-      n, 
-      weight, 
-      compat: compat[n],
-      finalScore,
-      confidence: Math.min(95, 40 + (finalScore * 12))
-    };
-  })
-    .filter(o => o.n >= 1 && o.n <= 49 && !bases.includes(o.n))
-    .sort((a, b) => b.finalScore - a.finalScore || a.n - b.n);
-  
-  // COLD NUMBER AVOIDANCE: Apply before selection
-  const coldNumbers = identifyColdNumbers(includeAdd);
-  const filteredSuggestions = applyColdNumberAvoidance(suggestions, coldNumbers, 1);
-  
-  // ENHANCED: Adaptive selection with perfect even/odd balance
-  let finalPredictions = [];
-  let evenCount = 0, oddCount = 0;
-  
-  if (range <= 8) {
-    // Small range: Top 6 by pure score with even/odd balance + slight randomization
-    const topCandidates = filteredSuggestions.slice(0, 10); // Get top 10 for selection flexibility
-    for (const candidate of topCandidates) {
-      if (finalPredictions.length >= 6) break;
-      
-      const isEven = candidate.n % 2 === 0;
-      
-      // Add small chance to skip top candidates for diversity
-      // Deterministic selection - no skipping for consistency
-      
-      // Enforce 3 even, 3 odd balance
-      if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || 
-          (finalPredictions.length >= 4)) { // Allow flexibility for last 2 picks
-        
-        finalPredictions.push(candidate);
-        if (isEven) evenCount++;
-        else oddCount++;
-      }
-    }
-    
-  } else if (range <= 35) {
-    // Medium range: Enhanced diversity with range-specific spacing + even/odd balance
-    const candidates = [...filteredSuggestions];
-    
-    // Range-specific selection pattern
-    const selectionPattern = range <= 15 ? 'conservative' : (range <= 20 ? 'balanced' : 'aggressive');
-    
-    while (finalPredictions.length < 6 && candidates.length > 0) {
-      let nextIndex = 0;
-      
-      // Different selection strategies based on range
-      if (selectionPattern === 'conservative') {
-        // Take mostly from top, occasional skip
-        nextIndex = 0; // Always select top candidate for consistency
-      } else if (selectionPattern === 'balanced') {
-        // Mix of top and middle selections
-        nextIndex = finalPredictions.length % Math.min(3, candidates.length); // Deterministic cycling
-      } else {
-        // More aggressive mixing
-        nextIndex = (finalPredictions.length * 2) % Math.min(6, candidates.length); // Deterministic mixing
-      }
-      
-      const next = candidates.splice(nextIndex, 1)[0];
-      if (!next) break;
-      
-      const isEven = next.n % 2 === 0;
-      
-      // Check even/odd constraint first, then spacing
-      const canAdd = (isEven && evenCount < 3) || (!isEven && oddCount < 3) || 
-                     (finalPredictions.length >= 4);
-      
-      if (canAdd) {
-        // Relaxed spacing for medium ranges
-        const tooClose = finalPredictions.some(p => Math.abs(p.n - next.n) <= 1);
-        if (!tooClose || finalPredictions.length >= 4) {
-          finalPredictions.push(next);
-          if (isEven) evenCount++;
-          else oddCount++;
-        }
-      }
-    }
-    
-  } else {
-    // Large range: Strategic selection with perfect balance
-    const topTier = filteredSuggestions.slice(0, 8);       // Larger pool for flexibility
-    const midTier = filteredSuggestions.slice(8, 25);      
-    const lowTier = filteredSuggestions.slice(25, 45);     
-    
-    // Smart tier-based selection with balance
-    const tiers = [
-      { candidates: topTier, target: 3 },    // 3 from top tier
-      { candidates: midTier, target: 2 },    // 2 from mid tier
-      { candidates: lowTier, target: 1 }     // 1 from low tier
-    ];
-    
-    for (const tier of tiers) {
-      let tierCount = 0;
-      for (const candidate of tier.candidates) {
-        if (finalPredictions.length >= 6 || tierCount >= tier.target) break;
-        
-        const isEven = candidate.n % 2 === 0;
-        
-        // STRICT: Enforce even/odd balance with tier preferences
-        if ((isEven && evenCount < 3) || (!isEven && oddCount < 3)) {
-          finalPredictions.push(candidate);
-          tierCount++;
-          if (isEven) evenCount++;
-          else oddCount++;
-        }
-      }
-    }
-  }
-  
-  // ENHANCED: Fill remaining slots with strict balance enforcement
-  while (finalPredictions.length < 6) {
-    const remaining = filteredSuggestions.filter(s => 
-      !finalPredictions.some(p => p.n === s.n)
-    );
-    
-    if (remaining.length === 0) break;
-    
-    // STRICT: Only add numbers that maintain 3/3 balance
-    let candidate;
-    if (evenCount < 3 && oddCount < 3) {
-      // Need both even and odd - prefer the one with higher score
-      const evenCandidates = remaining.filter(c => c.n % 2 === 0);
-      const oddCandidates = remaining.filter(c => c.n % 2 === 1);
-      
-      if (evenCandidates.length > 0 && oddCandidates.length > 0) {
-        candidate = evenCandidates[0].finalScore > oddCandidates[0].finalScore ? evenCandidates[0] : oddCandidates[0];
-      } else {
-        candidate = evenCandidates[0] || oddCandidates[0] || remaining[0];
-      }
-    } else if (evenCount < 3) {
-      // Need more even numbers
-      candidate = remaining.find(c => c.n % 2 === 0);
-      if (!candidate) break; // Can't maintain balance
-    } else if (oddCount < 3) {
-      // Need more odd numbers
-      candidate = remaining.find(c => c.n % 2 === 1);
-      if (!candidate) break; // Can't maintain balance
-    } else {
-      // Already balanced - shouldn't happen
-      break;
-    }
-    
-    if (candidate) {
-      finalPredictions.push(candidate);
-      if (candidate.n % 2 === 0) evenCount++;
-      else oddCount++;
-    } else {
-      break;
-    }
-  }
-  
-  const scores = finalPredictions.map(o => o.finalScore);
-  const freq = finalPredictions.map(o => o.weight);
-  const compatScores = finalPredictions.map(o => o.compat);
-  
-  console.log('Debug: Range-differentiated predictions:', 
-    finalPredictions.map(p => `${p.n}(${p.finalScore.toFixed(2)})`).join(', '));
-    
-  const algorithmType = range <= 8 ? 'Recent Focus' : 
-                       range <= 35 ? 'Balanced' : 
-                       'Pattern Analysis';
-                       
-  console.log('Debug: Weighted Recent predictions with balance:', 
-    finalPredictions.map(p => `${p.n}(${p.finalScore.toFixed(2)})`).join(', '));
-  console.log('Debug: Even/Odd balance:', evenCount, '/', oddCount);
-    
-  displayPredictedNumbers(
-    finalPredictions.map(o => o.n), 
-    null, 
-    scores, 
-    freq, 
-    compatScores, 
-    `Range-Differentiated Analysis: ${algorithmType} (${range} draws, E/O: ${evenCount}/${oddCount})`
-  );
-}
 
-// Hot/Cold Analysis - IMPROVED: Based on actual data patterns
-function runHotColdPrediction() {
-  const bases = getSelectedBases();
-  const range = getDrawRange();
-  const includeAdd = false; // Additional number dropdown removed
-  
-  // RANGE-SENSITIVE: Use proportional recent draws based on range
-  const recentSize = Math.min(Math.max(10, Math.floor(range * 0.3)), 30); // 30% of range, min 10, max 30
-  const recentDraws = historical.slice(0, Math.min(recentSize, historical.length));
-  const historicalDraws = historical.slice(recentSize, Math.min(range + recentSize, historical.length));
-  
-  console.log('Debug: Hot/Cold using', recentDraws.length, 'recent vs', historicalDraws.length, 'historical draws');
-  
-  const recentFreq = Array(50).fill(0);
-  const historicalFreq = Array(50).fill(0);
-  
-  // Count recent frequencies
-  recentDraws.forEach(draw => {
-    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => {
-      if (n >= 1 && n <= 49) recentFreq[n]++;
-    });
-  });
-  
-  // Count historical frequencies
-  historicalDraws.forEach(draw => {
-    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => {
-      if (n >= 1 && n <= 49) historicalFreq[n]++;
-    });
-  });
-  
-  // IMPROVED: Calculate true hotness ratios like actual data analysis
-  const suggestions = recentFreq.map((recentCount, n) => {
-    const recentRate = recentCount / recentDraws.length;
-    const historicalRate = historicalFreq[n] / Math.max(1, historicalDraws.length);
-    const hotRatio = historicalRate > 0 ? recentRate / historicalRate : (recentCount > 0 ? 10 : 0);
-    
-    // ENHANCED: Multi-factor scoring based on actual data insights
-    let hotScore = 0;
-    
-    // Factor 1: Recent activity (25% weight)
-    hotScore += recentCount * 0.25;
-    
-    // Factor 2: Heat ratio vs historical (40% weight) 
-    if (hotRatio > 1.5 && recentRate > 0.10) { // Minimum 10% recent appearance
-      hotScore += hotRatio * 0.40;
+      const scores = numbers.map(n => freq[n] + compat[n]);
+      console.log('Sanity Check - Predicted Numbers:');
+      numbers.forEach((n, i) => {
+        console.log(`Number ${n} -> Frequency: ${freq[n]}, Compatibility: ${compat[n]}, Total Score: ${scores[i]}`);
+      });
+      displayPredictedNumbers(numbers, additional, scores, freq, compat);
     }
-    
-    // Factor 3: Momentum boost for trending numbers (20% weight)
-    if (recentCount >= 3 && hotRatio > 1.2) {
-      hotScore += 0.20;
-    }
-    
-    // Factor 4: Penalty for completely cold numbers (15% weight)
-    if (recentCount === 0 && historicalRate > 0.08) {
-      hotScore -= 0.15; // Avoid numbers that went completely cold
-    }
-    
-    // Factor 5: Range-specific adjustments
-    const rangeBonus = range <= 20 ? hotScore * 0.1 : range <= 50 ? hotScore * 0.05 : 0;
-    hotScore += rangeBonus;
-    
-    return {
-      n,
-      recentCount,
-      recentRate: recentRate * 100, // Convert to percentage
-      historicalRate: historicalRate * 100,
-      hotRatio,
-      hotScore,
-      trend: recentCount > historicalFreq[n] / Math.max(1, historicalDraws.length) * recentDraws.length ? '+' : (recentCount === 0 ? '--' : '-'),
-      confidence: Math.min(95, 50 + hotScore * 20)
-    };
-  })
-    .filter(o => o.n >= 1 && o.n <= 49 && !bases.includes(o.n))
-    .sort((a, b) => b.hotScore - a.hotScore || a.n - b.n);
-  
-  // COLD NUMBER AVOIDANCE: Filter candidates but allow some for balance
-  const coldNumbers = identifyColdNumbers(includeAdd);
-  const filteredSuggestions = applyColdNumberAvoidance(suggestions, coldNumbers, 1);
-  
-  // ENHANCED: Smart selection with even/odd balance
-  const finalPredictions = [];
-  let evenCount = 0, oddCount = 0;
-  
-  for (const candidate of filteredSuggestions) {
-    if (finalPredictions.length >= 6) break;
-    
-    const isEven = candidate.n % 2 === 0;
-    
-    // Enforce 3 even, 3 odd balance (based on actual data: perfect 50/50 split)
-    if ((isEven && evenCount < 3) || (!isEven && oddCount < 3) || 
-        (finalPredictions.length >= 4)) { // Allow flexibility for last 2 picks
-      
-      finalPredictions.push(candidate);
-      if (isEven) evenCount++;
-      else oddCount++;
-    }
-  }
-  
-  // Fill remaining slots if needed
-  if (finalPredictions.length < 6) {
-    for (const candidate of filteredSuggestions) {
-      if (finalPredictions.length >= 6) break;
-      if (!finalPredictions.some(p => p.n === candidate.n)) {
-        finalPredictions.push(candidate);
-      }
-    }
-  }
 
-  const scores = finalPredictions.map(o => o.hotScore);
-  
-  // Calculate proper frequency and compatibility data for analytics
-  const freq = Array(50).fill(0);
-  const compat = Array(50).fill(0);
-  
-  // Calculate total frequency over the selected range
-  historical.slice(0, range).forEach(draw => {
-    const pool = includeAdd ? draw.numbers.concat(draw.additional) : draw.numbers;
-    pool.forEach(n => freq[n]++);
-    bases.forEach(b => {
-      if (pool.includes(b)) {
-        pool.filter(n => n !== b).forEach(n => compat[n]++);
-      }
-    });
-  });
-  
-  console.log('Debug: Hot/Cold predictions with heat ratios:', 
-    finalPredictions.map(p => `${p.n}(${p.trend}, ${p.recentRate.toFixed(1)}%)`).join(', '));
-  console.log('Debug: Even/Odd balance:', evenCount, '/', oddCount);
-  
-  // Debug: Check final results before display
-  console.log('Debug: Final predictions count:', finalPredictions.length);
-  console.log('Debug: Final predictions numbers:', finalPredictions.map(p => p.n));
-  console.log('Debug: Scores array:', scores.length);
+    function runFrequencyCompatibilityPrediction() {
+      const bases = getSelectedBases();
+      const range = parseInt(document.getElementById('drawRange').value);
+      const includeAdd = document.getElementById('includeAdd').checked;
+      const draws = historical.slice(0, range);
+      const freq = Array(50).fill(0);
+      const compat = Array(50).fill(0);
 
-  // Create temperature extraData for analytics display
-  const temperatureData = finalPredictions.map(prediction => {
-    const temp = prediction.hotRatio > 1.5 ? 'hot' : 
-                 prediction.hotRatio < 0.5 ? 'cold' : 'warm';
-    return {
-      temperature: temp,
-      trend: prediction.hotRatio - 1.0 // Deviation from normal
-    };
-  });
-
-  displayPredictedNumbers(
-    finalPredictions.map(o => o.n), 
-    null, 
-    scores, 
-    freq, 
-    compat, 
-    `Data-Driven Hot/Cold Analysis (Recent: ${recentDraws.length}, E/O: ${evenCount}/${6-evenCount})`,
-    temperatureData
-  );
-}
-
-// ENHANCEMENT 1: Enhanced Combined Analysis
-function runEnhancedPrediction() {
-  const bases = getSelectedBases();
-  const range = getDrawRange();
-  const includeAdd = document.getElementById('includeAdd').checked;
-  const draws = historical.slice(0, range);
-  console.log('Draws used for Weighted Prediction:', draws.length);
-  
-  const freq = Array(50).fill(0);
-  const compat = Array(50).fill(0);
-  const hotness = Array(50).fill(0);
-  const weighted = Array(50).fill(0);
-  
-  draws.forEach((draw, index) => {
-    const weight = Math.exp(-index * 0.05); // Recent draws weighted higher
-    const recentBonus = index < range * 0.3 ? 2 : 1; // Extra bonus for very recent
-  const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-    
-    pool.forEach(n => {
-      freq[n]++;
-      weighted[n] += weight;
-      hotness[n] += recentBonus;
-    });
-    
-    bases.forEach(b => {
-      if (pool.includes(b)) {
-        pool.filter(n => n !== b).forEach(n => {
-          compat[n]++;
+      draws.forEach(draw => {
+        const pool = includeAdd ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+        pool.forEach(n => freq[n]++);
+        bases.forEach(b => {
+          if (pool.includes(b)) {
+            pool.filter(n => n !== b).forEach(n => compat[n]++);
+          }
         });
-      }
-    });
-  });
-  
-  const suggestions = freq.map((count, n) => ({ 
-    n, 
-    freq: count, 
-    compat: compat[n],
-    weighted: weighted[n],
-    hotness: hotness[n],
-    score: count + compat[n] + weighted[n] * 0.5 + hotness[n] * 0.3
-  }))
-    .filter(o => o.n >= 1 && o.n <= 49)
-    .sort((a, b) => b.score - a.score || a.n - b.n);
-    
-  // Get 6 numbers (standard system)
-  const finalSuggestions = suggestions.slice(0, 6);
-    
-  const scores = finalSuggestions.map(o => Math.round(o.score));
-  displayPredictedNumbers(
-  finalSuggestions.map(o => o.n),
-  null,
-  scores,
-  freq,
-  compat,
-  'Enhanced Combined Analysis',
-  finalSuggestions
-);
-}
+      });
 
-// ENHANCEMENT 2: Weighted Recent Analysis
-function runWeightedPrediction() {
-  const bases = getSelectedBases();
-  const range = getDrawRange();
-  const includeAdd = false; // Additional number dropdown removed
-  const draws = historical.slice(0, range);
-  
-  const weighted = Array(50).fill(0);
-  const compat = Array(50).fill(0);
-  
-  draws.forEach((draw, index) => {
-    // RANGE-SENSITIVE: Different decay rates based on range
-    const decayRate = range <= 20 ? 0.2 : range <= 50 ? 0.1 : 0.05; // Faster decay for smaller ranges
-    const weight = Math.exp(-index * decayRate);
-    
-    // RANGE-SPECIFIC MULTIPLIER: Different emphasis based on range
-    const rangeMultiplier = range <= 20 ? 1.5 : range <= 50 ? 1.2 : 1.0;
-    const adjustedWeight = weight * rangeMultiplier;
-    
-    const pool = includeAdd && draw.numbers.length === 6 ? draw.numbers.concat(draw.additional) : draw.numbers;
-    
-    pool.forEach(n => weighted[n] += adjustedWeight);
-    
-    bases.forEach(b => {
-      if (pool.includes(b)) {
-        pool.filter(n => n !== b).forEach(n => compat[n] += adjustedWeight);
-      }
-    });
-  });
-  
-  const suggestions = weighted.map((weight, n) => ({ 
-    n, 
-    weight: weight, 
-    compat: compat[n],
-    score: weight + compat[n] * 1.5
-  }))
-    .filter(o => o.n >= 1 && o.n <= 49)
-    .sort((a, b) => b.score - a.score || a.n - b.n)
-    .slice(0, 6);
-    
-  const scores = suggestions.map(o => Math.round(o.score * 10) / 10);
-  const freq = weighted; // Use weighted as freq for display
-  displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat, 'Weighted Recent Draw Analysis (Consistent Results)');
-}
+      const suggestions = freq
+        .map((count, n) => ({ n, count, compat: compat[n] }))
+        .filter(o => o.n)
+        .sort((a, b) => (b.compat + b.count) - (a.compat + a.count) || b.count - a.count || a.n - b.n)
+        .slice(0, 6);
 
-// ENHANCEMENT 3: Hot/Cold Number Analysis - REMOVED DUPLICATE
-// The primary runHotColdPrediction() function is defined above at line 1236
-
-function displayPredictedNumbers(numbers, additional = null, scores, freq, compat, methodName = 'Analysis', extraData = null) {
-  const rs = document.getElementById('results');
-  const analytics = document.getElementById('analytics');
-  const showAnalytics = document.getElementById('showAnalytics').checked;
-  
-  const sorted = numbers.map((n, i) => ({ n, score: scores[i], freq: freq[n], compat: compat[n] }))
-    .sort((a, b) => a.n - b.n);
-  const sortedNumbers = sorted.map(o => o.n);
-  const sortedScores = sorted.map(o => o.score);
-  const sortedFreq = sorted.map(o => o.freq);
-  const sortedCompat = sorted.map(o => o.compat);
-  
-  // Main results display with system type info
-  const systemInfo = '';
-
-  rs.innerHTML = `
-    <h3>Predicted Numbers:</h3>
-    <p style="font-size: 1.2em; font-weight: bold; color: #2c5aa0;">${sortedNumbers.join(', ')}</p>
-    <p style="margin-top: 10px; font-size: 0.95em;">${systemInfo}</p>
-    ${additional ? `<p><strong>Additional Number:</strong> ${additional}</p>` : ''}
-  `;
-  
-  // Analytics display
-  if (showAnalytics) {
-    let analyticsHtml = `
-      <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin-top: 10px;">
-        <h4>Detailed Analytics (${methodName})</h4>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 15px;">
-    `;
-    
-    sortedNumbers.forEach((num, i) => {
-      let extraInfo = '';
-      if (extraData && extraData[i]) {
-        const data = extraData[numbers.indexOf(num)];
-        if (data && data.temperature) {
-          extraInfo = `<br>🌡️ ${data.temperature.toUpperCase()} (${data.trend > 0 ? '+' : ''}${data.trend.toFixed(1)})`;
-        } else if (data && data.weighted) {
-          extraInfo = `<br>⚖️ Weighted: ${data.weighted.toFixed(1)}`;
-        }
-      }
-      
-      analyticsHtml += `
-        <div style="background: white; padding: 10px; border-radius: 5px; border-left: 4px solid #2c5aa0;">
-          <strong>Number ${num}</strong><br>
-          📈 Score: ${typeof sortedScores[i] === 'number' ? sortedScores[i].toFixed(1) : sortedScores[i]}<br>
-          🔢 Frequency: ${Math.round(sortedFreq[i] * 10) / 10}<br>
-          🤝 Compatibility: ${Math.round(sortedCompat[i] * 10) / 10}${extraInfo}
-        </div>
-      `;
-    });
-    
-    analyticsHtml += `</div>`;
-    
-    // Add method explanation
-    const explanations = {
-      '🚀 Enhanced Ensemble Analysis (Recommended)': 'Advanced algorithm combining all three prediction methods with weighted voting and pattern filtering. Applies sum range, even/odd balance, and number distribution filters for optimal results.',
-      'Frequency + Compatibility Analysis': 'Original algorithm analyzing how often numbers appear and their compatibility with selected numbers.',
-      'Weighted Recent Draw Analysis': 'Gives more importance to recent draws using exponential decay weighting.',
-      'Hot/Cold Number Analysis': 'Identifies trending numbers by comparing recent vs historical frequency.',
-      'Enhanced Combined Analysis': 'Multi-factor analysis combining frequency, compatibility, weighting, and trend analysis.',
-    };
-    
-    if (explanations[methodName]) {
-      analyticsHtml += `
-        <div style="background: #e8f4f8; padding: 10px; border-radius: 5px; margin-top: 10px;">
-          <strong>📋 Method Explanation:</strong><br>
-          ${explanations[methodName]}
-        </div>
-      `;
+      const scores = suggestions.map(o => o.count + o.compat);
+      console.log('Sanity Check - Suggestions:');
+      suggestions.forEach((o, i) => {
+        console.log(`Number ${o.n} -> Frequency: ${o.count}, Compatibility: ${o.compat}, Total Score: ${scores[i]}`);
+      });
+      displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat);
     }
-    
-    // Add prediction confidence
-    const avgScore = sortedScores.reduce((a, b) => a + b, 0) / sortedScores.length;
-    const maxPossibleScore = Math.max(...scores);
-    const confidence = Math.round((avgScore / maxPossibleScore) * 100);
-    
-    analyticsHtml += `
-      <div style="background: #f0f8e8; padding: 10px; border-radius: 5px; margin-top: 10px;">
-        <strong>Prediction Confidence:</strong> ${confidence}%<br>
-        <strong>Average Score:</strong> ${avgScore.toFixed(1)}<br>
-        <strong>📈 Score Range:</strong> ${Math.min(...sortedScores).toFixed(1)} - ${Math.max(...sortedScores).toFixed(1)}
-      </div>
-    `;
-    
 
-    
-    analyticsHtml += `</div>`;
-    analytics.innerHTML = analyticsHtml;
-  } else {
-    analytics.innerHTML = '';
-  }
-  
-  // Chart display
-  const ctx = document.getElementById('freqChart').getContext('2d');
-  if (chartInstance) chartInstance.destroy();
-  chartInstance = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: sortedNumbers.map((n, i) => `${n} (F: ${Math.round(sortedFreq[i])}, C: ${Math.round(sortedCompat[i])})`),
-      datasets: [{
-        label: `Score (${methodName})`,
-        data: sortedScores,
-        backgroundColor: 'rgba(54, 162, 235, 0.6)',
-        borderColor: 'rgba(54, 162, 235, 1)',
-        borderWidth: 1
-      }]
-    },
-    options: {
-      responsive: true,
-      plugins: {
-        title: {
-          display: true,
-          text: `Prediction Analysis: ${methodName}`
+    function displayPredictedNumbers(numbers, additional = null, scores, freq, compat) {
+      const rs = document.getElementById('results');
+      // Sort numbers, scores, freq, compat for both display and chart
+     const sorted = numbers
+     .map((n, i) => ({
+      n,
+      score: scores[i],
+      freq: freq[n],
+      compat: compat[n]
+  }))
+  .sort((a, b) => a.n - b.n);  // ✅ ASCENDING ORDER by number
+      const sortedNumbers = sorted.map(o => o.n);
+      const sortedScores = sorted.map(o => o.score);
+      const sortedFreq = sorted.map(o => o.freq);
+      const sortedCompat = sorted.map(o => o.compat);
+      rs.innerHTML = '<h3>Predicted Numbers:</h3>' +
+        `<p>${sortedNumbers.join(', ')}</p>`;
+
+      const ctx = document.getElementById('freqChart').getContext('2d');
+      if (chartInstance) {
+        chartInstance.destroy();
+      }
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: sortedNumbers.map((n, i) => `${n}\n(freq: ${sortedFreq[i]}, compat: ${sortedCompat[i]})`),
+          datasets: [{
+            label: 'Total Score',
+            data: sortedScores,
+            backgroundColor: 'rgba(54, 162, 235, 0.6)',
+            borderColor: 'rgba(54, 162, 235, 1)',
+            borderWidth: 1
+          }]
         },
-        tooltip: {
-          callbacks: {
-            label: function(context) {
-              const index = context.dataIndex;
-              const baseInfo = `Freq: ${Math.round(sortedFreq[index])}, Compat: ${Math.round(sortedCompat[index])}, Total: ${sortedScores[index]}`;
-              
-              if (extraData && extraData[numbers.indexOf(sortedNumbers[index])]) {
-                const data = extraData[numbers.indexOf(sortedNumbers[index])];
-                if (data.temperature) {
-                  return `${baseInfo}, Trend: ${data.temperature} (${data.trend > 0 ? '+' : ''}${data.trend.toFixed(1)})`;
-                } else if (data.weighted) {
-                  return `${baseInfo}, Weighted: ${data.weighted.toFixed(1)}`;
+        options: {
+          responsive: true,
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const index = context.dataIndex;
+                  return `Freq: ${sortedFreq[index]}, Compat: ${sortedCompat[index]}, Total: ${sortedScores[index]}`;
                 }
               }
-              
-              return baseInfo;
             }
-          }
+          },
+          scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
         }
-      },
-      scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+      });
     }
-  });
-}
-</script>
+  </script>
 </body>
 </html>
