@@ -204,6 +204,12 @@ function checkHistoricalAndMaybePredict() {
       const range = parseInt(document.getElementById('drawRange').value);
       const includeAdd = document.getElementById('includeAdd').checked;
       const draws = historical.slice(0, range);
+
+      if (range > 20) {
+        runWeightedHybridPrediction(bases, draws, range, includeAdd);
+        return;
+      }
+
       const freq = Array(50).fill(0);
       const compat = Array(50).fill(0);
 
@@ -229,6 +235,75 @@ function checkHistoricalAndMaybePredict() {
         console.log(`Number ${o.n} -> Frequency: ${o.count}, Compatibility: ${o.compat}, Total Score: ${scores[i]}`);
       });
       displayPredictedNumbers(suggestions.map(o => o.n), null, scores, freq, compat);
+    }
+
+    function runWeightedHybridPrediction(bases, draws, range, includeAdd) {
+      const baseSet = new Set(bases);
+      const freq = Array(50).fill(0);
+      const compat = Array(50).fill(0);
+      const recency = Array(50).fill(0);
+      const pairBoost = Array(50).fill(0);
+      const age = Array(50).fill(range);
+
+      draws.forEach((draw, idx) => {
+        const pool = includeAdd ? draw.slice(0, 6).concat(draw[6]) : draw.slice(0, 6);
+        const mainPool = draw.slice(0, 6);
+        const recencyWeight = 1 / (1 + idx * 0.12);
+        const matchedBases = bases.filter(b => pool.includes(b));
+
+        pool.forEach(n => {
+          freq[n]++;
+          recency[n] += recencyWeight;
+        });
+
+        matchedBases.forEach(b => {
+          pool.filter(n => n !== b).forEach(n => {
+            compat[n]++;
+          });
+        });
+
+        if (matchedBases.length >= 2) {
+          mainPool.forEach(n => {
+            pairBoost[n] += (matchedBases.length - 1);
+          });
+        }
+      });
+
+      for (let n = 1; n <= 49; n++) {
+        for (let i = 0; i < draws.length; i++) {
+          if (draws[i].slice(0, 6).includes(n)) {
+            age[n] = i;
+            break;
+          }
+        }
+      }
+
+      const scored = [];
+      for (let n = 1; n <= 49; n++) {
+        const score =
+          recency[n] * 1.8 +
+          compat[n] * 0.8 +
+          freq[n] * 0.6 +
+          pairBoost[n] * 1.2 +
+          (age[n] / range) * 0.8 -
+          (baseSet.has(n) ? 1.2 : 0);
+
+        scored.push({ n, score });
+      }
+
+      const top = scored
+        .sort((a, b) => b.score - a.score || a.n - b.n)
+        .slice(0, 6);
+
+      const numbers = top.map(o => o.n);
+      const scores = top.map(o => o.score);
+
+      console.log('Sanity Check - Weighted Hybrid Suggestions:');
+      top.forEach(o => {
+        console.log(`Number ${o.n} -> Frequency: ${freq[o.n]}, Compatibility: ${compat[o.n]}, Score: ${o.score.toFixed(3)}`);
+      });
+
+      displayPredictedNumbers(numbers, null, scores, freq, compat);
     }
 
     function displayPredictedNumbers(numbers, additional = null, scores, freq, compat) {
