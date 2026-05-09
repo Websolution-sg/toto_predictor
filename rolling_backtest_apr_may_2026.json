@@ -1,0 +1,240 @@
+{
+  "period": {
+    "start": "2-Apr-26",
+    "end": "7-May-26"
+  },
+  "testedDraws": 11,
+  "totalSets": 275,
+  "totalWinningSets": 2,
+  "drawsWithAnyWin": 1,
+  "drawHitRate": 0.09090909090909091,
+  "setWinRate": 0.007272727272727273,
+  "avgBestMatches": 2.1818181818181817,
+  "groupCounts": {
+    "Group 1": 0,
+    "Group 2": 0,
+    "Group 3": 0,
+    "Group 4": 0,
+    "Group 5": 1,
+    "Group 6": 0,
+    "Group 7": 1
+  },
+  "drawReports": [
+    {
+      "date": "2-Apr-26",
+      "winningNumbers": [
+        1,
+        7,
+        8,
+        23,
+        30,
+        33
+      ],
+      "additional": 47,
+      "setsTested": 25,
+      "winningSets": 0,
+      "bestMatches": 2,
+      "winners": []
+    },
+    {
+      "date": "6-Apr-26",
+      "winningNumbers": [
+        14,
+        23,
+        29,
+        30,
+        39,
+        48
+      ],
+      "additional": 12,
+      "setsTested": 25,
+      "winningSets": 0,
+      "bestMatches": 2,
+      "winners": []
+    },
+    {
+      "date": "9-Apr-26",
+      "winningNumbers": [
+        1,
+        2,
+        6,
+        9,
+        44,
+        48
+      ],
+      "additional": 24,
+      "setsTested": 25,
+      "winningSets": 0,
+      "bestMatches": 2,
+      "winners": []
+    },
+    {
+      "date": "13-Apr-26",
+      "winningNumbers": [
+        4,
+        8,
+        10,
+        15,
+        16,
+        26
+      ],
+      "additional": 17,
+      "setsTested": 25,
+      "winningSets": 2,
+      "bestMatches": 4,
+      "winners": [
+        {
+          "setIndex": 1,
+          "set": [
+            10,
+            11,
+            15,
+            16,
+            19,
+            20
+          ],
+          "matchCount": 3,
+          "matched": [
+            10,
+            15,
+            16
+          ],
+          "hasAdditional": false,
+          "group": "Group 7"
+        },
+        {
+          "setIndex": 18,
+          "set": [
+            4,
+            8,
+            15,
+            26,
+            37,
+            48
+          ],
+          "matchCount": 4,
+          "matched": [
+            4,
+            8,
+            15,
+            26
+          ],
+          "hasAdditional": false,
+          "group": "Group 5"
+        }
+      ]
+    },
+    {
+      "date": "16-Apr-26",
+      "winningNumbers": [
+        1,
+        3,
+        6,
+        12,
+        21,
+        41
+      ],
+      "additional": 18,
+      "setsTested": 25,
+      "winningSets": 0,
+      "bestMatches": 2,
+      "winners": []
+    },
+    {
+      "date": "20-Apr-26",
+      "winningNumbers": [
+        3,
+        5,
+        9,
+        23,
+        43,
+        49
+      ],
+      "additional": 8,
+      "setsTested": 25,
+      "winningSets": 0,
+      "bestMatches": 2,
+      "winners": []
+    },
+    {
+      "date": "23-Apr-26",
+      "winningNumbers": [
+        3,
+        5,
+        15,
+        23,
+        37,
+        42
+      ],
+      "additional": 48,
+      "setsTested": 25,
+      "winningSets": 0,
+      "bestMatches": 2,
+      "winners": []
+    },
+    {
+      "date": "27-Apr-26",
+      "winningNumbers": [
+        3,
+        11,
+        13,
+        22,
+        28,
+        48
+      ],
+      "additional": 21,
+      "setsTested": 25,
+      "winningSets": 0,
+      "bestMatches": 2,
+      "winners": []
+    },
+    {
+      "date": "30-Apr-26",
+      "winningNumbers": [
+        2,
+        6,
+        7,
+        31,
+        35,
+        39
+      ],
+      "additional": 15,
+      "setsTested": 25,
+      "winningSets": 0,
+      "bestMatches": 2,
+      "winners": []
+    },
+    {
+      "date": "4-May-26",
+      "winningNumbers": [
+        7,
+        18,
+        19,
+        30,
+        36,
+        48
+      ],
+      "additional": 11,
+      "setsTested": 25,
+      "winningSets": 0,
+      "bestMatches": 2,
+      "winners": []
+    },
+    {
+      "date": "7-May-26",
+      "winningNumbers": [
+        2,
+        3,
+        8,
+        16,
+        20,
+        47
+      ],
+      "additional": 10,
+      "setsTested": 25,
+      "winningSets": 0,
+      "bestMatches": 2,
+      "winners": []
+    }
+  ]
+}
